@@ -1,0 +1,23 @@
+# 编译与依赖
+target/
+build/
+node_modules/
+dist/
+.idea/
+.vscode/
+*.class
+
+# 环境与密钥（切勿提交）
+.env
+.env.local
+application-local.yml
+*.pem
+
+# 大文件与上传目录（视频文件不要进 Git）
+uploads/
+*.mp4
+*.mov
+
+# 系统
+.DS_Store
+Thumbs.db
