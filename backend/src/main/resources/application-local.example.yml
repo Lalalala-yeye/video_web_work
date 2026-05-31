@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/doinb?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    # 密码含 @、: 等特殊字符时请用双引号包裹，例如 password: "@yourPassword"
+    password: "改成你的MySQL密码"
+
+jwt:
+  secret: "改成你自己的JWT密钥"
