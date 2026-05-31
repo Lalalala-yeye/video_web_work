@@ -1,6 +1,6 @@
 # doinb 视频网站（video_web）
 
-课程项目 **doinb** 的前后端代码仓库，仿 B 站风格的视频平台。当前已完成**项目骨架**与前后端联调，业务功能（登录、视频、评论等）按模块迭代开发中。
+课程项目 **doinb** 的前后端代码仓库。当前已完成**项目骨架**与前后端联调，业务功能（登录、视频、评论等）按模块迭代开发中。
 
 仓库地址：https://github.com/Lalalala-yeye/video_web_work.git
 
@@ -32,12 +32,10 @@ video_web/
         ├── router/
         └── views/
 ```
-
+- 提交配置在.gitignore里已经写明，直接提交就行
 ---
 
 ## 环境要求
-
-请提前安装：
 
 - **JDK 25**
 - **MySQL 8.x**（本机安装并启动服务）
@@ -48,8 +46,6 @@ video_web/
 
 ---
 
-## 快速开始（给组员）
-
 ### 1. 克隆仓库
 
 ```bash
@@ -59,22 +55,17 @@ cd video_web
 
 ### 2. 准备 MySQL
 
-在本机 MySQL 中执行（只需一次）：
-
+- 在自己的数据库里建个这个表就行
 ```sql
 CREATE DATABASE doinb DEFAULT CHARACTER SET utf8mb4;
 ```
 
-每人使用**自己的本机 MySQL**，数据互不影响。
-
 ### 3. 配置后端本地密钥
 
-```bash
-cd backend/src/main/resources
-copy application-local.example.yml application-local.yml
-```
 
-编辑 `application-local.yml`，填写你自己的 MySQL 账号密码，并设置 JWT 密钥，例如：
+编辑 `application-local.yml`，填写你自己的 MySQL 账号密码，并设置 JWT 密钥，`alication-local.example.yml`中已给出例子，复制后补充账号密码和密钥。
+
+例如：
 
 ```yaml
 spring:
@@ -88,10 +79,8 @@ jwt:
 ```
 
 > **注意（YAML 语法）**  
-> 若密码以 `@`、`:`、`#` 等特殊字符开头或包含特殊字符，**必须用英文双引号包起来**，例如 `password: "@abc123"`。  
+> 若密码以 `@`、`:`、`#` 等特殊字符开头或包含特殊字符，**必须用英文双引号包起来**，例如 `password: "@abc123"`。  （是这样的，有神秘人士在设置密码的时候用了‘@’结果后端运行不成功（））
 > 否则 Spring Boot 启动时会报 YAML 解析错误。
-
-`application-local.yml` 已在 `.gitignore` 中，**不要提交到 GitHub**。
 
 ### 4. 启动后端
 
@@ -117,14 +106,13 @@ cd web
 npm install
 npm run dev
 ```
-
-浏览器打开：http://localhost:8787  
-
-首页应显示后端健康检查结果（`doinb-backend ok`）。
+- 我这里运行成功就自己跳出来网页了。
 
 前端通过 Vite 代理访问后端：`/api/*` → `http://localhost:8080/*`（见 `web/vite.config.js`）。
 
 ---
+
+# 以下部分，可以不看
 
 ## 端口约定
 
@@ -214,7 +202,3 @@ git status
 后端分层约定：`Controller` → `Service` → `Mapper` → MySQL。
 
 ---
-
-## 联系方式
-
-有问题先在组内沟通；配置类问题可对照本 README 的「快速开始」逐步排查。
