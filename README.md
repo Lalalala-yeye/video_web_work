@@ -5,6 +5,18 @@
 仓库地址：https://github.com/Lalalala-yeye/video_web_work.git
 
 ---
+## 写在前面
+做特定功能时
+```bash
+1. git pull origin main          # 先同步最新的 main
+2. git checkout -b feature/登录   # 新建自己的分支（名字自定）
+3. 改代码、commit
+4. git push origin feature/登录   # 只 push 自己的分支，不 push main
+5. 在 GitHub 上开 Pull Request：feature/登录 → main
+6. Merge
+```
+不要没git pull就开始写，一定要新建对应分支再改！不要覆盖main分支，main分支最后再更新。
+
 
 ## 技术栈
 
