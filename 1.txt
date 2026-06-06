@@ -1,0 +1,33 @@
+第一步：用户注册 / 登录（优先）
+这是后续所有功能的基础，建议按这个顺序做：
+在 MySQL 执行 database/database.sql（如果还没建表）
+实现 UserService
+注册：查重 → 密码加密（BCrypt）→ userMapper.insert
+登录：selectByUsername → 校验密码 → 生成 JWT
+实现 JwtUtil
+生成 token、解析 token、校验过期
+实现 UserController
+POST /auth/register
+POST /auth/login
+可选：GET /users/me 获取当前用户
+完善 SecurityConfig + JwtAuthenticationTokenFilter
+登录/注册接口放行
+其余接口校验 Authorization 头
+前端登录页
+调接口 → token 存 localStorage.doinb_token → Axios 自动带 token
+
+第二步：视频模块
+VideoService + VideoController
+接口：列表、详情、上传（发布者角色）
+前端：首页视频列表、播放页
+
+第三步：评论 + 播放历史
+CommentService：按 target_id + target_type 查/发评论
+PlayHistoryService：记录/读取播放进度（联合主键用 LambdaQueryWrapper）
+
+第四步：订阅 + 直播
+SubscriptionService：关注 / 取消关注 / 关注列表
+LiveRoomService：直播间 CRUD、开播状态
+
+第五步：搜索（可穿插在视频模块后）
+不需要新表，在 VideoService 里按标题模糊查询即可

@@ -13,5 +13,5 @@ mybatis-plus:
       id-type: auto
 
 jwt:
-  secret: change-me-in-local-config
+  secret: "change-me-in-local-config-at-least-32-chars!!"
   expire: 86400000

@@ -6,4 +6,4 @@ spring:
     password: "改成你的MySQL密码"
 
 jwt:
-  secret: "改成你自己的JWT密钥"
+  secret: "改成至少32个字符的随机字符串用于JWT签名"
