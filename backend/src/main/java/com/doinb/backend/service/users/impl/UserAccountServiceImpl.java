@@ -121,7 +121,6 @@ public class UserAccountServiceImpl implements UserAccountService {
         } catch (BadCredentialsException e) {
             return fail(403, "账号或密码不正确");
         }
-
         UserDetailsImpl loginUser = (UserDetailsImpl) authenticate.getPrincipal();
         User user = loginUser.getUser();
 
