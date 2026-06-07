@@ -60,3 +60,7 @@ CREATE TABLE IF NOT EXISTS play_history (
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (video_id) REFERENCES videos(id)
 );
+
+-- 可选：测试用示例数据（需先有 users 表中的 author，例如 id=1）
+-- INSERT INTO videos (title, description, author_id, cover_url, video_url, status)
+-- VALUES ('示例视频', '用于联调播放列表', 1, NULL, 'https://www.w3schools.com/html/mov_bbb.mp4', 1);

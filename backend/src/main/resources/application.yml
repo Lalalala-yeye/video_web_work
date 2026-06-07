@@ -4,6 +4,13 @@ server:
 spring:
   profiles:
     active: local    # 启动时加载 local 配置
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+upload:
+  path: uploads
 
 mybatis-plus:
   configuration:
