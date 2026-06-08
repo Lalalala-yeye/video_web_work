@@ -27,3 +27,20 @@ instance.interceptors.response.use(
 
 export const get = (url, params) => instance.get(url, { params })
 export const post = (url, data) => instance.post(url, data)
+
+/** application/x-www-form-urlencoded，对应后端 @RequestParam */
+export function postParams(url, params) {
+  const body = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value != null && value !== '') body.append(key, value)
+  })
+  return instance.post(url, body)
+}
+
+/** multipart/form-data 上传 */
+export function postForm(url, formData) {
+  return instance.post(url, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 300000
+  })
+}

@@ -1,0 +1,18 @@
+:root {
+  --doinb-primary: #409eff;
+  --el-color-primary: #409eff;
+  --doinb-primary-light: #66b1ff;
+  --doinb-bg-page: #f5f7fa;
+  --doinb-bg-card: #ffffff;
+  --doinb-text-primary: #303133;
+  --doinb-text-regular: #606266;
+  --doinb-text-secondary: #909399;
+  --doinb-text-placeholder: #c0c4cc;
+  --doinb-border: #dcdfe6;
+  --doinb-border-light: #ebeef5;
+  --doinb-danger: #f56c6c;
+  --doinb-header-height: 56px;
+  --doinb-content-max: 1280px;
+  --doinb-radius: 8px;
+  --doinb-radius-sm: 4px;
+}

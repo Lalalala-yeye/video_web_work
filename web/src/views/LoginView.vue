@@ -25,9 +25,7 @@ async function onSubmit() {
   loading.value = true
   try {
     const res = await login(form.username.trim(), form.password)
-    if (res.data.code !== 200) {
-      return
-    }
+    if (res.data.code !== 200) return
     saveLoginResult(res.data.data)
     ElMessage.success(res.data.message || '登录成功')
     router.push('/')
@@ -39,19 +37,22 @@ async function onSubmit() {
 
 <template>
   <div class="auth-page">
-    <el-card class="auth-card" shadow="hover">
-      <h2 class="title">登录 doinb</h2>
-      <p class="subtitle">登录后可上传视频、记录播放历史</p>
+    <el-card class="auth-card" shadow="never">
+      <div class="auth-header">
+        <div class="logo-box">D</div>
+        <h1>欢迎回来</h1>
+        <p>登录到 doinb 视频平台</p>
+      </div>
 
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" @submit.prevent="onSubmit">
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="onSubmit">
         <el-form-item label="账号" prop="username">
-          <el-input v-model="form.username" placeholder="用户名" clearable />
+          <el-input v-model="form.username" placeholder="请输入账号" size="large" clearable />
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" show-password />
+          <el-input v-model="form.password" type="password" placeholder="请输入密码" size="large" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="loading" native-type="submit" style="width: 100%">
+          <el-button type="primary" size="large" :loading="loading" native-type="submit" style="width: 100%">
             登录
           </el-button>
         </el-form-item>
@@ -59,7 +60,7 @@ async function onSubmit() {
 
       <p class="footer-link">
         还没有账号？
-        <router-link to="/register">去注册</router-link>
+        <router-link to="/register">立即注册</router-link>
       </p>
     </el-card>
   </div>
@@ -67,40 +68,61 @@ async function onSubmit() {
 
 <style scoped>
 .auth-page {
-  min-height: 60vh;
+  width: 100%;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  background: var(--doinb-bg-page);
 }
 
 .auth-card {
   width: 100%;
   max-width: 420px;
+  padding: 8px;
+  border-radius: var(--doinb-radius);
 }
 
-.title {
-  margin: 0 0 8px;
+.auth-header {
   text-align: center;
-  font-size: 1.5rem;
+  margin-bottom: 32px;
 }
 
-.subtitle {
-  margin: 0 0 24px;
-  text-align: center;
-  color: #666;
+.logo-box {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: var(--doinb-primary);
+  color: #fff;
+  border-radius: var(--doinb-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.auth-header h1 {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: var(--doinb-text-primary);
+}
+
+.auth-header p {
   font-size: 14px;
+  color: var(--doinb-text-secondary);
 }
 
 .footer-link {
   text-align: center;
-  margin: 16px 0 0;
+  margin-top: 24px;
   font-size: 14px;
-  color: #666;
+  color: var(--doinb-text-secondary);
 }
 
 .footer-link a {
-  color: var(--el-color-primary);
-  text-decoration: none;
+  color: var(--doinb-primary);
+  margin-left: 4px;
 }
 </style>
