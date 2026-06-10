@@ -11,9 +11,11 @@ import com.doinb.backend.pojo.dto.PageResult;
 import com.doinb.backend.pojo.entity.LiveRoom;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.service.live.LiveRoomService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,10 +26,11 @@ import java.util.stream.Collectors;
 @Service
 public class LiveRoomServiceImpl implements LiveRoomService {
 
-    private static final String DEMO_PLAY_PREFIX = "http://localhost:8080/live/play/";
-
     private final LiveRoomMapper liveRoomMapper;
     private final UserMapper userMapper;
+
+    @Value("${live.play-url-prefix:http://localhost:8080/live/play/}")
+    private String playUrlPrefix;
 
     public LiveRoomServiceImpl(LiveRoomMapper liveRoomMapper, UserMapper userMapper) {
         this.liveRoomMapper = liveRoomMapper;
@@ -41,16 +44,20 @@ public class LiveRoomServiceImpl implements LiveRoomService {
 
         Page<LiveRoom> mpPage = new Page<>(safePage, safeSize);
         liveRoomMapper.selectPage(mpPage, new LambdaQueryWrapper<LiveRoom>()
-                .orderByDesc(LiveRoom::getId));
+                .eq(LiveRoom::getIsLive, true)
+                .orderByDesc(LiveRoom::getSessionStart));
 
         return new PageResult<>(mpPage.getTotal(), safePage, safeSize, toDTOList(mpPage.getRecords()));
     }
 
     @Override
-    public CustomResponse getOne(Integer id) {
+    public CustomResponse getOne(Integer id, Integer viewerUserId, Integer viewerRole) {
         LiveRoom room = liveRoomMapper.selectById(id);
         if (room == null) {
             return fail(404, "直播间不存在");
+        }
+        if (!Boolean.TRUE.equals(room.getIsLive()) && !canManage(viewerUserId, viewerRole, room)) {
+            return fail(404, "直播间未开播或已结束");
         }
         CustomResponse resp = ok("OK");
         resp.setData(toDTO(room));
@@ -71,9 +78,10 @@ public class LiveRoomServiceImpl implements LiveRoomService {
         room.setAnchorId(userId);
         room.setStreamKey(UUID.randomUUID().toString().replace("-", ""));
         room.setIsLive(false);
+        room.setCreateTime(LocalDateTime.now());
         liveRoomMapper.insert(room);
 
-        CustomResponse resp = ok("创建成功");
+        CustomResponse resp = ok("创建成功，请点击开播");
         resp.setData(toDTO(room));
         return resp;
     }
@@ -91,9 +99,12 @@ public class LiveRoomServiceImpl implements LiveRoomService {
             return fail(400, "已在直播中");
         }
 
+        LocalDateTime now = LocalDateTime.now();
         liveRoomMapper.update(null, new LambdaUpdateWrapper<LiveRoom>()
                 .eq(LiveRoom::getId, roomId)
-                .set(LiveRoom::getIsLive, true));
+                .set(LiveRoom::getIsLive, true)
+                .set(LiveRoom::getSessionStart, now)
+                .set(LiveRoom::getEndedAt, null));
         return ok("开播成功");
     }
 
@@ -112,7 +123,8 @@ public class LiveRoomServiceImpl implements LiveRoomService {
 
         liveRoomMapper.update(null, new LambdaUpdateWrapper<LiveRoom>()
                 .eq(LiveRoom::getId, roomId)
-                .set(LiveRoom::getIsLive, false));
+                .set(LiveRoom::getIsLive, false)
+                .set(LiveRoom::getEndedAt, LocalDateTime.now()));
         return ok("停播成功");
     }
 
@@ -133,7 +145,7 @@ public class LiveRoomServiceImpl implements LiveRoomService {
         if (role != null && role == 2) {
             return true;
         }
-        return Objects.equals(room.getAnchorId(), userId);
+        return userId != null && Objects.equals(room.getAnchorId(), userId);
     }
 
     private List<LiveRoomDTO> toDTOList(List<LiveRoom> rooms) {
@@ -167,7 +179,10 @@ public class LiveRoomServiceImpl implements LiveRoomService {
         dto.setAnchorNickname(anchor != null ? anchor.getNickname() : "未知主播");
         dto.setStreamKey(room.getStreamKey());
         dto.setIsLive(room.getIsLive());
-        dto.setPlayUrl(DEMO_PLAY_PREFIX + room.getStreamKey());
+        dto.setSessionStart(room.getSessionStart());
+        if (Boolean.TRUE.equals(room.getIsLive()) && room.getStreamKey() != null) {
+            dto.setPlayUrl(playUrlPrefix + room.getStreamKey() + ".m3u8");
+        }
         return dto;
     }
 

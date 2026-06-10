@@ -46,8 +46,8 @@ async function onSubmit() {
     <el-card class="auth-card" shadow="never">
       <div class="auth-header">
         <div class="logo-box">D</div>
-        <h1>{{ isAddMode ? '添加账号' : '欢迎回来' }}</h1>
-        <p>{{ isAddMode ? '登录后将加入本设备的账号列表' : '登录到 doinb 视频平台' }}</p>
+        <h1>{{ isAddMode ? '新标签页登录' : '欢迎回来' }}</h1>
+        <p>{{ isAddMode ? '本标签页独立登录，不影响其他已打开的标签页' : '登录到 doinb 视频平台' }}</p>
       </div>
 
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="onSubmit">

@@ -11,6 +11,8 @@ public class LiveRoomDTO {
     private String anchorNickname;
     private String streamKey;
     private Boolean isLive;
-    /** 观众拉流/播放地址（演示用占位） */
+    /** 本场开播时间 */
+    private java.time.LocalDateTime sessionStart;
+    /** 观众拉流地址（HLS，需流媒体服务） */
     private String playUrl;
 }

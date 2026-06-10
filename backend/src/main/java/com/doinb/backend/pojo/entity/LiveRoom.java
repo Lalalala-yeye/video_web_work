@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -18,4 +20,9 @@ public class LiveRoom {
     private Integer anchorId;
     private String streamKey;
     private Boolean isLive;
+    /** 本场开播时间，用于过滤本场弹幕 */
+    private LocalDateTime sessionStart;
+    /** 停播时间，用于定时清理房间 */
+    private LocalDateTime endedAt;
+    private LocalDateTime createTime;
 }

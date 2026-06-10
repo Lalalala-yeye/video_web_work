@@ -1,11 +1,13 @@
-/** 登录态：支持单设备多账号，当前活跃账号用于 API 请求 */
+/**
+ * 登录态：账号列表存 localStorage（全设备共享）；
+ * 当前活跃账号存 sessionStorage（每个浏览器标签页独立，可同时多账号操作）。
+ */
 
 const ACCOUNTS_KEY = 'doinb_accounts'
 const ACTIVE_ID_KEY = 'doinb_active_id'
 const LEGACY_TOKEN_KEY = 'doinb_token'
 const LEGACY_USER_KEY = 'doinb_user'
 
-/** 用户信息更新后派发，供导航栏等组件同步 */
 export const AUTH_UPDATED_EVENT = 'doinb-auth-updated'
 
 const REFRESH_INTERVAL_MS = 5000
@@ -29,8 +31,20 @@ function migrateLegacy() {
   localStorage.removeItem(LEGACY_USER_KEY)
 }
 
+/** 从 localStorage 的活跃 id 迁移到 sessionStorage（仅一次） */
+function migrateActiveIdToSession() {
+  const inSession = sessionStorage.getItem(ACTIVE_ID_KEY)
+  if (inSession) return
+  const inLocal = localStorage.getItem(ACTIVE_ID_KEY)
+  if (inLocal) {
+    sessionStorage.setItem(ACTIVE_ID_KEY, inLocal)
+    localStorage.removeItem(ACTIVE_ID_KEY)
+  }
+}
+
 function readAccountsRaw() {
   migrateLegacy()
+  migrateActiveIdToSession()
   const raw = localStorage.getItem(ACCOUNTS_KEY)
   if (!raw) return []
   try {
@@ -47,14 +61,15 @@ function writeAccounts(list) {
 
 function setActiveId(id) {
   if (id == null) {
-    localStorage.removeItem(ACTIVE_ID_KEY)
+    sessionStorage.removeItem(ACTIVE_ID_KEY)
   } else {
-    localStorage.setItem(ACTIVE_ID_KEY, String(id))
+    sessionStorage.setItem(ACTIVE_ID_KEY, String(id))
   }
 }
 
 function getActiveId() {
-  const id = localStorage.getItem(ACTIVE_ID_KEY)
+  migrateActiveIdToSession()
+  const id = sessionStorage.getItem(ACTIVE_ID_KEY)
   return id ? Number(id) : null
 }
 
@@ -113,7 +128,7 @@ export function isAdmin() {
   return Number(user?.role) === 2
 }
 
-/** 登录成功后保存 token 和用户信息，并设为当前活跃账号 */
+/** 登录成功：写入账号列表，并设为**当前标签页**的活跃账号 */
 export function saveLoginResult(data) {
   if (!data?.token || !data?.user?.id) return
   upsertAccount(data.user, data.token)
@@ -121,7 +136,7 @@ export function saveLoginResult(data) {
   window.dispatchEvent(new CustomEvent(AUTH_UPDATED_EVENT, { detail: data.user }))
 }
 
-/** 切换到已登录的其他账号 */
+/** 在当前标签页切换到已登录的其他账号 */
 export function switchAccount(userId) {
   const account = readAccountsRaw().find(a => Number(a.user?.id) === Number(userId))
   if (!account) return false
@@ -131,7 +146,13 @@ export function switchAccount(userId) {
   return true
 }
 
-/** 移除指定账号；未指定则移除当前账号 */
+/** 在新标签页打开登录页（各标签页账号互不影响） */
+export function openLoginInNewTab() {
+  const base = import.meta.env.BASE_URL || '/'
+  const path = `${base.replace(/\/?$/, '/')}login?add=1`
+  window.open(path, '_blank', 'noopener')
+}
+
 export function removeAccount(userId) {
   const targetId = userId != null ? Number(userId) : getActiveId()
   if (!targetId) return
@@ -151,12 +172,10 @@ export function removeAccount(userId) {
   }
 }
 
-/** 退出当前账号 */
 export function clearAuth() {
   removeAccount(getActiveId())
 }
 
-/** 退出全部账号 */
 export function clearAllAccounts() {
   writeAccounts([])
   setActiveId(null)
@@ -198,6 +217,7 @@ export async function refreshStoredUser(force = false) {
 
 export function setupAuthSync() {
   migrateLegacy()
+  migrateActiveIdToSession()
   if (isLoggedIn()) {
     refreshStoredUser()
   }
@@ -205,6 +225,12 @@ export function setupAuthSync() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && isLoggedIn()) {
       refreshStoredUser()
+    }
+  })
+
+  window.addEventListener('storage', e => {
+    if (e.key === ACCOUNTS_KEY) {
+      window.dispatchEvent(new CustomEvent(AUTH_UPDATED_EVENT, { detail: getUser() }))
     }
   })
 }

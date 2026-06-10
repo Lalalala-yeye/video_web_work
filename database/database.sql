@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS live_rooms (
   anchor_id INT NOT NULL,
   stream_key VARCHAR(100),
   is_live BOOLEAN DEFAULT FALSE,
+  session_start DATETIME,
+  ended_at DATETIME,
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (anchor_id) REFERENCES users(id)
 );
 

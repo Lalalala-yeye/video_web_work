@@ -35,7 +35,14 @@ public class LiveRoomController {
 
     @GetMapping("/live/getone")
     public CustomResponse getOne(@RequestParam("id") Integer id) {
-        return liveRoomService.getOne(id);
+        Integer viewerId = null;
+        Integer viewerRole = null;
+        try {
+            viewerId = currentUser.getUserId();
+            viewerRole = currentUser.getRole();
+        } catch (Exception ignored) {
+        }
+        return liveRoomService.getOne(id, viewerId, viewerRole);
     }
 
     @PostMapping("/live/create")
