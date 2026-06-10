@@ -10,6 +10,7 @@ import com.doinb.backend.pojo.CustomResponse;
 import com.doinb.backend.pojo.dto.CommentDTO;
 import com.doinb.backend.pojo.dto.PageResult;
 import com.doinb.backend.pojo.entity.Comment;
+import com.doinb.backend.pojo.entity.LiveRoom;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.service.comment.CommentService;
 import com.doinb.backend.service.reaction.ReactionService;
@@ -64,8 +65,14 @@ public class CommentServiceImpl implements CommentService {
         if (targetType == TARGET_VIDEO && videoMapper.selectById(targetId) == null) {
             return fail(404, "视频不存在");
         }
-        if (targetType == TARGET_LIVE && liveRoomMapper.selectById(targetId) == null) {
-            return fail(404, "直播间不存在");
+        if (targetType == TARGET_LIVE) {
+            LiveRoom room = liveRoomMapper.selectById(targetId);
+            if (room == null) {
+                return fail(404, "直播间不存在");
+            }
+            if (!Boolean.TRUE.equals(room.getIsLive())) {
+                return fail(400, "直播间未开播，无法发送弹幕");
+            }
         }
 
         Comment comment = new Comment();
@@ -89,10 +96,20 @@ public class CommentServiceImpl implements CommentService {
         long safeSize = size < 1 ? 10 : Math.min(size, 50);
 
         Page<Comment> mpPage = new Page<>(safePage, safeSize);
-        commentMapper.selectPage(mpPage, new LambdaQueryWrapper<Comment>()
+        LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<Comment>()
                 .eq(Comment::getTargetId, targetId)
                 .eq(Comment::getTargetType, targetType)
-                .orderByDesc(Comment::getCreateTime));
+                .orderByAsc(Comment::getCreateTime);
+
+        if (targetType == TARGET_LIVE) {
+            LiveRoom room = liveRoomMapper.selectById(targetId);
+            if (room == null || !Boolean.TRUE.equals(room.getIsLive()) || room.getSessionStart() == null) {
+                return new PageResult<>(0, safePage, safeSize, List.of());
+            }
+            wrapper.ge(Comment::getCreateTime, room.getSessionStart());
+        }
+
+        commentMapper.selectPage(mpPage, wrapper);
 
         List<Comment> records = mpPage.getRecords();
         if (records.isEmpty()) {

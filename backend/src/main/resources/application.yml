@@ -16,6 +16,10 @@ spring:
 upload:
   path: uploads
 
+# 直播 HLS 拉流地址前缀（接入 SRS/云直播后修改）
+live:
+  play-url-prefix: http://localhost:8080/live/play/
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true

@@ -9,7 +9,7 @@ public interface LiveRoomService {
 
     PageResult<LiveRoomDTO> list(long page, long size);
 
-    CustomResponse getOne(Integer id);
+    CustomResponse getOne(Integer id, Integer viewerUserId, Integer viewerRole);
 
     CustomResponse create(Integer userId, Integer role, String title);
 

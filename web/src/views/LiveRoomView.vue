@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppAvatar from '@/components/AppAvatar.vue'
 import { fetchLiveDetail } from '@/api/live'
@@ -18,6 +18,9 @@ const comments = ref([])
 const commentText = ref('')
 const showEmojiPicker = ref(false)
 const loggedIn = ref(isLoggedIn())
+const playError = ref(false)
+
+let pollTimer = null
 
 async function load() {
   loading.value = true
@@ -25,6 +28,9 @@ async function load() {
     const res = await fetchLiveDetail(roomId.value)
     if (res.data.code === 200) {
       room.value = res.data.data
+      playError.value = false
+    } else {
+      room.value = null
     }
   } finally {
     loading.value = false
@@ -32,15 +38,36 @@ async function load() {
 }
 
 async function loadComments() {
+  if (!room.value?.isLive) {
+    comments.value = []
+    return
+  }
   const res = await fetchComments(roomId.value, 2)
   if (res.data.code === 200) {
     comments.value = res.data.data?.records || []
   }
 }
 
+function startPolling() {
+  stopPolling()
+  if (!room.value?.isLive) return
+  pollTimer = setInterval(loadComments, 3000)
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
 async function submitComment() {
   if (!loggedIn.value) {
     ElMessage.warning('请先登录')
+    return
+  }
+  if (!room.value?.isLive) {
+    ElMessage.warning('直播未开始')
     return
   }
   const text = commentText.value.trim()
@@ -65,14 +92,33 @@ function appendEmoji(payload) {
   }
 }
 
-onMounted(() => {
-  load()
-  loadComments()
+function onVideoError() {
+  playError.value = true
+}
+
+onMounted(async () => {
+  await load()
+  await loadComments()
+  startPolling()
 })
 
-watch(roomId, () => {
-  load()
-  loadComments()
+onUnmounted(stopPolling)
+
+watch(roomId, async () => {
+  stopPolling()
+  await load()
+  await loadComments()
+  startPolling()
+})
+
+watch(() => room.value?.isLive, isLive => {
+  if (isLive) {
+    loadComments()
+    startPolling()
+  } else {
+    comments.value = []
+    stopPolling()
+  }
 })
 </script>
 
@@ -83,9 +129,27 @@ watch(roomId, () => {
         <div class="player-area">
           <div class="player">
             <span v-if="room.isLive" class="live-badge">直播中</span>
-            <div class="player-placeholder">
-              <p>{{ room.title }}</p>
-              <p class="play-url">{{ room.playUrl || '演示播放地址' }}</p>
+            <template v-if="room.isLive && room.playUrl && !playError">
+              <video
+                class="player-video"
+                :src="room.playUrl"
+                controls
+                autoplay
+                muted
+                playsinline
+                @error="onVideoError"
+              />
+            </template>
+            <div v-else class="player-placeholder">
+              <template v-if="room.isLive">
+                <p>直播画面加载失败</p>
+                <p class="hint">当前为演示架构，尚未接入流媒体服务（SRS / 云直播）。</p>
+                <p class="play-url">拉流地址：{{ room.playUrl || '未配置' }}</p>
+              </template>
+              <template v-else>
+                <p>直播间未开播或已结束</p>
+                <p class="hint">请从直播列表进入正在直播中的房间</p>
+              </template>
             </div>
           </div>
           <el-card shadow="never" class="info-card">
@@ -100,7 +164,8 @@ watch(roomId, () => {
         </div>
 
         <el-card shadow="never" class="chat-card">
-          <h2>互动区</h2>
+          <h2>本场弹幕</h2>
+          <p v-if="room.isLive" class="chat-hint">仅显示本场直播弹幕，每日 0 点清零</p>
           <div class="comments">
             <CommentItem
               v-for="c in comments"
@@ -114,18 +179,30 @@ watch(roomId, () => {
               :reactions="c.reactions"
               @reaction-updated="(id, data) => { const i = comments.findIndex(x => x.id === id); if (i >= 0) comments[i].reactions = data }"
             />
-            <el-empty v-if="!comments.length" description="暂无弹幕/评论" :image-size="80" />
+            <el-empty
+              v-if="!comments.length"
+              :description="room.isLive ? '暂无弹幕，来发第一条吧' : '直播未开始'"
+              :image-size="80"
+            />
           </div>
-          <div v-if="loggedIn" class="chat-input">
+          <div v-if="loggedIn && room.isLive" class="chat-input">
             <el-input v-model="commentText" placeholder="说点什么..." @keyup.enter="submitComment" />
             <el-button text @click="showEmojiPicker = !showEmojiPicker">表情</el-button>
             <el-button type="primary" @click="submitComment">发送</el-button>
           </div>
+          <el-alert
+            v-else-if="!room.isLive"
+            type="info"
+            :closable="false"
+            show-icon
+            title="直播结束后弹幕不保留，下场开播重新计数"
+            class="offline-tip"
+          />
           <EmojiPicker :visible="showEmojiPicker" @select="appendEmoji" @close="showEmojiPicker = false" />
         </el-card>
       </div>
     </template>
-    <el-empty v-else-if="!loading" description="直播间不存在" />
+    <el-empty v-else-if="!loading" description="直播间不存在或未开播" />
   </div>
 </template>
 
@@ -152,6 +229,13 @@ watch(roomId, () => {
   margin-bottom: 16px;
 }
 
+.player-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
 .live-badge {
   position: absolute;
   top: 12px;
@@ -175,6 +259,7 @@ watch(roomId, () => {
   text-align: center;
 }
 
+.hint,
 .play-url {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
@@ -210,6 +295,12 @@ watch(roomId, () => {
 
 .chat-card h2 {
   font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.chat-hint {
+  font-size: 12px;
+  color: var(--doinb-text-secondary);
   margin-bottom: 12px;
 }
 
@@ -225,5 +316,9 @@ watch(roomId, () => {
   gap: 8px;
   margin-top: 12px;
   align-items: center;
+}
+
+.offline-tip {
+  margin-top: 12px;
 }
 </style>

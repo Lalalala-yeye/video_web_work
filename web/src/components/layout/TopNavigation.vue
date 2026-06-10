@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { Search, ArrowDown, User, SwitchButton } from '@element-plus/icons-vue'
 import AppAvatar from '@/components/AppAvatar.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
-import { getUser, isLoggedIn, clearAuth, clearAllAccounts, refreshStoredUser, getAccounts, switchAccount, AUTH_UPDATED_EVENT } from '@/utils/auth'
+import { getUser, isLoggedIn, clearAuth, clearAllAccounts, refreshStoredUser, getAccounts, switchAccount, openLoginInNewTab, AUTH_UPDATED_EVENT } from '@/utils/auth'
 import { logout as logoutApi } from '@/api/user'
 import { FAVICON_URL, BELL_ICON_URL } from '@/constants/staticAssets'
 
@@ -88,7 +88,7 @@ async function onSwitchAccount(userId) {
 
 function onAddAccount() {
   showMenu.value = false
-  router.push({ path: '/login', query: { add: '1' } })
+  openLoginInNewTab()
 }
 
 async function onLogout() {
@@ -201,7 +201,7 @@ function closeNotifications() {
               <span>{{ acc.user.nickname || acc.user.username }}</span>
             </button>
           </div>
-          <button type="button" class="menu-item" @click="onAddAccount">添加账号</button>
+          <button type="button" class="menu-item" @click="onAddAccount">新标签页登录其他账号</button>
           <router-link to="/profile" class="menu-item" @click="showMenu = false">
             <el-icon><User /></el-icon>
             个人中心
