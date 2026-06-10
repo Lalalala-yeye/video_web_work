@@ -12,6 +12,8 @@
     "@element-plus/icons-vue": "^2.3.2",
     "axios": "^1.16.1",
     "element-plus": "^2.14.1",
+    "flv.js": "^1.6.2",
+    "hls.js": "^1.6.16",
     "selenium-webdriver": "^4.44.0",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4"

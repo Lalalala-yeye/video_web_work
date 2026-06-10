@@ -7,3 +7,8 @@ spring:
 
 jwt:
   secret: "改成至少32个字符的随机字符串用于JWT签名"
+
+# 手机通过校园网访问时，把 127.0.0.1 改成电脑局域网 IP（ipconfig 里 10.x 或 192.168.x）：
+# live:
+#   play-url-prefix: http://10.135.252.251:8088/live/
+#   push-url-prefix: rtmp://10.135.252.251:1935/live/

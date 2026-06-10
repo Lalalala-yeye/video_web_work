@@ -1,6 +1,7 @@
 package com.doinb.backend.service.search.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.doinb.backend.config.LiveStreamHelper;
 import com.doinb.backend.mapper.LiveRoomMapper;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.mapper.VideoMapper;
@@ -24,18 +25,20 @@ import java.util.stream.Collectors;
 public class SearchServiceImpl implements SearchService {
 
     private static final int STATUS_PUBLISHED = 1;
-    private static final String DEMO_PLAY_PREFIX = "http://localhost:8080/live/play/";
 
     private final VideoMapper videoMapper;
     private final LiveRoomMapper liveRoomMapper;
     private final UserMapper userMapper;
+    private final LiveStreamHelper liveStreamHelper;
 
     public SearchServiceImpl(VideoMapper videoMapper,
                              LiveRoomMapper liveRoomMapper,
-                             UserMapper userMapper) {
+                             UserMapper userMapper,
+                             LiveStreamHelper liveStreamHelper) {
         this.videoMapper = videoMapper;
         this.liveRoomMapper = liveRoomMapper;
         this.userMapper = userMapper;
+        this.liveStreamHelper = liveStreamHelper;
     }
 
     @Override
@@ -126,7 +129,9 @@ public class SearchServiceImpl implements SearchService {
             dto.setAnchorNickname(anchor != null ? anchor.getNickname() : "未知主播");
             dto.setStreamKey(room.getStreamKey());
             dto.setIsLive(room.getIsLive());
-            dto.setPlayUrl(DEMO_PLAY_PREFIX + room.getStreamKey());
+            if (Boolean.TRUE.equals(room.getIsLive()) && room.getStreamKey() != null) {
+                dto.setPlayUrl(liveStreamHelper.playUrl(room.getStreamKey()));
+            }
             list.add(dto);
         }
         return list;

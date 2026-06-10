@@ -16,9 +16,10 @@ spring:
 upload:
   path: uploads
 
-# 直播 HLS 拉流地址前缀（接入 SRS/云直播后修改）
+# 直播 SRS 地址（本地 Docker：HLS 映射到 8088，避免与后端 8080 冲突）
 live:
-  play-url-prefix: http://localhost:8080/live/play/
+  play-url-prefix: http://127.0.0.1:8088/live/
+  push-url-prefix: rtmp://127.0.0.1:1935/live/
 
 mybatis-plus:
   configuration:

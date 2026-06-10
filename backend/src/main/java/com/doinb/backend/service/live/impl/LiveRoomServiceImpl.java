@@ -3,6 +3,7 @@ package com.doinb.backend.service.live.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.doinb.backend.config.LiveStreamHelper;
 import com.doinb.backend.mapper.LiveRoomMapper;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.pojo.CustomResponse;
@@ -11,7 +12,6 @@ import com.doinb.backend.pojo.dto.PageResult;
 import com.doinb.backend.pojo.entity.LiveRoom;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.service.live.LiveRoomService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -28,13 +28,14 @@ public class LiveRoomServiceImpl implements LiveRoomService {
 
     private final LiveRoomMapper liveRoomMapper;
     private final UserMapper userMapper;
+    private final LiveStreamHelper liveStreamHelper;
 
-    @Value("${live.play-url-prefix:http://localhost:8080/live/play/}")
-    private String playUrlPrefix;
-
-    public LiveRoomServiceImpl(LiveRoomMapper liveRoomMapper, UserMapper userMapper) {
+    public LiveRoomServiceImpl(LiveRoomMapper liveRoomMapper,
+                               UserMapper userMapper,
+                               LiveStreamHelper liveStreamHelper) {
         this.liveRoomMapper = liveRoomMapper;
         this.userMapper = userMapper;
+        this.liveStreamHelper = liveStreamHelper;
     }
 
     @Override
@@ -180,8 +181,12 @@ public class LiveRoomServiceImpl implements LiveRoomService {
         dto.setStreamKey(room.getStreamKey());
         dto.setIsLive(room.getIsLive());
         dto.setSessionStart(room.getSessionStart());
+        if (room.getStreamKey() != null) {
+            dto.setPushServer(liveStreamHelper.pushServer());
+            dto.setPushUrl(liveStreamHelper.pushUrl(room.getStreamKey()));
+        }
         if (Boolean.TRUE.equals(room.getIsLive()) && room.getStreamKey() != null) {
-            dto.setPlayUrl(playUrlPrefix + room.getStreamKey() + ".m3u8");
+            dto.setPlayUrl(liveStreamHelper.playUrl(room.getStreamKey()));
         }
         return dto;
     }
