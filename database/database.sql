@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS videos (
   cover_url VARCHAR(255),
   video_url VARCHAR(255),
   status INT DEFAULT 0,
+  report_count INT DEFAULT 0,
   create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (author_id) REFERENCES users(id)
 );
@@ -115,8 +116,21 @@ CREATE TABLE IF NOT EXISTS dm_messages (
   FOREIGN KEY (sender_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS video_reports (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  video_id INT NOT NULL,
+  reporter_id INT NOT NULL,
+  reason VARCHAR(500),
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (video_id) REFERENCES videos(id),
+  FOREIGN KEY (reporter_id) REFERENCES users(id),
+  UNIQUE KEY uk_video_reporter (video_id, reporter_id)
+);
+
 -- 已有库增量升级（按需执行）：
 -- ALTER TABLE users ADD COLUMN bio TEXT AFTER avatar;
+-- ALTER TABLE videos ADD COLUMN report_count INT DEFAULT 0 AFTER status;
+-- CREATE TABLE video_reports (...见上...);
 
 -- 历史账号：将 role=0 的用户升级为发布者（管理员 role=2 不受影响）
 -- UPDATE users SET role = 1 WHERE role IS NULL OR role < 1;

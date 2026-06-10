@@ -22,5 +22,6 @@ public class Video {
     private String coverUrl;
     private String videoUrl;
     private Integer status;
+    private Integer reportCount;
     private LocalDateTime createTime;
 }

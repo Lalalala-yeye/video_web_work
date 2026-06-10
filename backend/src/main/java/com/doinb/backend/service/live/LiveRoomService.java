@@ -16,4 +16,6 @@ public interface LiveRoomService {
     CustomResponse startLive(Integer userId, Integer role, Integer roomId);
 
     CustomResponse stopLive(Integer userId, Integer role, Integer roomId);
+
+    PageResult<LiveRoomDTO> listMyRooms(Integer userId, long page, long size);
 }

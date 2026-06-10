@@ -20,6 +20,16 @@ const router = createRouter({
         { path: 'upload', name: 'studio-upload', component: () => import('../views/studio/StudioUploadView.vue') },
         { path: 'edit', name: 'studio-edit', component: () => import('../views/studio/StudioEditView.vue') },
         { path: 'edit/:id', name: 'studio-edit-id', component: () => import('../views/studio/StudioEditView.vue') },
+        { path: 'live', name: 'studio-live', component: () => import('../views/studio/StudioLiveView.vue') },
+      ],
+    },
+    {
+      path: '/admin',
+      component: () => import('../views/admin/AdminLayout.vue'),
+      children: [
+        { path: '', redirect: '/admin/pending' },
+        { path: 'pending', name: 'admin-pending', component: () => import('../views/admin/AdminPendingView.vue') },
+        { path: 'report', name: 'admin-report', component: () => import('../views/admin/AdminReportView.vue') },
       ],
     },
     { path: '/upload', redirect: '/studio/upload' },

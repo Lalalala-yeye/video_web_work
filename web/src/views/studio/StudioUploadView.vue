@@ -12,17 +12,21 @@ const coverFile = ref(null)
 
 const form = reactive({
   title: '',
-  description: ''
+  description: '',
+  visibility: 'public',
 })
 
+const visibilityOptions = [
+  { value: 'public', label: '他人可见', hint: '提交后需管理员审核通过才会公开展示' },
+  { value: 'private', label: '仅自己可见', hint: '仅作者本人可预览，不会出现在公开列表' },
+]
+
 function onVideoChange(_uploadFile, fileList) {
-  const latest = fileList[fileList.length - 1]
-  videoFile.value = latest?.raw ?? null
+  videoFile.value = fileList[fileList.length - 1]?.raw ?? null
 }
 
 function onCoverChange(_uploadFile, fileList) {
-  const latest = fileList[fileList.length - 1]
-  coverFile.value = latest?.raw ?? null
+  coverFile.value = fileList[fileList.length - 1]?.raw ?? null
 }
 
 async function onSubmit() {
@@ -39,14 +43,17 @@ async function onSubmit() {
     const res = await uploadVideo({
       title: form.title.trim(),
       description: form.description.trim(),
+      visibility: form.visibility,
       file: videoFile.value,
-      cover: coverFile.value
+      cover: coverFile.value,
     })
     if (res.data.code === 200) {
       ElMessage.success(res.data.message || '上传成功')
       const id = res.data.data?.id
-      if (id) router.push(`/video/${id}`)
-      else router.push('/profile')
+      if (id) router.push(`/studio/edit/${id}`)
+      else router.push('/studio/edit')
+    } else {
+      ElMessage.error(res.data.message || '上传失败')
     }
   } finally {
     loading.value = false
@@ -57,7 +64,7 @@ async function onSubmit() {
 <template>
   <div class="studio-panel">
     <h1 class="page-title">上传视频</h1>
-    <p class="page-subtitle">分享你的精彩内容</p>
+    <p class="page-subtitle">选择可见范围后提交，他人可见的内容需管理员审核</p>
 
     <el-card shadow="never" class="form-card">
       <el-form label-position="top">
@@ -84,6 +91,14 @@ async function onSubmit() {
         <el-form-item label="简介">
           <el-input v-model="form.description" type="textarea" :rows="4" placeholder="介绍一下视频内容" />
         </el-form-item>
+        <el-form-item label="可见范围" required>
+          <el-radio-group v-model="form.visibility" class="visibility-group">
+            <div v-for="opt in visibilityOptions" :key="opt.value" class="visibility-option">
+              <el-radio :value="opt.value">{{ opt.label }}</el-radio>
+              <span class="hint">{{ opt.hint }}</span>
+            </div>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" size="large" :loading="loading" @click="onSubmit">提交上传</el-button>
         </el-form-item>
@@ -99,5 +114,24 @@ async function onSubmit() {
 
 .form-card {
   border-radius: var(--doinb-radius);
+}
+
+.visibility-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.visibility-option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--doinb-text-secondary);
+  margin-left: 22px;
 }
 </style>

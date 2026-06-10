@@ -5,9 +5,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   fetchMyVideos,
   updateVideo,
-  updateVideoStatus,
   deleteVideo,
   videoStatusLabel,
+  statusToVisibility,
 } from '@/api/video'
 import { resolveMediaUrl } from '@/utils/media'
 
@@ -23,7 +23,7 @@ const currentCover = ref('')
 const form = reactive({
   title: '',
   description: '',
-  status: 1,
+  visibility: 'public',
 })
 
 const videoFile = ref(null)
@@ -34,10 +34,9 @@ const editId = computed(() => {
   return id ? Number(id) : null
 })
 
-const statusOptions = [
-  { value: 0, label: '审核中' },
-  { value: 1, label: '已发布' },
-  { value: 2, label: '已下架' },
+const visibilityOptions = [
+  { value: 'public', label: '他人可见', hint: '保存后进入待审核，管理员通过后公开展示' },
+  { value: 'private', label: '仅自己可见', hint: '不会出现在公开列表，仅本人可预览' },
 ]
 
 async function loadList() {
@@ -52,7 +51,7 @@ function applyVideo(v) {
   selectedId.value = v.id
   form.title = v.title || ''
   form.description = v.description || ''
-  form.status = v.status ?? 1
+  form.visibility = statusToVisibility(v.status)
   currentCover.value = v.coverUrl || ''
   videoFile.value = null
   coverFile.value = null
@@ -107,6 +106,7 @@ async function onSave() {
       id: selectedId.value,
       title: form.title.trim(),
       description: form.description.trim(),
+      visibility: form.visibility,
       file: videoFile.value,
       cover: coverFile.value,
     })
@@ -114,14 +114,7 @@ async function onSave() {
       ElMessage.error(res.data.message || '保存失败')
       return
     }
-
-    const statusRes = await updateVideoStatus(selectedId.value, form.status)
-    if (statusRes.data.code !== 200) {
-      ElMessage.error(statusRes.data.message || '状态更新失败')
-      return
-    }
-
-    ElMessage.success('保存成功')
+    ElMessage.success(res.data.message || '保存成功')
     await loadList()
     await loadVideo(selectedId.value)
   } finally {
@@ -132,7 +125,7 @@ async function onSave() {
 async function onDelete() {
   if (!selectedId.value) return
   try {
-    await ElMessageBox.confirm('确定删除该视频？此操作不可恢复', '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm('确定删除该稿件？此操作不可恢复', '删除确认', { type: 'warning' })
   } catch {
     return
   }
@@ -158,7 +151,7 @@ watch(editId, id => {
     selectedId.value = null
     form.title = ''
     form.description = ''
-    form.status = 1
+    form.visibility = 'public'
     currentCover.value = ''
   }
 })
@@ -167,7 +160,7 @@ watch(editId, id => {
 <template>
   <div class="studio-panel">
     <h1 class="page-title">修改视频</h1>
-    <p class="page-subtitle">编辑标题、简介、封面、视频文件与发布状态</p>
+    <p class="page-subtitle">编辑内容并选择可见范围；删除稿件请使用下方按钮</p>
 
     <div class="edit-layout">
       <el-card shadow="never" class="list-card">
@@ -181,12 +174,7 @@ watch(editId, id => {
             :class="{ active: selectedId === v.id }"
             @click="selectVideo(v.id)"
           >
-            <img
-              v-if="v.coverUrl"
-              :src="resolveMediaUrl(v.coverUrl)"
-              alt=""
-              class="thumb"
-            />
+            <img v-if="v.coverUrl" :src="resolveMediaUrl(v.coverUrl)" alt="" class="thumb" />
             <div v-else class="thumb thumb--empty">无封面</div>
             <div class="meta">
               <span class="name">{{ v.title }}</span>
@@ -224,16 +212,17 @@ watch(editId, id => {
             <el-form-item label="简介">
               <el-input v-model="form.description" type="textarea" :rows="4" />
             </el-form-item>
-            <el-form-item label="发布状态">
-              <el-radio-group v-model="form.status">
-                <el-radio v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </el-radio>
+            <el-form-item label="可见范围">
+              <el-radio-group v-model="form.visibility" class="visibility-group">
+                <div v-for="opt in visibilityOptions" :key="opt.value" class="visibility-option">
+                  <el-radio :value="opt.value">{{ opt.label }}</el-radio>
+                  <span class="hint">{{ opt.hint }}</span>
+                </div>
               </el-radio-group>
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="saving" @click="onSave">保存修改</el-button>
-              <el-button type="danger" plain @click="onDelete">删除视频</el-button>
+              <el-button type="danger" plain @click="onDelete">删除稿件</el-button>
               <router-link :to="`/video/${selectedId}`">
                 <el-button>预览</el-button>
               </router-link>
@@ -330,6 +319,25 @@ watch(editId, id => {
 .current-cover {
   max-width: 240px;
   border-radius: var(--doinb-radius-sm);
+}
+
+.visibility-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.visibility-option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--doinb-text-secondary);
+  margin-left: 22px;
 }
 
 @media (max-width: 900px) {

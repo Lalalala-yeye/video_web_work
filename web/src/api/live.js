@@ -19,3 +19,7 @@ export function startLive(id) {
 export function stopLive(id) {
   return postParams('/live/stop', { id })
 }
+
+export function fetchMyLiveList(page = 1, size = 12) {
+  return get('/live/my/list', { page, size })
+}

@@ -24,35 +24,50 @@ export function fetchMyVideos(page = 1, size = 12, config = {}) {
   return get('/video/my/list', { page, size }, { skipErrorHandler: true, ...config })
 }
 
-export function uploadVideo({ title, description, file, cover }) {
+export function uploadVideo({ title, description, visibility = 'public', file, cover }) {
   const form = new FormData()
   form.append('title', title)
   if (description) form.append('description', description)
+  form.append('visibility', visibility)
   form.append('file', file)
   if (cover) form.append('cover', cover)
   return postForm('/video/upload', form)
 }
 
-export function updateVideo({ id, title, description, file, cover, status }, config = {}) {
+export function updateVideo({ id, title, description, visibility = 'public', file, cover }, config = {}) {
   const form = new FormData()
   form.append('id', id)
   form.append('title', title)
   if (description != null) form.append('description', description)
+  form.append('visibility', visibility)
   if (file) form.append('file', file)
   if (cover) form.append('cover', cover)
   return postForm('/video/update', form, { skipErrorHandler: true, ...config })
 }
 
-export function updateVideoStatus(id, status, config = {}) {
-  return postParams('/video/status', { id, status }, { skipErrorHandler: true, ...config })
+export function setVideoVisibility(id, visibility, config = {}) {
+  return postParams('/video/visibility', { id, visibility }, { skipErrorHandler: true, ...config })
+}
+
+export function reportVideo(id, reason, config = {}) {
+  return postParams('/video/report', { id, reason }, { skipErrorHandler: true, ...config })
 }
 
 export function deleteVideo(id, config = {}) {
   return postParams('/video/delete', { id }, { skipErrorHandler: true, ...config })
 }
 
-const STATUS_LABELS = { 0: '审核中', 1: '已发布', 2: '已下架' }
+const STATUS_LABELS = {
+  0: '待审核',
+  1: '已发布',
+  2: '举报待复审',
+  3: '仅自己可见',
+}
 
 export function videoStatusLabel(status) {
   return STATUS_LABELS[status] ?? '未知'
+}
+
+export function statusToVisibility(status) {
+  return status === 3 ? 'private' : 'public'
 }

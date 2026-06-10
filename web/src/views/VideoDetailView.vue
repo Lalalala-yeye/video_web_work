@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import AppAvatar from '@/components/AppAvatar.vue'
 import CommentItem from '@/components/CommentItem.vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import FollowButton from '@/components/FollowButton.vue'
-import { fetchVideoDetail, saveProgress } from '@/api/video'
+import { fetchVideoDetail, saveProgress, reportVideo } from '@/api/video'
 import { fetchComments, addComment } from '@/api/comment'
 import { reactVideo } from '@/api/reaction'
 import { fetchFollowing } from '@/api/subscription'
@@ -136,6 +136,29 @@ async function shareVideo() {
   }
 }
 
+async function onReport() {
+  if (!loggedIn.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  if (isSelfAuthor.value) return
+  try {
+    const { value } = await ElMessageBox.prompt('请简要说明举报原因（可选）', '举报视频', {
+      confirmButtonText: '提交',
+      cancelButtonText: '取消',
+      inputPlaceholder: '例如：内容违规',
+    })
+    const res = await reportVideo(videoId.value, value || '')
+    if (res.data.code === 200) {
+      ElMessage.success(res.data.message || '举报已提交')
+    } else {
+      ElMessage.error(res.data.message || '举报失败')
+    }
+  } catch {
+    /* cancelled */
+  }
+}
+
 function appendEmoji(payload) {
   if (typeof payload === 'string') {
     commentText.value += payload
@@ -201,6 +224,14 @@ watch(videoId, () => {
                 {{ reactions.dislikeCount || 0 }}
               </button>
               <button type="button" class="action-btn" @click="shareVideo">转发</button>
+              <button
+                v-if="!isSelfAuthor"
+                type="button"
+                class="action-btn report-btn"
+                @click="onReport"
+              >
+                举报
+              </button>
             </div>
             <div class="author-row">
               <div class="author-info">

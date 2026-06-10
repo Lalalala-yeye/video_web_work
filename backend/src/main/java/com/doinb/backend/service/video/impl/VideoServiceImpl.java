@@ -6,13 +6,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.doinb.backend.mapper.PlayHistoryMapper;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.mapper.VideoMapper;
+import com.doinb.backend.mapper.VideoReportMapper;
 import com.doinb.backend.pojo.CustomResponse;
+import com.doinb.backend.pojo.VideoStatus;
 import com.doinb.backend.pojo.dto.PageResult;
 import com.doinb.backend.pojo.dto.PlayHistoryDTO;
 import com.doinb.backend.pojo.dto.VideoDTO;
 import com.doinb.backend.pojo.entity.PlayHistory;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.pojo.entity.Video;
+import com.doinb.backend.pojo.entity.VideoReport;
 import com.doinb.backend.service.reaction.ReactionService;
 import com.doinb.backend.service.video.VideoService;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,14 +36,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * 视频业务：列表、详情、播放历史、本地上传。
- */
 @Service
 public class VideoServiceImpl implements VideoService {
 
-    /** 0审核中 1已发布 2已下架 */
-    private static final int STATUS_PUBLISHED = 1;
+    private static final int ROLE_ADMIN = 2;
 
     private static final Set<String> VIDEO_EXTENSIONS = Set.of("mp4", "webm", "mov");
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
@@ -48,6 +47,7 @@ public class VideoServiceImpl implements VideoService {
     private final VideoMapper videoMapper;
     private final UserMapper userMapper;
     private final PlayHistoryMapper playHistoryMapper;
+    private final VideoReportMapper videoReportMapper;
     private final ReactionService reactionService;
 
     @Value("${upload.path:uploads}")
@@ -56,10 +56,12 @@ public class VideoServiceImpl implements VideoService {
     public VideoServiceImpl(VideoMapper videoMapper,
                             UserMapper userMapper,
                             PlayHistoryMapper playHistoryMapper,
+                            VideoReportMapper videoReportMapper,
                             ReactionService reactionService) {
         this.videoMapper = videoMapper;
         this.userMapper = userMapper;
         this.playHistoryMapper = playHistoryMapper;
+        this.videoReportMapper = videoReportMapper;
         this.reactionService = reactionService;
     }
 
@@ -69,26 +71,26 @@ public class VideoServiceImpl implements VideoService {
         long safeSize = size < 1 ? 10 : Math.min(size, 50);
 
         Page<Video> mpPage = new Page<>(safePage, safeSize);
-        LambdaQueryWrapper<Video> wrapper = new LambdaQueryWrapper<Video>()
-                .eq(Video::getStatus, STATUS_PUBLISHED)
-                .orderByDesc(Video::getCreateTime);
-        videoMapper.selectPage(mpPage, wrapper);
+        videoMapper.selectPage(mpPage, new LambdaQueryWrapper<Video>()
+                .eq(Video::getStatus, VideoStatus.PUBLISHED)
+                .orderByDesc(Video::getCreateTime));
 
-        List<VideoDTO> records = toVideoDTOList(mpPage.getRecords());
-        return new PageResult<>(mpPage.getTotal(), safePage, safeSize, records);
+        return new PageResult<>(mpPage.getTotal(), safePage, safeSize, toVideoDTOList(mpPage.getRecords()));
     }
 
     @Override
-    public CustomResponse getOne(Integer videoId, Integer viewerUserId) {
+    public CustomResponse getOne(Integer videoId, Integer viewerUserId, Integer viewerRole) {
         if (videoId == null) {
             return fail(400, "视频 id 不能为空");
         }
         Video video = videoMapper.selectById(videoId);
-        if (video == null || !Objects.equals(video.getStatus(), STATUS_PUBLISHED)) {
+        if (video == null || !canViewVideo(video, viewerUserId, viewerRole)) {
             return fail(404, "视频不存在或未发布");
         }
         VideoDTO dto = toVideoDTO(video);
-        dto.setReactions(reactionService.getVideoSummary(videoId, viewerUserId));
+        if (Objects.equals(video.getStatus(), VideoStatus.PUBLISHED)) {
+            dto.setReactions(reactionService.getVideoSummary(videoId, viewerUserId));
+        }
         CustomResponse resp = ok("OK");
         resp.setData(dto);
         return resp;
@@ -104,7 +106,7 @@ public class VideoServiceImpl implements VideoService {
         }
 
         Video video = videoMapper.selectById(videoId);
-        if (video == null || !Objects.equals(video.getStatus(), STATUS_PUBLISHED)) {
+        if (video == null || !Objects.equals(video.getStatus(), VideoStatus.PUBLISHED)) {
             return fail(404, "视频不存在或未发布");
         }
 
@@ -139,10 +141,9 @@ public class VideoServiceImpl implements VideoService {
         long safeSize = size < 1 ? 10 : Math.min(size, 50);
 
         Page<PlayHistory> mpPage = new Page<>(safePage, safeSize);
-        LambdaQueryWrapper<PlayHistory> wrapper = new LambdaQueryWrapper<PlayHistory>()
+        playHistoryMapper.selectPage(mpPage, new LambdaQueryWrapper<PlayHistory>()
                 .eq(PlayHistory::getUserId, userId)
-                .orderByDesc(PlayHistory::getUpdateTime);
-        playHistoryMapper.selectPage(mpPage, wrapper);
+                .orderByDesc(PlayHistory::getUpdateTime));
 
         List<PlayHistoryDTO> records = new ArrayList<>();
         for (PlayHistory history : mpPage.getRecords()) {
@@ -163,7 +164,7 @@ public class VideoServiceImpl implements VideoService {
 
     @Override
     public CustomResponse upload(Integer userId, Integer role, String title, String description,
-                                 MultipartFile cover, MultipartFile videoFile) {
+                                 String visibility, MultipartFile cover, MultipartFile videoFile) {
         if (!StringUtils.hasText(title)) {
             return fail(400, "标题不能为空");
         }
@@ -173,6 +174,8 @@ public class VideoServiceImpl implements VideoService {
         if (videoFile == null || videoFile.isEmpty()) {
             return fail(400, "请上传视频文件");
         }
+
+        int status = resolveVisibilityStatus(visibility, true);
 
         try {
             String videoExt = extensionOf(videoFile.getOriginalFilename(), VIDEO_EXTENSIONS);
@@ -187,8 +190,7 @@ public class VideoServiceImpl implements VideoService {
             Files.createDirectories(coverDir);
 
             String videoFileName = UUID.randomUUID() + "." + videoExt;
-            Path videoPath = videoDir.resolve(videoFileName);
-            videoFile.transferTo(videoPath.toFile());
+            videoFile.transferTo(videoDir.resolve(videoFileName).toFile());
 
             String coverUrl = null;
             if (cover != null && !cover.isEmpty()) {
@@ -197,8 +199,7 @@ public class VideoServiceImpl implements VideoService {
                     return fail(400, "封面格式仅支持 jpg / png / webp / gif");
                 }
                 String coverFileName = UUID.randomUUID() + "." + coverExt;
-                Path coverPath = coverDir.resolve(coverFileName);
-                cover.transferTo(coverPath.toFile());
+                cover.transferTo(coverDir.resolve(coverFileName).toFile());
                 coverUrl = "/uploads/covers/" + coverFileName;
             }
 
@@ -208,12 +209,12 @@ public class VideoServiceImpl implements VideoService {
             video.setAuthorId(userId);
             video.setCoverUrl(coverUrl);
             video.setVideoUrl("/uploads/videos/" + videoFileName);
-            // 课程演示：上传后直接发布；正式环境可改为 0（审核中）
-            video.setStatus(STATUS_PUBLISHED);
+            video.setStatus(status);
+            video.setReportCount(0);
             video.setCreateTime(LocalDateTime.now());
             videoMapper.insert(video);
 
-            CustomResponse resp = ok("上传成功");
+            CustomResponse resp = ok(status == VideoStatus.PRIVATE ? "上传成功（仅自己可见）" : "上传成功，等待管理员审核");
             resp.setData(toVideoDTO(video));
             return resp;
         } catch (IOException e) {
@@ -227,17 +228,16 @@ public class VideoServiceImpl implements VideoService {
         long safeSize = size < 1 ? 10 : Math.min(size, 50);
 
         Page<Video> mpPage = new Page<>(safePage, safeSize);
-        LambdaQueryWrapper<Video> wrapper = new LambdaQueryWrapper<Video>()
+        videoMapper.selectPage(mpPage, new LambdaQueryWrapper<Video>()
                 .eq(Video::getAuthorId, userId)
-                .orderByDesc(Video::getCreateTime);
-        videoMapper.selectPage(mpPage, wrapper);
+                .orderByDesc(Video::getCreateTime));
 
         return new PageResult<>(mpPage.getTotal(), safePage, safeSize, toVideoDTOList(mpPage.getRecords()));
     }
 
     @Override
     public CustomResponse updateVideo(Integer userId, Integer role, Integer videoId,
-                                      String title, String description,
+                                      String title, String description, String visibility,
                                       MultipartFile cover, MultipartFile videoFile) {
         Video video = videoMapper.selectById(videoId);
         if (video == null) {
@@ -259,6 +259,13 @@ public class VideoServiceImpl implements VideoService {
                     .set(Video::getTitle, title.trim())
                     .set(Video::getDescription, StringUtils.hasText(description) ? description.trim() : null);
 
+            int newStatus = resolveVisibilityStatus(visibility, false);
+            if (isPrivateVisibility(visibility)) {
+                wrapper.set(Video::getStatus, VideoStatus.PRIVATE);
+            } else if (isPublicVisibility(visibility)) {
+                wrapper.set(Video::getStatus, VideoStatus.PENDING);
+            }
+
             Path baseDir = Paths.get(uploadPath).toAbsolutePath().normalize();
             Path coverDir = baseDir.resolve("covers");
             Path videoDir = baseDir.resolve("videos");
@@ -272,6 +279,9 @@ public class VideoServiceImpl implements VideoService {
                 String coverFileName = UUID.randomUUID() + "." + coverExt;
                 cover.transferTo(coverDir.resolve(coverFileName).toFile());
                 wrapper.set(Video::getCoverUrl, "/uploads/covers/" + coverFileName);
+                if (isPublicVisibility(visibility)) {
+                    wrapper.set(Video::getStatus, VideoStatus.PENDING);
+                }
             }
 
             if (videoFile != null && !videoFile.isEmpty()) {
@@ -283,11 +293,15 @@ public class VideoServiceImpl implements VideoService {
                 String videoFileName = UUID.randomUUID() + "." + videoExt;
                 videoFile.transferTo(videoDir.resolve(videoFileName).toFile());
                 wrapper.set(Video::getVideoUrl, "/uploads/videos/" + videoFileName);
+                if (isPublicVisibility(visibility)) {
+                    wrapper.set(Video::getStatus, VideoStatus.PENDING);
+                }
             }
 
             videoMapper.update(null, wrapper);
             Video updated = videoMapper.selectById(videoId);
-            CustomResponse resp = ok("更新成功");
+            String msg = newStatus == VideoStatus.PRIVATE ? "更新成功（仅自己可见）" : "更新成功，等待管理员审核";
+            CustomResponse resp = ok(msg);
             resp.setData(toVideoDTO(updated));
             return resp;
         } catch (IOException e) {
@@ -313,22 +327,66 @@ public class VideoServiceImpl implements VideoService {
     }
 
     @Override
-    public CustomResponse updateStatus(Integer userId, Integer role, Integer videoId, Integer status) {
-        if (status == null || status < 0 || status > 2) {
-            return fail(400, "状态值无效（0审核中 1已发布 2已下架）");
-        }
+    public CustomResponse setVisibility(Integer userId, Integer role, Integer videoId, String visibility) {
         Video video = videoMapper.selectById(videoId);
         if (video == null) {
             return fail(404, "视频不存在");
         }
         if (!canManageVideo(userId, role, video)) {
-            return fail(403, "无权修改该视频状态");
+            return fail(403, "无权修改该视频");
+        }
+        if (!isPublicVisibility(visibility) && !isPrivateVisibility(visibility)) {
+            return fail(400, "可见性参数无效，请使用 public 或 private");
         }
 
+        int status = isPrivateVisibility(visibility) ? VideoStatus.PRIVATE : VideoStatus.PENDING;
         videoMapper.update(null, new LambdaUpdateWrapper<Video>()
                 .eq(Video::getId, videoId)
                 .set(Video::getStatus, status));
-        return ok("状态已更新");
+
+        return ok(status == VideoStatus.PRIVATE ? "已设为仅自己可见" : "已提交审核，等待管理员处理");
+    }
+
+    @Override
+    public CustomResponse reportVideo(Integer userId, Integer videoId, String reason) {
+        if (videoId == null) {
+            return fail(400, "视频 id 不能为空");
+        }
+        Video video = videoMapper.selectById(videoId);
+        if (video == null || !Objects.equals(video.getStatus(), VideoStatus.PUBLISHED)) {
+            return fail(404, "只能举报已发布的视频");
+        }
+        if (Objects.equals(video.getAuthorId(), userId)) {
+            return fail(400, "不能举报自己的视频");
+        }
+
+        Long existing = videoReportMapper.selectCount(new LambdaQueryWrapper<VideoReport>()
+                .eq(VideoReport::getVideoId, videoId)
+                .eq(VideoReport::getReporterId, userId));
+        if (existing != null && existing > 0) {
+            return fail(400, "您已举报过该视频");
+        }
+
+        VideoReport report = new VideoReport();
+        report.setVideoId(videoId);
+        report.setReporterId(userId);
+        report.setReason(StringUtils.hasText(reason) ? reason.trim() : null);
+        report.setCreateTime(LocalDateTime.now());
+        videoReportMapper.insert(report);
+
+        Long reportCount = videoReportMapper.selectCount(new LambdaQueryWrapper<VideoReport>()
+                .eq(VideoReport::getVideoId, videoId));
+        int count = reportCount != null ? reportCount.intValue() : 1;
+
+        LambdaUpdateWrapper<Video> update = new LambdaUpdateWrapper<Video>()
+                .eq(Video::getId, videoId)
+                .set(Video::getReportCount, count);
+        if (count >= VideoStatus.REPORT_THRESHOLD) {
+            update.set(Video::getStatus, VideoStatus.REPORT_REVIEW);
+        }
+        videoMapper.update(null, update);
+
+        return ok(count >= VideoStatus.REPORT_THRESHOLD ? "举报已提交，该视频已进入复审" : "举报已提交");
     }
 
     @Override
@@ -340,16 +398,61 @@ public class VideoServiceImpl implements VideoService {
         if (!canManageVideo(userId, role, video)) {
             return fail(403, "无权删除该视频");
         }
+        deleteFiles(video);
         videoMapper.deleteById(videoId);
         return ok("删除成功");
     }
 
-    /** 作者本人或管理员可管理视频 */
+    private boolean canViewVideo(Video video, Integer viewerUserId, Integer viewerRole) {
+        if (Objects.equals(video.getStatus(), VideoStatus.PUBLISHED)) {
+            return true;
+        }
+        if (viewerRole != null && viewerRole == ROLE_ADMIN) {
+            return true;
+        }
+        return viewerUserId != null && Objects.equals(video.getAuthorId(), viewerUserId);
+    }
+
     private boolean canManageVideo(Integer userId, Integer role, Video video) {
-        if (role != null && role == 2) {
+        if (role != null && role == ROLE_ADMIN) {
             return true;
         }
         return Objects.equals(video.getAuthorId(), userId);
+    }
+
+    private int resolveVisibilityStatus(String visibility, boolean defaultPublic) {
+        if (isPrivateVisibility(visibility)) {
+            return VideoStatus.PRIVATE;
+        }
+        if (isPublicVisibility(visibility) || defaultPublic) {
+            return VideoStatus.PENDING;
+        }
+        return VideoStatus.PENDING;
+    }
+
+    private boolean isPublicVisibility(String visibility) {
+        return "public".equalsIgnoreCase(visibility);
+    }
+
+    private boolean isPrivateVisibility(String visibility) {
+        return "private".equalsIgnoreCase(visibility);
+    }
+
+    private void deleteFiles(Video video) {
+        deleteIfExists(video.getCoverUrl());
+        deleteIfExists(video.getVideoUrl());
+    }
+
+    private void deleteIfExists(String url) {
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        String name = url.startsWith("/uploads/") ? url.substring("/uploads/".length()) : url;
+        Path path = Paths.get(uploadPath, name);
+        try {
+            Files.deleteIfExists(path);
+        } catch (Exception ignored) {
+        }
     }
 
     private List<VideoDTO> toVideoDTOList(List<Video> videos) {
@@ -386,6 +489,7 @@ public class VideoServiceImpl implements VideoService {
         dto.setCoverUrl(video.getCoverUrl());
         dto.setVideoUrl(video.getVideoUrl());
         dto.setStatus(video.getStatus());
+        dto.setReportCount(video.getReportCount() != null ? video.getReportCount() : 0);
         dto.setCreateTime(video.getCreateTime());
         return dto;
     }

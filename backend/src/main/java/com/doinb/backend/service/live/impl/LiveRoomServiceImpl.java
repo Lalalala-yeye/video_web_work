@@ -116,6 +116,19 @@ public class LiveRoomServiceImpl implements LiveRoomService {
         return ok("停播成功");
     }
 
+    @Override
+    public PageResult<LiveRoomDTO> listMyRooms(Integer userId, long page, long size) {
+        long safePage = page < 1 ? 1 : page;
+        long safeSize = size < 1 ? 10 : Math.min(size, 50);
+
+        Page<LiveRoom> mpPage = new Page<>(safePage, safeSize);
+        liveRoomMapper.selectPage(mpPage, new LambdaQueryWrapper<LiveRoom>()
+                .eq(LiveRoom::getAnchorId, userId)
+                .orderByDesc(LiveRoom::getId));
+
+        return new PageResult<>(mpPage.getTotal(), safePage, safeSize, toDTOList(mpPage.getRecords()));
+    }
+
     private boolean canManage(Integer userId, Integer role, LiveRoom room) {
         if (role != null && role == 2) {
             return true;

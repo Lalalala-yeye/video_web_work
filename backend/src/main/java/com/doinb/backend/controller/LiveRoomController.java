@@ -58,4 +58,13 @@ public class LiveRoomController {
                 .getAuthentication().getPrincipal();
         return liveRoomService.stopLive(loginUser.getUser().getId(), loginUser.getUser().getRole(), id);
     }
+
+    @GetMapping("/live/my/list")
+    public CustomResponse myList(@RequestParam(value = "page", defaultValue = "1") long page,
+                                 @RequestParam(value = "size", defaultValue = "12") long size) {
+        PageResult<LiveRoomDTO> result = liveRoomService.listMyRooms(currentUser.getUserId(), page, size);
+        CustomResponse resp = new CustomResponse();
+        resp.setData(result);
+        return resp;
+    }
 }

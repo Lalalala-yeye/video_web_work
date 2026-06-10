@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * 视频接口：列表、播放、历史、上传。
- */
 @RestController
 public class VideoController {
 
@@ -28,7 +25,6 @@ public class VideoController {
         this.currentUser = currentUser;
     }
 
-    /** 已发布视频列表（游客可访问） */
     @GetMapping("/video/list")
     public CustomResponse list(@RequestParam(value = "page", defaultValue = "1") long page,
                                @RequestParam(value = "size", defaultValue = "12") long size) {
@@ -38,97 +34,99 @@ public class VideoController {
         return resp;
     }
 
-    /** 视频详情与播放地址（游客可访问） */
     @GetMapping("/video/getone")
     public CustomResponse getOne(@RequestParam("id") Integer id) {
-        return videoService.getOne(id, safeViewerId());
+        return videoService.getOne(id, safeViewerId(), safeViewerRole());
     }
 
-    /** 保存播放进度（需登录） */
     @PostMapping("/video/history/progress")
     public CustomResponse saveProgress(@RequestParam("videoId") Integer videoId,
                                        @RequestParam("progress") Integer progress) {
-        Integer userId = currentUser.getUserId();
-        return videoService.saveProgress(userId, videoId, progress);
+        return videoService.saveProgress(currentUser.getUserId(), videoId, progress);
     }
 
-    /** 我的播放历史（需登录） */
     @GetMapping("/video/history/list")
     public CustomResponse historyList(@RequestParam(value = "page", defaultValue = "1") long page,
                                       @RequestParam(value = "size", defaultValue = "12") long size) {
-        Integer userId = currentUser.getUserId();
-        PageResult<PlayHistoryDTO> result = videoService.listHistory(userId, page, size);
+        PageResult<PlayHistoryDTO> result = videoService.listHistory(currentUser.getUserId(), page, size);
         CustomResponse resp = new CustomResponse();
         resp.setData(result);
         return resp;
     }
 
-    /** 上传视频（需登录） */
     @PostMapping("/video/upload")
     public CustomResponse upload(@RequestParam("title") String title,
                                  @RequestParam(value = "description", required = false) String description,
+                                 @RequestParam(value = "visibility", defaultValue = "public") String visibility,
                                  @RequestParam(value = "cover", required = false) MultipartFile cover,
                                  @RequestParam("file") MultipartFile file) {
-        UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        Integer userId = loginUser.getUser().getId();
-        Integer role = loginUser.getUser().getRole();
-        return videoService.upload(userId, role, title, description, cover, file);
+        UserDetailsImpl loginUser = currentLoginUser();
+        return videoService.upload(loginUser.getUser().getId(), loginUser.getUser().getRole(),
+                title, description, visibility, cover, file);
     }
 
-    /** 我上传的视频（含各状态，需登录） */
     @GetMapping("/video/my/list")
     public CustomResponse myList(@RequestParam(value = "page", defaultValue = "1") long page,
                                  @RequestParam(value = "size", defaultValue = "12") long size) {
-        Integer userId = currentUser.getUserId();
-        PageResult<VideoDTO> result = videoService.listMyVideos(userId, page, size);
+        PageResult<VideoDTO> result = videoService.listMyVideos(currentUser.getUserId(), page, size);
         CustomResponse resp = new CustomResponse();
         resp.setData(result);
         return resp;
     }
 
-    /** 编辑视频（作者或管理员，可选更换封面/视频） */
     @PostMapping("/video/update")
     public CustomResponse update(@RequestParam("id") Integer id,
                                  @RequestParam("title") String title,
                                  @RequestParam(value = "description", required = false) String description,
+                                 @RequestParam(value = "visibility", defaultValue = "public") String visibility,
                                  @RequestParam(value = "cover", required = false) MultipartFile cover,
                                  @RequestParam(value = "file", required = false) MultipartFile file) {
-        UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
+        UserDetailsImpl loginUser = currentLoginUser();
         return videoService.updateVideo(loginUser.getUser().getId(), loginUser.getUser().getRole(),
-                id, title, description, cover, file);
+                id, title, description, visibility, cover, file);
     }
 
-    /** 获取本人可编辑的视频详情 */
     @GetMapping("/video/my/getone")
     public CustomResponse myGetOne(@RequestParam("id") Integer id) {
-        UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
+        UserDetailsImpl loginUser = currentLoginUser();
         return videoService.getMyVideo(loginUser.getUser().getId(), loginUser.getUser().getRole(), id);
     }
 
-    /** 修改视频状态（作者或管理员） */
-    @PostMapping("/video/status")
-    public CustomResponse updateStatus(@RequestParam("id") Integer id,
-                                       @RequestParam("status") Integer status) {
-        UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        return videoService.updateStatus(loginUser.getUser().getId(), loginUser.getUser().getRole(),
-                id, status);
+    @PostMapping("/video/visibility")
+    public CustomResponse setVisibility(@RequestParam("id") Integer id,
+                                        @RequestParam("visibility") String visibility) {
+        UserDetailsImpl loginUser = currentLoginUser();
+        return videoService.setVisibility(loginUser.getUser().getId(), loginUser.getUser().getRole(),
+                id, visibility);
     }
 
-    /** 删除视频（作者或管理员） */
+    @PostMapping("/video/report")
+    public CustomResponse report(@RequestParam("id") Integer id,
+                                 @RequestParam(value = "reason", required = false) String reason) {
+        return videoService.reportVideo(currentUser.getUserId(), id, reason);
+    }
+
     @PostMapping("/video/delete")
     public CustomResponse delete(@RequestParam("id") Integer id) {
-        UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
+        UserDetailsImpl loginUser = currentLoginUser();
         return videoService.deleteVideo(loginUser.getUser().getId(), loginUser.getUser().getRole(), id);
+    }
+
+    private UserDetailsImpl currentLoginUser() {
+        return (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
     private Integer safeViewerId() {
         try {
             return currentUser.getUserId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Integer safeViewerRole() {
+        try {
+            return currentUser.getRole();
         } catch (Exception e) {
             return null;
         }

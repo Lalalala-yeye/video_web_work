@@ -108,6 +108,11 @@ export function isLoggedIn() {
   return !!getToken()
 }
 
+export function isAdmin() {
+  const user = getUser()
+  return Number(user?.role) === 2
+}
+
 /** 登录成功后保存 token 和用户信息，并设为当前活跃账号 */
 export function saveLoginResult(data) {
   if (!data?.token || !data?.user?.id) return
