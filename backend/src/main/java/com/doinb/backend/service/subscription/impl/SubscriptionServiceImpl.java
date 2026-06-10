@@ -62,7 +62,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .eq(Subscription::getFollowerId, followerId)
                 .eq(Subscription::getTargetId, targetId));
         if (count != null && count > 0) {
-            return fail(400, "已关注该用户");
+            return ok("已关注");
         }
 
         Subscription sub = new Subscription();
@@ -79,9 +79,20 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .eq(Subscription::getFollowerId, followerId)
                 .eq(Subscription::getTargetId, targetId));
         if (rows == 0) {
-            return fail(404, "未关注该用户");
+            return ok("未关注");
         }
         return ok("已取消关注");
+    }
+
+    @Override
+    public boolean isFollowing(Integer followerId, Integer targetId) {
+        if (followerId == null || targetId == null) {
+            return false;
+        }
+        Long count = subscriptionMapper.selectCount(new LambdaQueryWrapper<Subscription>()
+                .eq(Subscription::getFollowerId, followerId)
+                .eq(Subscription::getTargetId, targetId));
+        return count != null && count > 0;
     }
 
     @Override

@@ -59,9 +59,6 @@ public class LiveRoomServiceImpl implements LiveRoomService {
 
     @Override
     public CustomResponse create(Integer userId, Integer role, String title) {
-        if (role == null || role < 1) {
-            return fail(403, "仅发布者或管理员可创建直播间");
-        }
         if (!StringUtils.hasText(title)) {
             return fail(400, "标题不能为空");
         }

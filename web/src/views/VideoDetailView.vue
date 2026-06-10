@@ -4,11 +4,15 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppAvatar from '@/components/AppAvatar.vue'
 import CommentItem from '@/components/CommentItem.vue'
+import EmojiPicker from '@/components/EmojiPicker.vue'
+import FollowButton from '@/components/FollowButton.vue'
 import { fetchVideoDetail, saveProgress } from '@/api/video'
 import { fetchComments, addComment } from '@/api/comment'
-import { followUser } from '@/api/subscription'
+import { reactVideo } from '@/api/reaction'
+import { fetchFollowing } from '@/api/subscription'
 import { resolveMediaUrl } from '@/utils/media'
-import { isLoggedIn } from '@/utils/auth'
+import { getUser, isLoggedIn } from '@/utils/auth'
+import { LIKE_ICON_URL, DISLIKE_ICON_URL } from '@/constants/staticAssets'
 
 const route = useRoute()
 const videoId = computed(() => Number(route.params.id))
@@ -18,10 +22,21 @@ const video = ref(null)
 const comments = ref([])
 const commentText = ref('')
 const commentLoading = ref(false)
+const showEmojiPicker = ref(false)
 const loggedIn = ref(isLoggedIn())
+const reactions = ref({ likeCount: 0, dislikeCount: 0, userReaction: 0 })
+const authorFollowing = ref(false)
+
+const isSelfAuthor = computed(() => {
+  const me = getUser()
+  return me && video.value && Number(me.id) === Number(video.value.authorId)
+})
 
 const videoSrc = computed(() => resolveMediaUrl(video.value?.videoUrl))
 const coverSrc = computed(() => resolveMediaUrl(video.value?.coverUrl))
+const shareUrl = computed(() => `${window.location.origin}/video/${videoId.value}`)
+
+const lastSavedProgress = ref(-1)
 
 async function loadVideo() {
   loading.value = true
@@ -29,9 +44,29 @@ async function loadVideo() {
     const res = await fetchVideoDetail(videoId.value)
     if (res.data.code === 200) {
       video.value = res.data.data
+      reactions.value = res.data.data?.reactions || { likeCount: 0, dislikeCount: 0, userReaction: 0 }
+      await syncAuthorFollow()
     }
   } finally {
     loading.value = false
+  }
+}
+
+async function syncAuthorFollow() {
+  if (!isLoggedIn() || isSelfAuthor.value || !video.value?.authorId) {
+    authorFollowing.value = false
+    return
+  }
+  authorFollowing.value = false
+  try {
+    const res = await fetchFollowing(1, 200)
+    if (res.data.code === 200) {
+      authorFollowing.value = (res.data.data?.records || []).some(
+        u => Number(u.id) === Number(video.value.authorId)
+      )
+    }
+  } catch {
+    /* ignore */
   }
 }
 
@@ -42,12 +77,20 @@ async function loadComments() {
   }
 }
 
+function onCommentReactionUpdated(commentId, data) {
+  const idx = comments.value.findIndex(c => c.id === commentId)
+  if (idx >= 0) {
+    comments.value[idx].reactions = data
+  }
+}
+
 async function onTimeUpdate(e) {
   if (!loggedIn.value) return
   const progress = Math.floor(e.target.currentTime)
-  if (progress > 0 && progress % 10 === 0) {
-    saveProgress(videoId.value, progress).catch(() => {})
-  }
+  if (progress <= 0 || progress % 10 !== 0) return
+  if (progress === lastSavedProgress.value) return
+  lastSavedProgress.value = progress
+  saveProgress(videoId.value, progress).catch(() => {})
 }
 
 async function submitComment() {
@@ -62,6 +105,7 @@ async function submitComment() {
     const res = await addComment(videoId.value, 1, text)
     if (res.data.code === 200) {
       commentText.value = ''
+      showEmojiPicker.value = false
       ElMessage.success('评论成功')
       loadComments()
     }
@@ -70,14 +114,37 @@ async function submitComment() {
   }
 }
 
-async function onFollow() {
+async function toggleVideoReaction(reaction) {
   if (!loggedIn.value) {
     ElMessage.warning('请先登录')
     return
   }
-  const res = await followUser(video.value.authorId)
+  const current = reactions.value?.userReaction || 0
+  const next = current === reaction ? 0 : reaction
+  const res = await reactVideo(videoId.value, next)
   if (res.data.code === 200) {
-    ElMessage.success(res.data.message || '关注成功')
+    reactions.value = res.data.data
+  }
+}
+
+async function shareVideo() {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    ElMessage.success('视频链接已复制，可分享给好友')
+  } catch {
+    ElMessage.error('复制失败')
+  }
+}
+
+function appendEmoji(payload) {
+  if (typeof payload === 'string') {
+    commentText.value += payload
+    return
+  }
+  if (payload?.type === 'unicode') {
+    commentText.value += payload.code
+  } else if (payload?.type === 'image') {
+    commentText.value += payload.name
   }
 }
 
@@ -87,6 +154,7 @@ onMounted(() => {
 })
 
 watch(videoId, () => {
+  lastSavedProgress.value = -1
   loadVideo()
   loadComments()
 })
@@ -104,6 +172,8 @@ watch(videoId, () => {
               :src="videoSrc"
               :poster="coverSrc"
               controls
+              preload="metadata"
+              playsinline
               @timeupdate="onTimeUpdate"
             />
             <div v-else class="player player--empty">暂无播放地址</div>
@@ -111,14 +181,45 @@ watch(videoId, () => {
 
           <el-card class="info-card" shadow="never">
             <h1 class="video-title">{{ video.title }}</h1>
+            <div class="video-actions">
+              <button
+                type="button"
+                class="action-btn"
+                :class="{ active: reactions.userReaction === 1 }"
+                @click="toggleVideoReaction(1)"
+              >
+                <img :src="LIKE_ICON_URL" alt="赞" class="reaction-icon" />
+                {{ reactions.likeCount || 0 }}
+              </button>
+              <button
+                type="button"
+                class="action-btn"
+                :class="{ active: reactions.userReaction === -1 }"
+                @click="toggleVideoReaction(-1)"
+              >
+                <img :src="DISLIKE_ICON_URL" alt="踩" class="reaction-icon" />
+                {{ reactions.dislikeCount || 0 }}
+              </button>
+              <button type="button" class="action-btn" @click="shareVideo">转发</button>
+            </div>
             <div class="author-row">
               <div class="author-info">
-                <AppAvatar :size="48" :name="video.authorNickname" />
+                <AppAvatar
+                  :size="48"
+                  :src="video.authorAvatar"
+                  :name="video.authorNickname"
+                  :user-id="video.authorId"
+                />
                 <div>
                   <div class="author-name">{{ video.authorNickname }}</div>
                 </div>
               </div>
-              <el-button type="primary" @click="onFollow">订阅</el-button>
+              <FollowButton
+                v-if="!isSelfAuthor"
+                :target-id="video.authorId"
+                :following="authorFollowing"
+                @update:following="authorFollowing = $event"
+              />
             </div>
             <p v-if="video.description" class="desc">{{ video.description }}</p>
           </el-card>
@@ -134,9 +235,13 @@ watch(videoId, () => {
                 maxlength="500"
                 show-word-limit
               />
-              <el-button type="primary" :loading="commentLoading" class="submit-btn" @click="submitComment">
-                发表评论
-              </el-button>
+              <div class="form-actions">
+                <el-button text @click="showEmojiPicker = !showEmojiPicker">表情</el-button>
+                <el-button type="primary" :loading="commentLoading" @click="submitComment">
+                  发表评论
+                </el-button>
+              </div>
+              <EmojiPicker :visible="showEmojiPicker" @select="appendEmoji" @close="showEmojiPicker = false" />
             </div>
             <el-alert v-else type="info" :closable="false" show-icon title="登录后可发表评论" class="login-tip" />
 
@@ -144,10 +249,14 @@ watch(videoId, () => {
               <CommentItem
                 v-for="c in comments"
                 :key="c.id"
+                :id="c.id"
+                :user-id="c.userId"
                 :user-nickname="c.userNickname"
                 :user-avatar="c.userAvatar"
                 :content="c.content"
                 :create-time="c.createTime"
+                :reactions="c.reactions"
+                @reaction-updated="onCommentReactionUpdated"
               />
               <el-empty v-if="!comments.length" description="暂无评论，来抢沙发吧" />
             </div>
@@ -194,7 +303,37 @@ watch(videoId, () => {
 .video-title {
   font-size: 20px;
   font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.video-actions {
+  display: flex;
+  gap: 16px;
   margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--doinb-border-light);
+}
+
+.action-btn {
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: var(--doinb-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reaction-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.action-btn:hover,
+.action-btn.active {
+  color: var(--doinb-primary);
 }
 
 .author-row {
@@ -202,8 +341,6 @@ watch(videoId, () => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--doinb-border-light);
 }
 
 .author-info {
@@ -233,7 +370,10 @@ watch(videoId, () => {
   margin-bottom: 16px;
 }
 
-.submit-btn {
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 12px;
 }
 

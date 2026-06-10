@@ -41,7 +41,10 @@ async function onSubmit() {
   loading.value = true
   try {
     const res = await register(form.username.trim(), form.password, form.confirmedPassword)
-    if (res.data.code !== 200) return
+    if (res.data.code !== 200) {
+      ElMessage.error(res.data.message || '注册失败')
+      return
+    }
     ElMessage.success(res.data.message || '注册成功')
     router.push('/login')
   } finally {

@@ -12,6 +12,7 @@ import com.doinb.backend.pojo.dto.PageResult;
 import com.doinb.backend.pojo.entity.Comment;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.service.comment.CommentService;
+import com.doinb.backend.service.reaction.ReactionService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -31,15 +32,18 @@ public class CommentServiceImpl implements CommentService {
     private final UserMapper userMapper;
     private final VideoMapper videoMapper;
     private final LiveRoomMapper liveRoomMapper;
+    private final ReactionService reactionService;
 
     public CommentServiceImpl(CommentMapper commentMapper,
                               UserMapper userMapper,
                               VideoMapper videoMapper,
-                              LiveRoomMapper liveRoomMapper) {
+                              LiveRoomMapper liveRoomMapper,
+                              ReactionService reactionService) {
         this.commentMapper = commentMapper;
         this.userMapper = userMapper;
         this.videoMapper = videoMapper;
         this.liveRoomMapper = liveRoomMapper;
+        this.reactionService = reactionService;
     }
 
     @Override
@@ -79,7 +83,8 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public PageResult<CommentDTO> listByTarget(Integer targetId, Integer targetType, long page, long size) {
+    public PageResult<CommentDTO> listByTarget(Integer targetId, Integer targetType, long page, long size,
+                                               Integer viewerUserId) {
         long safePage = page < 1 ? 1 : page;
         long safeSize = size < 1 ? 10 : Math.min(size, 50);
 
@@ -101,9 +106,15 @@ public class CommentServiceImpl implements CommentService {
         Map<Integer, User> userMap = userMapper.selectBatchIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        List<Integer> commentIds = records.stream().map(Comment::getId).collect(Collectors.toList());
+        Map<Integer, com.doinb.backend.pojo.dto.ReactionSummaryDTO> reactionMap =
+                reactionService.getCommentSummaries(commentIds, viewerUserId);
+
         List<CommentDTO> list = new ArrayList<>();
         for (Comment comment : records) {
-            list.add(toDTO(comment, userMap.get(comment.getUserId())));
+            CommentDTO dto = toDTO(comment, userMap.get(comment.getUserId()));
+            dto.setReactions(reactionMap.get(comment.getId()));
+            list.add(dto);
         }
         return new PageResult<>(mpPage.getTotal(), safePage, safeSize, list);
     }

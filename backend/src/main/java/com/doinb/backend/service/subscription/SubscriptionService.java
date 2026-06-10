@@ -12,6 +12,8 @@ public interface SubscriptionService {
 
     CustomResponse unfollow(Integer followerId, Integer targetId);
 
+    boolean isFollowing(Integer followerId, Integer targetId);
+
     PageResult<UserDTO> listFollowing(Integer followerId, long page, long size);
 
     PageResult<FeedItemDTO> feed(Integer followerId, long page, long size);

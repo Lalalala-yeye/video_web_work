@@ -13,7 +13,7 @@ const items = ref([])
 
 async function load() {
   if (!isLoggedIn()) {
-    ElMessage.warning('请先登录查看订阅动态')
+    ElMessage.warning('请先登录查看关注动态')
     router.push('/login')
     return
   }
@@ -33,8 +33,8 @@ onMounted(load)
 
 <template>
   <div class="page-container">
-    <h1 class="page-title">订阅动态</h1>
-    <p class="page-subtitle">关注 UP 主的最新视频与直播</p>
+    <h1 class="page-title">关注动态</h1>
+    <p class="page-subtitle">你关注的 UP 主最新视频与直播</p>
 
     <div v-loading="loading">
       <div v-if="items.length" class="feed-list">

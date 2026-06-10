@@ -5,6 +5,10 @@ spring:
   profiles:
     active: local    # 启动时加载 local 配置
   servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
     multipart:
       max-file-size: 500MB
       max-request-size: 500MB

@@ -201,6 +201,20 @@ git status
 
 升级 Node 到 20.19+ 或 22.12+，或使用 nvm 切换版本。
 
+### 5. `npm` 报 `ENOENT ... video_web\package.json`
+
+前端在 `web/` 子目录，不要在仓库根目录执行 npm。应先：
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+### 6. 播放上传视频时浏览器卡顿
+
+演示用视频建议 **50MB 以内、1080p 以下**；过大文件经本地代理播放会占满内存。若已更新到最新代码仍卡顿，确认 `VideoDetailView` 的播放进度保存逻辑不会对同一秒重复请求（旧版本存在此问题）。
+
 ---
 
 ## 开发分工建议

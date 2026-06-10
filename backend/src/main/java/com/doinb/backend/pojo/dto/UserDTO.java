@@ -17,4 +17,6 @@ public class UserDTO {
     private String avatar;
     /** 0=普通用户  1=发布者  2=管理员 */
     private Integer role;
+    /** 个人简介（自己可见完整；公开展示页也展示） */
+    private String bio;
 }

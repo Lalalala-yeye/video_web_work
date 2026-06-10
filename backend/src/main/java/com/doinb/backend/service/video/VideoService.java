@@ -15,7 +15,7 @@ public interface VideoService {
     PageResult<VideoDTO> listPublished(long page, long size);
 
     /** 视频详情与播放地址（仅已发布；游客可看） */
-    CustomResponse getOne(Integer videoId);
+    CustomResponse getOne(Integer videoId, Integer viewerUserId);
 
     /** 记录/更新播放进度（需登录） */
     CustomResponse saveProgress(Integer userId, Integer videoId, Integer progress);
@@ -30,9 +30,13 @@ public interface VideoService {
     /** 我上传的视频列表（含各状态） */
     PageResult<VideoDTO> listMyVideos(Integer userId, long page, long size);
 
-    /** 编辑视频元数据 */
+    /** 编辑视频元数据（可选更换封面/视频文件） */
     CustomResponse updateVideo(Integer userId, Integer role, Integer videoId,
-                             String title, String description);
+                             String title, String description,
+                             MultipartFile cover, MultipartFile videoFile);
+
+    /** 获取本人可管理的视频详情（含未发布） */
+    CustomResponse getMyVideo(Integer userId, Integer role, Integer videoId);
 
     /** 修改视频状态：0审核中 1已发布 2已下架 */
     CustomResponse updateStatus(Integer userId, Integer role, Integer videoId, Integer status);

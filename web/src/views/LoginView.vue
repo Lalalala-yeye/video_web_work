@@ -1,12 +1,14 @@
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '@/api/user'
-import { saveLoginResult } from '@/utils/auth'
+import { saveLoginResult, refreshStoredUser } from '@/utils/auth'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
+const isAddMode = computed(() => route.query.add === '1')
 
 const form = reactive({
   username: '',
@@ -25,8 +27,12 @@ async function onSubmit() {
   loading.value = true
   try {
     const res = await login(form.username.trim(), form.password)
-    if (res.data.code !== 200) return
+    if (res.data.code !== 200) {
+      ElMessage.error(res.data.message || '登录失败')
+      return
+    }
     saveLoginResult(res.data.data)
+    await refreshStoredUser(true)
     ElMessage.success(res.data.message || '登录成功')
     router.push('/')
   } finally {
@@ -40,8 +46,8 @@ async function onSubmit() {
     <el-card class="auth-card" shadow="never">
       <div class="auth-header">
         <div class="logo-box">D</div>
-        <h1>欢迎回来</h1>
-        <p>登录到 doinb 视频平台</p>
+        <h1>{{ isAddMode ? '添加账号' : '欢迎回来' }}</h1>
+        <p>{{ isAddMode ? '登录后将加入本设备的账号列表' : '登录到 doinb 视频平台' }}</p>
       </div>
 
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="onSubmit">

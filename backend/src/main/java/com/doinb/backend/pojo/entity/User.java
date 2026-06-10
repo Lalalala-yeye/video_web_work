@@ -18,5 +18,6 @@ public class User {
     private String password;
     private String nickname;
     private String avatar;
+    private String bio;
     private Integer role;  // 0普通 1发布者 2管理员
 }

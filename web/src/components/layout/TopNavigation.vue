@@ -1,10 +1,12 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Search, ArrowDown, User, SwitchButton } from '@element-plus/icons-vue'
 import AppAvatar from '@/components/AppAvatar.vue'
-import { getUser, isLoggedIn, clearAuth } from '@/utils/auth'
+import NotificationPanel from '@/components/NotificationPanel.vue'
+import { getUser, isLoggedIn, clearAuth, clearAllAccounts, refreshStoredUser, getAccounts, switchAccount, AUTH_UPDATED_EVENT } from '@/utils/auth'
 import { logout as logoutApi } from '@/api/user'
+import { FAVICON_URL, BELL_ICON_URL } from '@/constants/staticAssets'
 
 const emit = defineEmits(['logout'])
 const router = useRouter()
@@ -12,23 +14,57 @@ const route = useRoute()
 
 const searchQuery = ref('')
 const showMenu = ref(false)
+const showNotifications = ref(false)
+const unreadCount = ref(0)
+const useFallbackBell = ref(false)
+const notificationPanelRef = ref(null)
 const loggedIn = ref(isLoggedIn())
 const user = ref(getUser())
+const accounts = ref(getAccounts())
 
-const navItems = [
-  { path: '/', label: '首页' },
-  { path: '/live', label: '直播' },
-  { path: '/subscribe', label: '订阅' }
-]
+const otherAccounts = computed(() =>
+  accounts.value.filter(a => Number(a.user?.id) !== Number(user.value?.id))
+)
+
+const navItems = computed(() => {
+  const items = [
+    { path: '/', label: '首页' },
+    { path: '/live', label: '直播' },
+    { path: '/subscribe', label: '关注' },
+  ]
+  if (loggedIn.value) {
+    items.push({ path: '/studio', label: '发布' })
+  }
+  return items
+})
 
 const displayName = computed(() => user.value?.nickname || user.value?.username || '')
 
-onMounted(refreshAuth)
+onMounted(() => {
+  refreshAuth()
+  window.addEventListener(AUTH_UPDATED_EVENT, onAuthUpdated)
+})
+
+onUnmounted(() => {
+  window.removeEventListener(AUTH_UPDATED_EVENT, onAuthUpdated)
+})
+
 watch(() => route.path, refreshAuth)
 
-function refreshAuth() {
+function onAuthUpdated(e) {
+  user.value = e.detail ?? getUser()
   loggedIn.value = isLoggedIn()
-  user.value = getUser()
+  accounts.value = getAccounts()
+}
+
+async function refreshAuth() {
+  loggedIn.value = isLoggedIn()
+  accounts.value = getAccounts()
+  if (loggedIn.value) {
+    user.value = await refreshStoredUser()
+  } else {
+    user.value = null
+  }
 }
 
 function isActive(path) {
@@ -42,17 +78,53 @@ function onSearch() {
   router.push({ path: '/search', query: { keyword: q } })
 }
 
+async function onSwitchAccount(userId) {
+  showMenu.value = false
+  if (switchAccount(userId)) {
+    await refreshAuth()
+    router.push('/')
+  }
+}
+
+function onAddAccount() {
+  showMenu.value = false
+  router.push({ path: '/login', query: { add: '1' } })
+}
+
 async function onLogout() {
   showMenu.value = false
+  showNotifications.value = false
   try {
     if (loggedIn.value) await logoutApi()
   } catch {
     /* ignore */
   }
   clearAuth()
-  refreshAuth()
+  await refreshAuth()
   emit('logout')
   router.push('/')
+}
+
+async function onLogoutAll() {
+  showMenu.value = false
+  showNotifications.value = false
+  clearAllAccounts()
+  await refreshAuth()
+  emit('logout')
+  router.push('/')
+}
+
+function toggleNotifications() {
+  showMenu.value = false
+  showNotifications.value = !showNotifications.value
+}
+
+function onUnreadChange(count) {
+  unreadCount.value = count
+}
+
+function closeNotifications() {
+  showNotifications.value = false
 }
 </script>
 
@@ -60,7 +132,7 @@ async function onLogout() {
   <header class="top-nav">
     <div class="inner">
       <router-link to="/" class="logo">
-        <span class="logo-icon">D</span>
+        <img :src="FAVICON_URL" alt="doinb" class="logo-icon-img" />
         <span class="logo-text">doinb</span>
       </router-link>
 
@@ -89,20 +161,62 @@ async function onLogout() {
       </form>
 
       <div v-if="loggedIn && user" class="user-area">
-        <button type="button" class="user-trigger" @click="showMenu = !showMenu">
+        <div class="notify-wrap">
+          <button type="button" class="notify-btn" aria-label="通知" @click="toggleNotifications">
+            <img
+              v-if="!useFallbackBell"
+              :src="BELL_ICON_URL"
+              alt=""
+              class="notify-icon"
+              @error="useFallbackBell = true"
+            />
+            <span v-else class="notify-fallback">🔔</span>
+            <span v-if="unreadCount > 0" class="badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+          </button>
+          <div v-if="showNotifications" class="menu-backdrop" @click="closeNotifications" />
+          <NotificationPanel
+            ref="notificationPanelRef"
+            :visible="showNotifications"
+            @close="closeNotifications"
+            @unread-change="onUnreadChange"
+          />
+        </div>
+        <button type="button" class="user-trigger" @click="showMenu = !showMenu; showNotifications = false">
           <AppAvatar :size="32" :src="user.avatar" :name="displayName" />
           <span class="user-name">{{ displayName }}</span>
           <el-icon><ArrowDown /></el-icon>
         </button>
         <div v-if="showMenu" class="menu-backdrop" @click="showMenu = false" />
-        <div v-if="showMenu" class="dropdown">
+        <div v-if="showMenu" class="dropdown dropdown--wide">
+          <div v-if="otherAccounts.length" class="account-section">
+            <p class="section-label">切换账号</p>
+            <button
+              v-for="acc in otherAccounts"
+              :key="acc.user.id"
+              type="button"
+              class="menu-item account-item"
+              @click="onSwitchAccount(acc.user.id)"
+            >
+              <AppAvatar :size="24" :src="acc.user.avatar" :name="acc.user.nickname || acc.user.username" />
+              <span>{{ acc.user.nickname || acc.user.username }}</span>
+            </button>
+          </div>
+          <button type="button" class="menu-item" @click="onAddAccount">添加账号</button>
           <router-link to="/profile" class="menu-item" @click="showMenu = false">
             <el-icon><User /></el-icon>
             个人中心
           </router-link>
           <button type="button" class="menu-item menu-item--danger" @click="onLogout">
             <el-icon><SwitchButton /></el-icon>
-            退出登录
+            退出当前账号
+          </button>
+          <button
+            v-if="accounts.length > 1"
+            type="button"
+            class="menu-item menu-item--danger"
+            @click="onLogoutAll"
+          >
+            退出全部账号
           </button>
         </div>
       </div>
@@ -145,6 +259,13 @@ async function onLogout() {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.logo-icon-img {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--doinb-radius-sm);
+  object-fit: cover;
 }
 
 .logo-icon {
@@ -214,6 +335,55 @@ async function onLogout() {
 .user-area {
   position: relative;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notify-wrap {
+  position: relative;
+}
+
+.notify-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  border-radius: var(--doinb-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notify-btn:hover {
+  background: var(--doinb-bg-page);
+}
+
+.notify-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.notify-fallback {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #f56c6c;
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
 }
 
 .user-trigger {
@@ -258,6 +428,28 @@ async function onLogout() {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 102;
   overflow: hidden;
+}
+
+.dropdown--wide {
+  width: 220px;
+}
+
+.account-section {
+  border-bottom: 1px solid var(--doinb-border-light);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.section-label {
+  padding: 8px 16px 4px;
+  font-size: 12px;
+  color: var(--doinb-text-secondary);
+}
+
+.account-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menu-item {

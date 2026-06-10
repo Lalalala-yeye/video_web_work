@@ -5,6 +5,7 @@ import AppAvatar from '@/components/AppAvatar.vue'
 import { fetchLiveDetail } from '@/api/live'
 import { fetchComments, addComment } from '@/api/comment'
 import CommentItem from '@/components/CommentItem.vue'
+import EmojiPicker from '@/components/EmojiPicker.vue'
 import { isLoggedIn } from '@/utils/auth'
 import { ElMessage } from 'element-plus'
 
@@ -15,6 +16,7 @@ const loading = ref(true)
 const room = ref(null)
 const comments = ref([])
 const commentText = ref('')
+const showEmojiPicker = ref(false)
 const loggedIn = ref(isLoggedIn())
 
 async function load() {
@@ -46,7 +48,20 @@ async function submitComment() {
   const res = await addComment(roomId.value, 2, text)
   if (res.data.code === 200) {
     commentText.value = ''
+    showEmojiPicker.value = false
     loadComments()
+  }
+}
+
+function appendEmoji(payload) {
+  if (typeof payload === 'string') {
+    commentText.value += payload
+    return
+  }
+  if (payload?.type === 'unicode') {
+    commentText.value += payload.code
+  } else if (payload?.type === 'image') {
+    commentText.value += payload.name
   }
 }
 
@@ -75,7 +90,7 @@ watch(roomId, () => {
           </div>
           <el-card shadow="never" class="info-card">
             <div class="author-row">
-              <AppAvatar :size="40" :name="room.anchorNickname" />
+              <AppAvatar :size="40" :name="room.anchorNickname" :user-id="room.anchorId" />
               <div>
                 <h1>{{ room.title }}</h1>
                 <p class="anchor">{{ room.anchorNickname }}</p>
@@ -90,17 +105,23 @@ watch(roomId, () => {
             <CommentItem
               v-for="c in comments"
               :key="c.id"
+              :id="c.id"
+              :user-id="c.userId"
               :user-nickname="c.userNickname"
               :user-avatar="c.userAvatar"
               :content="c.content"
               :create-time="c.createTime"
+              :reactions="c.reactions"
+              @reaction-updated="(id, data) => { const i = comments.findIndex(x => x.id === id); if (i >= 0) comments[i].reactions = data }"
             />
             <el-empty v-if="!comments.length" description="暂无弹幕/评论" :image-size="80" />
           </div>
           <div v-if="loggedIn" class="chat-input">
             <el-input v-model="commentText" placeholder="说点什么..." @keyup.enter="submitComment" />
+            <el-button text @click="showEmojiPicker = !showEmojiPicker">表情</el-button>
             <el-button type="primary" @click="submitComment">发送</el-button>
           </div>
+          <EmojiPicker :visible="showEmojiPicker" @select="appendEmoji" @close="showEmojiPicker = false" />
         </el-card>
       </div>
     </template>
@@ -200,7 +221,9 @@ watch(roomId, () => {
 
 .chat-input {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+  align-items: center;
 }
 </style>

@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /** 订阅/关注接口 */
 @RestController
 public class SubscriptionController {
@@ -31,6 +34,17 @@ public class SubscriptionController {
     @PostMapping("/subscription/unfollow")
     public CustomResponse unfollow(@RequestParam("targetId") Integer targetId) {
         return subscriptionService.unfollow(currentUser.getUserId(), targetId);
+    }
+
+    /** 查询是否已关注某用户（需登录） */
+    @GetMapping("/subscription/status")
+    public CustomResponse status(@RequestParam("targetId") Integer targetId) {
+        boolean following = subscriptionService.isFollowing(currentUser.getUserId(), targetId);
+        Map<String, Object> data = new HashMap<>();
+        data.put("following", following);
+        CustomResponse resp = new CustomResponse();
+        resp.setData(data);
+        return resp;
     }
 
     @GetMapping("/subscription/following")

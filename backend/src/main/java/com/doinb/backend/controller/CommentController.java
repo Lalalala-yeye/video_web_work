@@ -34,9 +34,18 @@ public class CommentController {
                                @RequestParam("targetType") Integer targetType,
                                @RequestParam(value = "page", defaultValue = "1") long page,
                                @RequestParam(value = "size", defaultValue = "20") long size) {
-        PageResult<CommentDTO> result = commentService.listByTarget(targetId, targetType, page, size);
+        PageResult<CommentDTO> result = commentService.listByTarget(
+                targetId, targetType, page, size, safeViewerId());
         CustomResponse resp = new CustomResponse();
         resp.setData(result);
         return resp;
+    }
+
+    private Integer safeViewerId() {
+        try {
+            return currentUser.getUserId();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

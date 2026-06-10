@@ -13,6 +13,7 @@ import com.doinb.backend.pojo.dto.VideoDTO;
 import com.doinb.backend.pojo.entity.PlayHistory;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.pojo.entity.Video;
+import com.doinb.backend.service.reaction.ReactionService;
 import com.doinb.backend.service.video.VideoService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -47,16 +48,19 @@ public class VideoServiceImpl implements VideoService {
     private final VideoMapper videoMapper;
     private final UserMapper userMapper;
     private final PlayHistoryMapper playHistoryMapper;
+    private final ReactionService reactionService;
 
     @Value("${upload.path:uploads}")
     private String uploadPath;
 
     public VideoServiceImpl(VideoMapper videoMapper,
                             UserMapper userMapper,
-                            PlayHistoryMapper playHistoryMapper) {
+                            PlayHistoryMapper playHistoryMapper,
+                            ReactionService reactionService) {
         this.videoMapper = videoMapper;
         this.userMapper = userMapper;
         this.playHistoryMapper = playHistoryMapper;
+        this.reactionService = reactionService;
     }
 
     @Override
@@ -75,7 +79,7 @@ public class VideoServiceImpl implements VideoService {
     }
 
     @Override
-    public CustomResponse getOne(Integer videoId) {
+    public CustomResponse getOne(Integer videoId, Integer viewerUserId) {
         if (videoId == null) {
             return fail(400, "视频 id 不能为空");
         }
@@ -83,8 +87,10 @@ public class VideoServiceImpl implements VideoService {
         if (video == null || !Objects.equals(video.getStatus(), STATUS_PUBLISHED)) {
             return fail(404, "视频不存在或未发布");
         }
+        VideoDTO dto = toVideoDTO(video);
+        dto.setReactions(reactionService.getVideoSummary(videoId, viewerUserId));
         CustomResponse resp = ok("OK");
-        resp.setData(toVideoDTO(video));
+        resp.setData(dto);
         return resp;
     }
 
@@ -158,10 +164,6 @@ public class VideoServiceImpl implements VideoService {
     @Override
     public CustomResponse upload(Integer userId, Integer role, String title, String description,
                                  MultipartFile cover, MultipartFile videoFile) {
-        // role: 0普通 1发布者 2管理员
-        if (role == null || role < 1) {
-            return fail(403, "只有发布者或管理员可以上传视频");
-        }
         if (!StringUtils.hasText(title)) {
             return fail(400, "标题不能为空");
         }
@@ -235,7 +237,8 @@ public class VideoServiceImpl implements VideoService {
 
     @Override
     public CustomResponse updateVideo(Integer userId, Integer role, Integer videoId,
-                                      String title, String description) {
+                                      String title, String description,
+                                      MultipartFile cover, MultipartFile videoFile) {
         Video video = videoMapper.selectById(videoId);
         if (video == null) {
             return fail(404, "视频不存在");
@@ -250,12 +253,63 @@ public class VideoServiceImpl implements VideoService {
             return fail(400, "标题长度不能超过100");
         }
 
-        LambdaUpdateWrapper<Video> wrapper = new LambdaUpdateWrapper<Video>()
-                .eq(Video::getId, videoId)
-                .set(Video::getTitle, title.trim())
-                .set(Video::getDescription, StringUtils.hasText(description) ? description.trim() : null);
-        videoMapper.update(null, wrapper);
-        return ok("更新成功");
+        try {
+            LambdaUpdateWrapper<Video> wrapper = new LambdaUpdateWrapper<Video>()
+                    .eq(Video::getId, videoId)
+                    .set(Video::getTitle, title.trim())
+                    .set(Video::getDescription, StringUtils.hasText(description) ? description.trim() : null);
+
+            Path baseDir = Paths.get(uploadPath).toAbsolutePath().normalize();
+            Path coverDir = baseDir.resolve("covers");
+            Path videoDir = baseDir.resolve("videos");
+
+            if (cover != null && !cover.isEmpty()) {
+                String coverExt = extensionOf(cover.getOriginalFilename(), IMAGE_EXTENSIONS);
+                if (coverExt == null) {
+                    return fail(400, "封面格式仅支持 jpg / png / webp / gif");
+                }
+                Files.createDirectories(coverDir);
+                String coverFileName = UUID.randomUUID() + "." + coverExt;
+                cover.transferTo(coverDir.resolve(coverFileName).toFile());
+                wrapper.set(Video::getCoverUrl, "/uploads/covers/" + coverFileName);
+            }
+
+            if (videoFile != null && !videoFile.isEmpty()) {
+                String videoExt = extensionOf(videoFile.getOriginalFilename(), VIDEO_EXTENSIONS);
+                if (videoExt == null) {
+                    return fail(400, "视频格式仅支持 mp4 / webm / mov");
+                }
+                Files.createDirectories(videoDir);
+                String videoFileName = UUID.randomUUID() + "." + videoExt;
+                videoFile.transferTo(videoDir.resolve(videoFileName).toFile());
+                wrapper.set(Video::getVideoUrl, "/uploads/videos/" + videoFileName);
+            }
+
+            videoMapper.update(null, wrapper);
+            Video updated = videoMapper.selectById(videoId);
+            CustomResponse resp = ok("更新成功");
+            resp.setData(toVideoDTO(updated));
+            return resp;
+        } catch (IOException e) {
+            return fail(500, "文件保存失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public CustomResponse getMyVideo(Integer userId, Integer role, Integer videoId) {
+        if (videoId == null) {
+            return fail(400, "视频 id 不能为空");
+        }
+        Video video = videoMapper.selectById(videoId);
+        if (video == null) {
+            return fail(404, "视频不存在");
+        }
+        if (!canManageVideo(userId, role, video)) {
+            return fail(403, "无权查看该视频");
+        }
+        CustomResponse resp = ok("OK");
+        resp.setData(toVideoDTO(video));
+        return resp;
     }
 
     @Override
@@ -328,6 +382,7 @@ public class VideoServiceImpl implements VideoService {
         dto.setDescription(video.getDescription());
         dto.setAuthorId(video.getAuthorId());
         dto.setAuthorNickname(author != null ? author.getNickname() : "未知作者");
+        dto.setAuthorAvatar(author != null ? author.getAvatar() : null);
         dto.setCoverUrl(video.getCoverUrl());
         dto.setVideoUrl(video.getVideoUrl());
         dto.setStatus(video.getStatus());

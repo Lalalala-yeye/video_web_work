@@ -14,9 +14,11 @@ public class VideoDTO {
     private String description;
     private Integer authorId;
     private String authorNickname;
+    private String authorAvatar;
     private String coverUrl;
     private String videoUrl;
     /** 0审核中 1已发布 2已下架 */
     private Integer status;
     private LocalDateTime createTime;
+    private ReactionSummaryDTO reactions;
 }

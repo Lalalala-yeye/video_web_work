@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { uploadVideo } from '@/api/video'
-import { getUser, isLoggedIn } from '@/utils/auth'
+import { isLoggedIn } from '@/utils/auth'
 
 const router = useRouter()
 const loading = ref(false)
@@ -17,19 +17,20 @@ const form = reactive({
 })
 
 onMounted(() => {
-  const user = getUser()
-  if (!isLoggedIn() || !user || (user.role !== 1 && user.role !== 2)) {
-    ElMessage.warning('仅发布者或管理员可上传视频')
-    router.push('/')
+  if (!isLoggedIn()) {
+    ElMessage.warning('请先登录后再上传视频')
+    router.push('/login')
   }
 })
 
-function onVideoChange(uploadFile) {
-  videoFile.value = uploadFile.raw
+function onVideoChange(_uploadFile, fileList) {
+  const latest = fileList[fileList.length - 1]
+  videoFile.value = latest?.raw ?? null
 }
 
-function onCoverChange(uploadFile) {
-  coverFile.value = uploadFile.raw
+function onCoverChange(_uploadFile, fileList) {
+  const latest = fileList[fileList.length - 1]
+  coverFile.value = latest?.raw ?? null
 }
 
 async function onSubmit() {
@@ -67,7 +68,13 @@ async function onSubmit() {
     <el-card shadow="never" class="upload-card">
       <el-form label-position="top">
         <el-form-item label="视频文件" required>
-          <el-upload drag :auto-upload="false" :limit="1" accept="video/*" @change="onVideoChange">
+          <el-upload
+            drag
+            :auto-upload="false"
+            :limit="1"
+            accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+            @change="onVideoChange"
+          >
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">拖拽视频到此处，或 <em>点击上传</em></div>
           </el-upload>

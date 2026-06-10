@@ -41,7 +41,7 @@ public class VideoController {
     /** 视频详情与播放地址（游客可访问） */
     @GetMapping("/video/getone")
     public CustomResponse getOne(@RequestParam("id") Integer id) {
-        return videoService.getOne(id);
+        return videoService.getOne(id, safeViewerId());
     }
 
     /** 保存播放进度（需登录） */
@@ -63,7 +63,7 @@ public class VideoController {
         return resp;
     }
 
-    /** 上传视频（需登录，且为发布者 role=1 或管理员 role=2） */
+    /** 上传视频（需登录） */
     @PostMapping("/video/upload")
     public CustomResponse upload(@RequestParam("title") String title,
                                  @RequestParam(value = "description", required = false) String description,
@@ -87,15 +87,25 @@ public class VideoController {
         return resp;
     }
 
-    /** 编辑视频元数据（作者或管理员） */
+    /** 编辑视频（作者或管理员，可选更换封面/视频） */
     @PostMapping("/video/update")
     public CustomResponse update(@RequestParam("id") Integer id,
                                  @RequestParam("title") String title,
-                                 @RequestParam(value = "description", required = false) String description) {
+                                 @RequestParam(value = "description", required = false) String description,
+                                 @RequestParam(value = "cover", required = false) MultipartFile cover,
+                                 @RequestParam(value = "file", required = false) MultipartFile file) {
         UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
         return videoService.updateVideo(loginUser.getUser().getId(), loginUser.getUser().getRole(),
-                id, title, description);
+                id, title, description, cover, file);
+    }
+
+    /** 获取本人可编辑的视频详情 */
+    @GetMapping("/video/my/getone")
+    public CustomResponse myGetOne(@RequestParam("id") Integer id) {
+        UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        return videoService.getMyVideo(loginUser.getUser().getId(), loginUser.getUser().getRole(), id);
     }
 
     /** 修改视频状态（作者或管理员） */
@@ -114,5 +124,13 @@ public class VideoController {
         UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
         return videoService.deleteVideo(loginUser.getUser().getId(), loginUser.getUser().getRole(), id);
+    }
+
+    private Integer safeViewerId() {
+        try {
+            return currentUser.getUserId();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

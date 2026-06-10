@@ -15,4 +15,5 @@ public class CommentDTO {
     private Integer targetType;
     private String content;
     private LocalDateTime createTime;
+    private ReactionSummaryDTO reactions;
 }

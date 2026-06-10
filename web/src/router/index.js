@@ -12,8 +12,20 @@ const router = createRouter({
     { path: '/live/:id', name: 'live-room', component: () => import('../views/LiveRoomView.vue') },
     { path: '/subscribe', name: 'subscribe', component: () => import('../views/SubscribeView.vue') },
     { path: '/search', name: 'search', component: () => import('../views/SearchView.vue') },
-    { path: '/upload', name: 'upload', component: () => import('../views/UploadView.vue') },
+    {
+      path: '/studio',
+      component: () => import('../views/studio/StudioLayout.vue'),
+      children: [
+        { path: '', redirect: '/studio/upload' },
+        { path: 'upload', name: 'studio-upload', component: () => import('../views/studio/StudioUploadView.vue') },
+        { path: 'edit', name: 'studio-edit', component: () => import('../views/studio/StudioEditView.vue') },
+        { path: 'edit/:id', name: 'studio-edit-id', component: () => import('../views/studio/StudioEditView.vue') },
+      ],
+    },
+    { path: '/upload', redirect: '/studio/upload' },
     { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue') },
+    { path: '/user/:id', name: 'user-showcase', component: () => import('../views/UserShowcaseView.vue') },
+    { path: '/messages/:roomId', name: 'message-room', component: () => import('../views/MessageRoomView.vue') },
   ],
 })
 
