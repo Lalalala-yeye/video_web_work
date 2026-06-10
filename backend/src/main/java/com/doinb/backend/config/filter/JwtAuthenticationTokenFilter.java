@@ -3,6 +3,7 @@ package com.doinb.backend.config.filter;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.service.users.impl.UserDetailsImpl;
+import com.doinb.backend.service.users.UserService;
 import com.doinb.backend.utils.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,10 +29,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserMapper userMapper;
+    private final UserService userService;
 
-    public JwtAuthenticationTokenFilter(JwtUtil jwtUtil, UserMapper userMapper) {
+    public JwtAuthenticationTokenFilter(JwtUtil jwtUtil, UserMapper userMapper, UserService userService) {
         this.jwtUtil = jwtUtil;
         this.userMapper = userMapper;
+        this.userService = userService;
     }
 
     @Override
@@ -67,6 +70,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             response.setHeader("message", "not login");
             return;
         }
+
+        userService.ensurePublisherRole(user);
 
         // 管理员 token 只能给管理员用（防止普通 user token 误访问 admin 接口时仍能通过 Filter）
         String tokenRole = jwtUtil.getRoleFromToken(token);

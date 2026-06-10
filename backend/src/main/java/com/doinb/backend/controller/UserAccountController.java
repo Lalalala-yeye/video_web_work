@@ -12,7 +12,6 @@ import java.util.Map;
 
 /**
  * 账号相关接口：注册、登录、登出、改密码、获取当前用户信息。
- * 路径风格参考 teriteri 的 UserAccountController。
  */
 @RestController
 public class UserAccountController {

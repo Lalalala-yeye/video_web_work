@@ -23,7 +23,6 @@ import java.util.Map;
 
 /**
  * 账号业务实现：注册、登录、改密码等。
- * 参考 teriteri 的 UserAccountServiceImpl，但不使用 Redis，采用无状态 JWT。
  */
 @Service
 public class UserAccountServiceImpl implements UserAccountService {
@@ -55,7 +54,6 @@ public class UserAccountServiceImpl implements UserAccountService {
 
     @Override
     public CustomResponse register(String username, String password, String confirmedPassword) {
-        // ---------- 1. 参数校验 ----------
         if (!StringUtils.hasText(username)) {
             return fail(403, "账号不能为空");
         }
@@ -74,18 +72,16 @@ public class UserAccountServiceImpl implements UserAccountService {
             return fail(403, "两次输入的密码不一致");
         }
 
-        // ---------- 2. 查重 ----------
         if (userMapper.selectByUsername(username) != null) {
             return fail(403, "账号已存在");
         }
 
-        // ---------- 3. 写入数据库（密码必须 BCrypt 加密，不能存明文） ----------
         User newUser = new User();
         newUser.setUsername(username);
         newUser.setPassword(passwordEncoder.encode(password));
         newUser.setNickname("用户_" + username);
         newUser.setAvatar(DEFAULT_AVATAR);
-        newUser.setRole(0); // 新注册用户默认为普通用户
+        newUser.setRole(1);
         userMapper.insert(newUser);
 
         return ok("注册成功，请登录");
@@ -101,18 +97,11 @@ public class UserAccountServiceImpl implements UserAccountService {
         return doLogin(username, password, "admin", true);
     }
 
-    /**
-     * 登录公共逻辑
-     *
-     * @param tokenRole   写入 JWT 的角色标识
-     * @param requireAdmin 是否要求必须是管理员（role == 2）
-     */
     private CustomResponse doLogin(String username, String password, String tokenRole, boolean requireAdmin) {
         if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
             return fail(403, "账号或密码不能为空");
         }
 
-        // 交给 Spring Security 的 AuthenticationProvider 校验用户名和密码
         UsernamePasswordAuthenticationToken authRequest =
                 new UsernamePasswordAuthenticationToken(username.trim(), password);
         Authentication authenticate;
@@ -124,12 +113,12 @@ public class UserAccountServiceImpl implements UserAccountService {
         UserDetailsImpl loginUser = (UserDetailsImpl) authenticate.getPrincipal();
         User user = loginUser.getUser();
 
-        // 管理员登录入口：只有 role == 2 才能进
         if (requireAdmin && (user.getRole() == null || user.getRole() != 2)) {
             return fail(403, "您不是管理员，无权访问");
         }
 
-        // 生成 JWT，返回给前端保存
+        userService.ensurePublisherRole(user);
+
         String token = jwtUtil.createToken(user.getId(), tokenRole);
 
         Map<String, Object> data = new HashMap<>();
@@ -163,7 +152,6 @@ public class UserAccountServiceImpl implements UserAccountService {
 
     @Override
     public CustomResponse logout() {
-        // 无 Redis 时，服务端无状态，退出主要靠前端删除 localStorage 里的 token
         SecurityContextHolder.clearContext();
         return ok("已退出登录");
     }
@@ -177,12 +165,10 @@ public class UserAccountServiceImpl implements UserAccountService {
             return fail(500, "新密码长度不能超过50");
         }
 
-        // 从当前登录态取出用户
         UserDetailsImpl loginUser = (UserDetailsImpl) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
         User user = loginUser.getUser();
 
-        // 验证旧密码是否正确
         UsernamePasswordAuthenticationToken checkToken =
                 new UsernamePasswordAuthenticationToken(user.getUsername(), oldPassword);
         try {
@@ -195,7 +181,6 @@ public class UserAccountServiceImpl implements UserAccountService {
             return fail(500, "新密码不能与旧密码相同");
         }
 
-        // 更新数据库中的密码哈希
         LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<User>()
                 .eq(User::getId, user.getId())
                 .set(User::getPassword, passwordEncoder.encode(newPassword));

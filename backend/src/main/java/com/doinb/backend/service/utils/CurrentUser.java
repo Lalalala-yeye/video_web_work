@@ -32,4 +32,12 @@ public class CurrentUser {
         UserDetailsImpl loginUser = (UserDetailsImpl) authentication.getPrincipal();
         return loginUser.getUser().getRole() != null && loginUser.getUser().getRole() == 2;
     }
+
+    /** 获取当前登录用户的 role */
+    public Integer getRole() {
+        UsernamePasswordAuthenticationToken authentication =
+                (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl loginUser = (UserDetailsImpl) authentication.getPrincipal();
+        return loginUser.getUser().getRole();
+    }
 }

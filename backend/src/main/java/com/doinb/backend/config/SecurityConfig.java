@@ -84,6 +84,13 @@ public class SecurityConfig {
                         .requestMatchers("/user/account/register", "/user/account/login").permitAll()
                         .requestMatchers("/admin/account/login").permitAll()
                         .requestMatchers("/user/info/get-one").permitAll()
+                        .requestMatchers("/user/profile/showcase").permitAll()
+                        .requestMatchers("/video/reaction/summary").permitAll()
+                        .requestMatchers("/video/list", "/video/getone").permitAll()
+                        .requestMatchers("/live/list", "/live/getone").permitAll()
+                        .requestMatchers("/comment/list").permitAll()
+                        .requestMatchers("/search").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // 其余接口都需要携带有效 JWT
                         .anyRequest().authenticated())
