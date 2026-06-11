@@ -31,6 +31,12 @@ a {
   padding: calc(var(--doinb-header-height) + 24px) 16px 32px;
 }
 
+html[class*='theme-macaron-'] .page-container {
+  width: min(calc(100% - 32px), var(--doinb-content-max));
+  margin: 0 auto 48px;
+  padding: calc(var(--doinb-header-height) + 36px) 22px 34px;
+}
+
 .page-title {
   font-size: 24px;
   font-weight: 700;
@@ -47,7 +53,7 @@ a {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
-  gap: 16px;
+  gap: 18px;
 }
 
 @media (min-width: 640px) {
@@ -65,5 +71,12 @@ a {
 @media (min-width: 1200px) {
   .card-grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  html[class*='theme-macaron-'] .page-container {
+    width: min(calc(100% - 20px), var(--doinb-content-max));
+    padding: calc(var(--doinb-header-height) + 24px) 12px 24px;
   }
 }

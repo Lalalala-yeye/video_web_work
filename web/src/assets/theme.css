@@ -30,6 +30,7 @@ html[class*='theme-macaron-'] {
   --doinb-text-placeholder: #c8c0c8;
   --doinb-bg-card: #ffffff;
   --doinb-danger: #f5a89a;
+  --doinb-header-height: 64px;
   --doinb-radius: 12px;
   --doinb-radius-sm: 8px;
 }

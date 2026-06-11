@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { VideoPlay } from '@element-plus/icons-vue'
 import AppAvatar from './AppAvatar.vue'
 import { resolveMediaUrl } from '@/utils/media'
@@ -13,7 +14,7 @@ const props = defineProps({
   createTime: { type: String, default: '' }
 })
 
-const cover = resolveMediaUrl(props.coverUrl)
+const cover = computed(() => resolveMediaUrl(props.coverUrl))
 </script>
 
 <template>
@@ -40,10 +41,10 @@ const cover = resolveMediaUrl(props.coverUrl)
 .video-card {
   display: block;
   background: #fff;
-  border-radius: var(--doinb-radius);
+  border-radius: 4px;
   overflow: hidden;
   border: 1px solid var(--doinb-border-light);
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow 0.25s, transform 0.25s, filter 0.25s;
 }
 
 .video-card:hover {
@@ -58,6 +59,17 @@ const cover = resolveMediaUrl(props.coverUrl)
   overflow: hidden;
 }
 
+.cover-wrap::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22%;
+  background: rgba(25, 28, 42, 0.18);
+  pointer-events: none;
+}
+
 .cover {
   width: 100%;
   height: 100%;
@@ -66,7 +78,7 @@ const cover = resolveMediaUrl(props.coverUrl)
 }
 
 .video-card:hover .cover {
-  transform: scale(1.05);
+  transform: scale(1.035);
 }
 
 .cover--placeholder {
@@ -84,7 +96,7 @@ const cover = resolveMediaUrl(props.coverUrl)
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0);
-  transition: background 0.2s;
+  transition: background 0.25s;
 }
 
 .video-card:hover .cover-mask {
@@ -94,23 +106,36 @@ const cover = resolveMediaUrl(props.coverUrl)
 .play-icon {
   color: #fff;
   opacity: 0;
-  transition: opacity 0.2s;
+  filter: drop-shadow(0 5px 14px rgba(0, 0, 0, 0.22));
+  transition: opacity 0.2s, transform 0.2s;
 }
 
 .video-card:hover .play-icon {
   opacity: 1;
+  transform: scale(1.08);
 }
 
 .info {
-  padding: 12px;
+  position: relative;
+  padding: 14px 14px 15px;
+}
+
+.info::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: var(--card-line, var(--doinb-macaron-c));
 }
 
 .title {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--doinb-text-primary);
-  line-height: 1.4;
-  min-height: 2.8em;
+  line-height: 1.35;
+  min-height: 2.7em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

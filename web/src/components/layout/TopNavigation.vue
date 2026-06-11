@@ -1,11 +1,21 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, ArrowDown, User, SwitchButton } from '@element-plus/icons-vue'
+import { Search, ArrowDown, User, SwitchButton, Menu, Close } from '@element-plus/icons-vue'
 import AppAvatar from '@/components/AppAvatar.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
-import { getUser, isLoggedIn, isAdmin, clearAuth, clearAllAccounts, refreshStoredUser, getAccounts, switchAccount, openLoginInNewTab, AUTH_UPDATED_EVENT } from '@/utils/auth'
-import { logout as logoutApi } from '@/api/user'
+import {
+  getUser,
+  isLoggedIn,
+  isAdmin,
+  clearAuth,
+  clearAllAccounts,
+  refreshStoredUser,
+  getAccounts,
+  switchAccount,
+  openLoginInNewTab,
+  AUTH_UPDATED_EVENT,
+} from '@/utils/auth'
 import { FAVICON_URL, BELL_ICON_URL } from '@/constants/staticAssets'
 
 const emit = defineEmits(['logout'])
@@ -15,6 +25,7 @@ const route = useRoute()
 const searchQuery = ref('')
 const showMenu = ref(false)
 const showNotifications = ref(false)
+const showMobileNav = ref(false)
 const unreadCount = ref(0)
 const useFallbackBell = ref(false)
 const notificationPanelRef = ref(null)
@@ -33,7 +44,7 @@ const navItems = computed(() => {
     { path: '/subscribe', label: '关注' },
   ]
   if (loggedIn.value) {
-    items.push({ path: '/studio', label: '发布' })
+    items.push({ path: '/studio', label: '创作中心' })
   }
   return items
 })
@@ -49,7 +60,10 @@ onUnmounted(() => {
   window.removeEventListener(AUTH_UPDATED_EVENT, onAuthUpdated)
 })
 
-watch(() => route.path, refreshAuth)
+watch(() => route.path, () => {
+  showMobileNav.value = false
+  refreshAuth()
+})
 
 function onAuthUpdated(e) {
   user.value = e.detail ?? getUser()
@@ -75,6 +89,7 @@ function isActive(path) {
 function onSearch() {
   const q = searchQuery.value.trim()
   if (!q) return
+  showMobileNav.value = false
   router.push({ path: '/search', query: { keyword: q } })
 }
 
@@ -95,7 +110,10 @@ async function onLogout() {
   showMenu.value = false
   showNotifications.value = false
   try {
-    if (loggedIn.value) await logoutApi()
+    if (loggedIn.value) {
+      const { logout } = await import('@/api/user')
+      await logout()
+    }
   } catch {
     /* ignore */
   }
@@ -116,6 +134,7 @@ async function onLogoutAll() {
 
 function toggleNotifications() {
   showMenu.value = false
+  showMobileNav.value = false
   showNotifications.value = !showNotifications.value
 }
 
@@ -126,6 +145,12 @@ function onUnreadChange(count) {
 function closeNotifications() {
   showNotifications.value = false
 }
+
+function toggleMobileNav() {
+  showMenu.value = false
+  showNotifications.value = false
+  showMobileNav.value = !showMobileNav.value
+}
 </script>
 
 <template>
@@ -135,6 +160,10 @@ function closeNotifications() {
         <img :src="FAVICON_URL" alt="doinb" class="logo-icon-img" />
         <span class="logo-text">doinb</span>
       </router-link>
+
+      <button type="button" class="mobile-menu-btn" aria-label="打开导航" @click="toggleMobileNav">
+        <el-icon><Close v-if="showMobileNav" /><Menu v-else /></el-icon>
+      </button>
 
       <nav class="nav-links">
         <router-link
@@ -170,7 +199,7 @@ function closeNotifications() {
               class="notify-icon"
               @error="useFallbackBell = true"
             />
-            <span v-else class="notify-fallback">🔔</span>
+            <span v-else class="notify-fallback">!</span>
             <span v-if="unreadCount > 0" class="badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </button>
           <div v-if="showNotifications" class="menu-backdrop" @click="closeNotifications" />
@@ -232,6 +261,24 @@ function closeNotifications() {
         </router-link>
       </div>
     </div>
+
+    <div v-if="showMobileNav" class="mobile-panel">
+      <nav class="mobile-links">
+        <router-link
+          v-for="item in navItems"
+          :key="item.path"
+          :to="item.path"
+          class="mobile-link"
+          :class="{ active: isActive(item.path) }"
+        >
+          {{ item.label }}
+        </router-link>
+      </nav>
+      <form class="mobile-search-form" @submit.prevent="onSearch">
+        <el-input v-model="searchQuery" placeholder="搜索视频、直播、用户" clearable />
+        <el-button type="primary" native-type="submit">搜索</el-button>
+      </form>
+    </div>
   </header>
 </template>
 
@@ -251,10 +298,10 @@ function closeNotifications() {
   max-width: var(--doinb-content-max);
   margin: 0 auto;
   height: 100%;
-  padding: 0 16px;
+  padding: 0 22px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
 }
 
 .logo {
@@ -267,37 +314,39 @@ function closeNotifications() {
 .logo-icon-img {
   width: 32px;
   height: 32px;
-  border-radius: var(--doinb-radius-sm);
+  border-radius: 6px;
   object-fit: cover;
-}
-
-.logo-icon {
-  width: 32px;
-  height: 32px;
-  background: var(--doinb-primary);
-  color: #fff;
-  border-radius: var(--doinb-radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 18px;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--doinb-macaron-c) 18%, transparent);
 }
 
 .logo-text {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 21px;
+  font-weight: 800;
   color: var(--doinb-text-primary);
+}
+
+.mobile-menu-btn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--doinb-text-primary);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-links {
   display: flex;
-  gap: 24px;
+  gap: 28px;
   flex-shrink: 0;
 }
 
 .nav-link {
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--doinb-text-regular);
   transition: color 0.2s;
 }
@@ -310,7 +359,7 @@ function closeNotifications() {
 
 .search-form {
   flex: 1;
-  max-width: 400px;
+  max-width: 430px;
   position: relative;
   display: flex;
   align-items: center;
@@ -322,13 +371,14 @@ function closeNotifications() {
 
 .search-btn {
   position: absolute;
-  right: 8px;
+  right: 10px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--doinb-text-secondary);
   display: flex;
-  padding: 4px;
+  padding: 5px;
+  border-radius: 999px;
 }
 
 .search-btn:hover {
@@ -353,15 +403,17 @@ function closeNotifications() {
   height: 36px;
   border: none;
   background: none;
-  border-radius: var(--doinb-radius-sm);
+  border-radius: 999px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.notify-btn:hover {
-  background: var(--doinb-bg-page);
+.notify-btn:hover,
+.user-trigger:hover,
+.mobile-menu-btn:hover {
+  background: color-mix(in srgb, var(--doinb-primary-bg) 80%, white);
 }
 
 .notify-icon {
@@ -372,6 +424,7 @@ function closeNotifications() {
 .notify-fallback {
   font-size: 18px;
   line-height: 1;
+  font-weight: 700;
 }
 
 .badge {
@@ -382,7 +435,7 @@ function closeNotifications() {
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: #f56c6c;
+  background: var(--doinb-macaron-b);
   color: #fff;
   font-size: 10px;
   line-height: 16px;
@@ -396,13 +449,9 @@ function closeNotifications() {
   padding: 6px 12px;
   border: none;
   background: none;
-  border-radius: var(--doinb-radius-sm);
+  border-radius: 999px;
   cursor: pointer;
   transition: background 0.2s;
-}
-
-.user-trigger:hover {
-  background: var(--doinb-bg-page);
 }
 
 .user-name {
@@ -427,8 +476,10 @@ function closeNotifications() {
   width: 160px;
   background: #fff;
   border: 1px solid var(--doinb-border-light);
-  border-radius: var(--doinb-radius-sm);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  box-shadow:
+    0 18px 42px rgba(38, 42, 64, 0.12),
+    0 0 0 1px color-mix(in srgb, var(--doinb-border-light) 88%, transparent);
   z-index: 102;
   overflow: hidden;
 }
@@ -471,7 +522,7 @@ function closeNotifications() {
 }
 
 .menu-item:hover {
-  background: var(--doinb-bg-page);
+  background: color-mix(in srgb, var(--doinb-primary-bg) 78%, white);
 }
 
 .menu-item--admin {
@@ -490,10 +541,67 @@ function closeNotifications() {
   flex-shrink: 0;
 }
 
+.mobile-panel {
+  display: none;
+}
+
 @media (max-width: 768px) {
+  .inner {
+    gap: 12px;
+    padding: 0 14px;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
   .nav-links,
+  .search-form,
   .user-name {
     display: none;
+  }
+
+  .auth-btns {
+    margin-left: auto;
+  }
+
+  .mobile-panel {
+    display: block;
+    position: fixed;
+    top: var(--doinb-header-height);
+    left: 0;
+    right: 0;
+    padding: 12px 14px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--doinb-border-light);
+    box-shadow: 0 18px 42px rgba(38, 42, 64, 0.12);
+    z-index: 99;
+  }
+
+  .mobile-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .mobile-link {
+    padding: 10px 12px;
+    border-radius: var(--doinb-radius-sm);
+    background: var(--doinb-bg-page);
+    color: var(--doinb-text-regular);
+    font-weight: 600;
+  }
+
+  .mobile-link.active {
+    color: var(--doinb-primary);
+    background: var(--doinb-primary-bg);
+  }
+
+  .mobile-search-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
   }
 }
 </style>

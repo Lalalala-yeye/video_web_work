@@ -1,19 +1,25 @@
 <script setup>
+import { computed } from 'vue'
 import AppAvatar from './AppAvatar.vue'
+import { resolveMediaUrl } from '@/utils/media'
 
-defineProps({
+const props = defineProps({
   id: { type: [Number, String], required: true },
   title: { type: String, required: true },
+  coverUrl: { type: String, default: '' },
   anchorNickname: { type: String, default: '未知主播' },
   anchorAvatar: { type: String, default: '' },
   isLive: { type: Boolean, default: false }
 })
+
+const cover = computed(() => resolveMediaUrl(props.coverUrl))
 </script>
 
 <template>
   <router-link :to="`/live/${id}`" class="live-card">
     <div class="cover-wrap">
-      <div class="cover cover--placeholder">{{ title.slice(0, 2) }}</div>
+      <img v-if="cover" :src="cover" :alt="title" class="cover" />
+      <div v-else class="cover cover--placeholder">{{ title.slice(0, 2) }}</div>
       <span v-if="isLive" class="live-tag">
         <span class="live-dot" />直播中
       </span>
@@ -32,10 +38,10 @@ defineProps({
 .live-card {
   display: block;
   background: #fff;
-  border-radius: var(--doinb-radius);
+  border-radius: 4px;
   overflow: hidden;
   border: 1px solid var(--doinb-border-light);
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow 0.25s, transform 0.25s;
 }
 
 .live-card:hover {
@@ -46,18 +52,25 @@ defineProps({
 .cover-wrap {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: #1a1a2e;
+  background: #11111c;
+  overflow: hidden;
+}
+
+.cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .cover--placeholder {
-  width: 100%;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.42);
   font-size: 24px;
   font-weight: 700;
+  background: #11111c;
+  text-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
 }
 
 .live-tag {
@@ -68,10 +81,11 @@ defineProps({
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  background: var(--doinb-macaron-b);
+  background: color-mix(in srgb, var(--doinb-macaron-b) 88%, white);
   color: var(--doinb-text-primary);
   font-size: 12px;
-  border-radius: var(--doinb-radius-sm);
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
 .live-dot {
@@ -88,12 +102,23 @@ defineProps({
 }
 
 .info {
-  padding: 12px;
+  position: relative;
+  padding: 14px 14px 15px;
+}
+
+.info::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: var(--card-line, var(--doinb-macaron-c));
 }
 
 .title {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--doinb-text-primary);
   line-height: 1.4;
   min-height: 2.8em;
@@ -110,5 +135,11 @@ defineProps({
   gap: 8px;
   font-size: 12px;
   color: var(--doinb-text-secondary);
+}
+
+.author {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

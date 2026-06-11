@@ -24,6 +24,20 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('element-plus') || id.includes('@element-plus')) return 'element-plus'
+          if (id.includes('hls.js') || id.includes('flv.js')) return 'live-player'
+          if (id.includes('vue') || id.includes('vue-router')) return 'vue-vendor'
+          if (id.includes('axios')) return 'http-vendor'
+          return 'vendor'
+        },
+      },
+    },
+  },
   server: {
     host: true,
     port: 8787,

@@ -1,11 +1,11 @@
 import { get, postForm, postParams } from '@/network/request'
 
-export function fetchVideoList(page = 1, size = 12) {
-  return get('/video/list', { page, size })
+export function fetchVideoList(page = 1, size = 12, config = {}) {
+  return get('/video/list', { page, size }, config)
 }
 
-export function fetchVideoDetail(id) {
-  return get('/video/getone', { id })
+export function fetchVideoDetail(id, config = {}) {
+  return get('/video/getone', { id }, config)
 }
 
 export function fetchMyVideoDetail(id) {
@@ -60,7 +60,7 @@ export function deleteVideo(id, config = {}) {
 const STATUS_LABELS = {
   0: '待审核',
   1: '已发布',
-  2: '举报待复审',
+  2: '举报待复核',
   3: '仅自己可见',
 }
 
