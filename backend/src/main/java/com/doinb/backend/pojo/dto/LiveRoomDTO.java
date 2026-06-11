@@ -9,14 +9,11 @@ public class LiveRoomDTO {
     private String title;
     private Integer anchorId;
     private String anchorNickname;
+    /** 仅主播本人「我的直播」等接口返回 */
     private String streamKey;
     private Boolean isLive;
     /** 本场开播时间 */
     private java.time.LocalDateTime sessionStart;
-    /** 观众拉流地址（HLS） */
+    /** 观众拉流相对路径（如 /live/xxx.m3u8），前端按当前站点代理播放 */
     private String playUrl;
-    /** OBS 推流服务器，如 rtmp://127.0.0.1:1935/live */
-    private String pushServer;
-    /** 完整推流地址（ffmpeg 等可直接使用） */
-    private String pushUrl;
 }

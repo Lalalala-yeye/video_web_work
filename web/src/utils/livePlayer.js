@@ -1,10 +1,15 @@
 import Hls from 'hls.js'
 import flvjs from 'flv.js'
-import { resolveMediaUrl, getWebRtcEip } from '@/utils/lanUrl'
+import { resolveMediaUrl, rewriteLiveMediaUrl } from '@/utils/lanUrl'
 
-function parseStreamKey(playUrl) {
-  const m = playUrl?.match(/\/live\/([^./?]+)/)
-  return m?.[1] || ''
+function toFlvUrl(mediaUrl) {
+  return mediaUrl.replace(/\.m3u8(\?.*)?$/i, '.flv')
+}
+
+/** 每次进入直播间用新 URL，避免命中旧 m3u8/缓存而从片头播 */
+function withLiveCacheBust(url) {
+  const sep = url.includes('?') ? '&' : '?'
+  return `${url}${sep}_live=${Date.now()}`
 }
 
 function isSafariNativeHls(video) {
@@ -12,51 +17,93 @@ function isSafariNativeHls(video) {
   return /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 }
 
-function waitIceConnected(pc, timeoutMs = 15000) {
-  return new Promise((resolve, reject) => {
-    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-      resolve()
-      return
+function seekVideoToLiveEdge(video, hls) {
+  if (!video) return
+  const edge = hls?.liveSyncPosition
+  if (Number.isFinite(edge) && edge > 0) {
+    video.currentTime = edge
+    return
+  }
+  const d = video.duration
+  if (Number.isFinite(d) && d !== Infinity && d > 2) {
+    video.currentTime = Math.max(0, d - 1.5)
+  } else if (Number.isFinite(d) && d === Infinity && video.seekable?.length) {
+    const end = video.seekable.end(video.seekable.length - 1)
+    if (Number.isFinite(end) && end > 1) {
+      video.currentTime = Math.max(0, end - 1.5)
     }
-    const timer = setTimeout(() => reject(new Error('timeout')), timeoutMs)
-    pc.oniceconnectionstatechange = () => {
-      const s = pc.iceConnectionState
-      if (s === 'connected' || s === 'completed') {
-        clearTimeout(timer)
-        resolve()
-      } else if (s === 'failed') {
-        clearTimeout(timer)
-        reject(new Error('ice failed'))
-      }
+  }
+}
+
+function createHlsInstance(video, mediaUrl, handlers) {
+  const { onError, onPlaying, tryPlay, startStallWatch } = handlers
+  const liveUrl = withLiveCacheBust(mediaUrl)
+
+  if (isSafariNativeHls(video)) {
+    video.src = withLiveCacheBust(rewriteLiveMediaUrl(mediaUrl))
+    video.onerror = () => onError()
+    video.onloadedmetadata = () => {
+      seekVideoToLiveEdge(video)
+      tryPlay()
+    }
+    video.onplaying = () => onPlaying()
+    startStallWatch()
+    return null
+  }
+  if (!Hls.isSupported()) {
+    onError()
+    return null
+  }
+  const hls = new Hls({
+    enableWorker: true,
+    lowLatencyMode: true,
+    backBufferLength: 0,
+    liveSyncDuration: 2,
+    liveMaxLatencyDuration: 8,
+    maxLiveSyncPlaybackRate: 1.5,
+    liveSyncDurationCount: 2,
+    liveMaxLatencyDurationCount: 6,
+    startPosition: -1,
+    xhrSetup(xhr, url) {
+      xhr.open('GET', rewriteLiveMediaUrl(url), true)
+    },
+  })
+  hls.loadSource(liveUrl)
+  hls.attachMedia(video)
+  hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    seekVideoToLiveEdge(video, hls)
+    tryPlay()
+    startStallWatch()
+  })
+  hls.on(Hls.Events.LEVEL_UPDATED, () => {
+    if (!video || video.paused) return
+    const lag = hls.liveSyncPosition - video.currentTime
+    if (Number.isFinite(lag) && lag > 12) {
+      seekVideoToLiveEdge(video, hls)
     }
   })
+  hls.on(Hls.Events.ERROR, (_, data) => {
+    if (data.fatal) onError()
+  })
+  video.onplaying = () => onPlaying()
+  return hls
 }
 
 /**
- * 观众端直播播放：屏幕分享推流优先 WHEP，断线自动重连；失败再 FLV / HLS
+ * 观众播放：FLV（实时）→ HLS 回退；每次挂载从直播最新位置开始
  */
 export function attachLivePlayer(video, playUrl, { onError, onPlaying } = {}) {
   const mediaUrl = resolveMediaUrl(playUrl)
-  const flvUrl = mediaUrl.replace(/\.m3u8(\?.*)?$/i, '.flv')
-  const streamKey = parseStreamKey(playUrl)
+  const flvUrl = withLiveCacheBust(toFlvUrl(mediaUrl))
 
   let flvPlayer = null
   let hlsInstance = null
-  let whepPc = null
-  let mediaStream = null
-  let reconnectTimer = null
   let stallTimer = null
+  let lagTimer = null
   let destroyed = false
-  let mode = 'whep'
+  let playingReported = false
   let lastAdvanceAt = 0
   let lastVideoTime = 0
-
-  const clearReconnect = () => {
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
-  }
 
   const clearStall = () => {
     if (stallTimer) {
@@ -65,14 +112,17 @@ export function attachLivePlayer(video, playUrl, { onError, onPlaying } = {}) {
     }
   }
 
+  const clearLag = () => {
+    if (lagTimer) {
+      clearInterval(lagTimer)
+      lagTimer = null
+    }
+  }
+
   const cleanup = () => {
     destroyed = true
-    clearReconnect()
     clearStall()
-    if (whepPc) {
-      whepPc.close()
-      whepPc = null
-    }
+    clearLag()
     if (flvPlayer) {
       flvPlayer.pause()
       flvPlayer.unload()
@@ -84,24 +134,29 @@ export function attachLivePlayer(video, playUrl, { onError, onPlaying } = {}) {
       hlsInstance.destroy()
       hlsInstance = null
     }
-    mediaStream = null
     video.onplaying = null
     video.onerror = null
     video.removeAttribute('src')
     video.srcObject = null
     video.load()
+    playingReported = false
   }
 
   const handleError = () => {
     if (!destroyed) onError?.()
   }
 
-  const handlePlaying = () => {
-    if (!destroyed) onPlaying?.()
+  const reportPlaying = () => {
+    if (destroyed || playingReported) return
+    playingReported = true
+    onPlaying?.()
   }
 
   const tryPlay = () => {
-    video.play().then(handlePlaying).catch(() => {})
+    if (destroyed) return
+    video.play()
+      .then(() => reportPlaying())
+      .catch(() => {})
   }
 
   const startStallWatch = () => {
@@ -114,139 +169,76 @@ export function attachLivePlayer(video, playUrl, { onError, onPlaying } = {}) {
       if (t > lastVideoTime + 0.05) {
         lastVideoTime = t
         lastAdvanceAt = Date.now()
+        reportPlaying()
         return
       }
-      if (Date.now() - lastAdvanceAt > 5000) {
-        if (mode === 'whep') {
-          scheduleWhepReconnect()
-        } else {
-          handleError()
-        }
+      if (Date.now() - lastAdvanceAt > 12000) {
+        handleError()
       }
     }, 1000)
   }
 
-  const scheduleWhepReconnect = () => {
-    if (destroyed || mode !== 'whep' || reconnectTimer) return
-    lastAdvanceAt = Date.now()
-    reconnectTimer = setTimeout(async () => {
-      reconnectTimer = null
-      if (destroyed || mode !== 'whep') return
-      const ok = await connectWhep()
-      if (!ok && !destroyed) {
-        mode = 'flv'
-        tryFlv()
+  const startLagWatch = (hls) => {
+    clearLag()
+    lagTimer = setInterval(() => {
+      if (destroyed || !hls) return
+      const edge = hls.liveSyncPosition
+      if (!Number.isFinite(edge)) return
+      const lag = edge - video.currentTime
+      if (lag > 15) {
+        seekVideoToLiveEdge(video, hls)
       }
-    }, 800)
+    }, 5000)
   }
 
-  const connectWhep = async () => {
-    if (destroyed || !streamKey) return false
-    try {
-      if (whepPc) {
-        whepPc.close()
-        whepPc = null
-      }
-      whepPc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-      })
-      whepPc.addTransceiver('video', { direction: 'recvonly' })
-      whepPc.addTransceiver('audio', { direction: 'recvonly' })
-
-      whepPc.ontrack = (event) => {
-        if (!mediaStream) {
-          mediaStream = new MediaStream()
-          video.srcObject = mediaStream
-        }
-        const kind = event.track.kind
-        mediaStream.getTracks()
-          .filter(t => t.kind === kind)
-          .forEach(t => mediaStream.removeTrack(t))
-        mediaStream.addTrack(event.track)
-        event.track.onended = () => scheduleWhepReconnect()
-        tryPlay()
-        startStallWatch()
-      }
-
-      whepPc.oniceconnectionstatechange = () => {
-        const s = whepPc?.iceConnectionState
-        if (s === 'failed' || s === 'disconnected') {
-          scheduleWhepReconnect()
-        }
-      }
-
-      const offer = await whepPc.createOffer()
-      await whepPc.setLocalDescription(offer)
-
-      const eip = getWebRtcEip()
-      const whepUrl = `/srs-api/rtc/v1/whep/?app=live&stream=${encodeURIComponent(streamKey)}&eip=${eip}`
-      const res = await fetch(whepUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/sdp' },
-        body: offer.sdp,
-      })
-      if (!res.ok) return false
-
-      const answerSdp = await res.text()
-      await whepPc.setRemoteDescription({ type: 'answer', sdp: answerSdp })
-      await waitIceConnected(whepPc)
-      tryPlay()
-      startStallWatch()
-      return true
-    } catch {
-      if (whepPc) {
-        whepPc.close()
-        whepPc = null
-      }
-      return false
-    }
-  }
+  const handlers = { onError: handleError, onPlaying: reportPlaying, tryPlay, startStallWatch }
 
   const tryHls = () => {
     if (destroyed) return
-    mode = 'hls'
-    if (isSafariNativeHls(video)) {
-      video.src = mediaUrl
-      video.onerror = () => handleError()
-      tryPlay()
-      startStallWatch()
-      return
-    }
-    if (!Hls.isSupported()) {
+    hlsInstance = createHlsInstance(video, mediaUrl, {
+      onError: () => {
+        if (destroyed) return
+        if (hlsInstance) {
+          hlsInstance.destroy()
+          hlsInstance = null
+          clearLag()
+        }
+        handleError()
+      },
+      onPlaying: reportPlaying,
+      tryPlay,
+      startStallWatch,
+    })
+    if (hlsInstance) {
+      startLagWatch(hlsInstance)
+    } else if (!isSafariNativeHls(video) && !Hls.isSupported()) {
       handleError()
-      return
     }
-    hlsInstance = new Hls({
-      enableWorker: true,
-      lowLatencyMode: true,
-      liveSyncDurationCount: 3,
-      liveMaxLatencyDurationCount: 8,
-    })
-    hlsInstance.loadSource(mediaUrl)
-    hlsInstance.attachMedia(video)
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-      tryPlay()
-      startStallWatch()
-    })
-    hlsInstance.on(Hls.Events.ERROR, (_, data) => {
-      if (data.fatal) handleError()
-    })
-    video.onplaying = handlePlaying
   }
 
   const tryFlv = () => {
     if (destroyed) return
-    mode = 'flv'
     if (!flvjs.isSupported()) {
       tryHls()
       return
     }
     flvPlayer = flvjs.createPlayer(
-      { type: 'flv', url: flvUrl, isLive: true, hasAudio: false, hasVideo: true },
-      { enableWorker: true, enableStashBuffer: false, stashInitialSize: 128, lazyLoad: false }
+      {
+        type: 'flv',
+        url: flvUrl,
+        isLive: true,
+        hasAudio: true,
+        hasVideo: true,
+      },
+      {
+        enableWorker: false,
+        enableStashBuffer: false,
+        stashInitialSize: 128,
+        lazyLoad: false,
+        autoCleanupSourceBuffer: true,
+      }
     )
     flvPlayer.attachMediaElement(video)
-    flvPlayer.load()
     flvPlayer.on(flvjs.Events.ERROR, () => {
       if (destroyed) return
       if (flvPlayer) {
@@ -255,25 +247,18 @@ export function attachLivePlayer(video, playUrl, { onError, onPlaying } = {}) {
       }
       tryHls()
     })
-    video.onplaying = () => {
-      handlePlaying()
-      startStallWatch()
-    }
+    flvPlayer.on(flvjs.Events.MEDIA_INFO, () => tryPlay())
+    flvPlayer.on(flvjs.Events.STATISTICS_INFO, () => {
+      if (video.readyState >= 2) reportPlaying()
+    })
+    video.onplaying = () => reportPlaying()
+    flvPlayer.load()
     tryPlay()
     startStallWatch()
   }
 
-  const bootstrap = async () => {
-    mode = 'whep'
-    const whepOk = await connectWhep()
-    if (!destroyed && !whepOk) {
-      tryFlv()
-    }
-  }
-
-  cleanup()
-  destroyed = false
-  bootstrap()
+  // FLV 为真直播，每次进入从当前推流位置播放；失败再 HLS 并追到最新
+  tryFlv()
 
   return { destroy: cleanup }
 }

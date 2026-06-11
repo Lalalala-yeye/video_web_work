@@ -1,6 +1,10 @@
-/** 浏览器屏幕分享 → SRS WebRTC（WHIP），观众通过 WHEP/FLV 观看 */
+/**
+ * 浏览器屏幕分享 → SRS WebRTC（WHIP）
+ * 暂未在 UI 启用（屏幕分享功能未完善），保留实现供后续完善。
+ */
 
 import { getWebRtcEip, SRS_WEBRTC_PORT } from '@/utils/lanUrl'
+import { waitStreamPlayable } from '@/utils/srsStream'
 
 let activeSession = null
 
@@ -30,6 +34,41 @@ function waitIceConnected(pc, timeoutMs = 20000) {
       }
     }
   })
+}
+
+function preferH264Transceiver(pc, track, stream) {
+  const transceiver = pc.addTransceiver(track, {
+    direction: 'sendonly',
+    streams: [stream],
+  })
+  const caps = RTCRtpSender.getCapabilities?.('video')
+  if (!caps?.codecs?.length || !transceiver.setCodecPreferences) return transceiver
+  const h264 = caps.codecs.filter(c => c.mimeType?.toLowerCase() === 'video/h264')
+  if (!h264.length) return transceiver
+  const rest = caps.codecs.filter(c => c.mimeType?.toLowerCase() !== 'video/h264')
+  transceiver.setCodecPreferences([...h264, ...rest])
+  return transceiver
+}
+
+async function tunePublishSenders(pc) {
+  for (const sender of pc.getSenders()) {
+    const track = sender.track
+    if (!track) continue
+    const params = sender.getParameters()
+    if (!params.encodings?.length) params.encodings = [{}]
+    if (track.kind === 'video') {
+      params.encodings[0].maxBitrate = 2_500_000
+      params.encodings[0].maxFramerate = 30
+      params.degradationPreference = 'maintain-framerate'
+    } else if (track.kind === 'audio') {
+      params.encodings[0].maxBitrate = 128_000
+    }
+    try {
+      await sender.setParameters(params)
+    } catch {
+      /* 部分浏览器不支持全部字段 */
+    }
+  }
 }
 
 export function isScreenPublishing() {
@@ -73,24 +112,48 @@ export async function startScreenPublish(streamKey, { onPreviewReady } = {}) {
 
   stopScreenPublish()
 
+  // 限制分辨率：过高（如 2560x1528）会导致 SRS rtc_to_rtmp empty nalu、frames=0
   const displayStream = await navigator.mediaDevices.getDisplayMedia({
-    video: { frameRate: { ideal: 30, max: 30 } },
+    video: {
+      width: { ideal: 1280, max: 1920 },
+      height: { ideal: 720, max: 1080 },
+      frameRate: { ideal: 24, max: 30 },
+    },
     audio: true,
   })
 
   const onEnded = () => stopScreenPublish()
   const videoTrack = displayStream.getVideoTracks()[0]
-  if (videoTrack) videoTrack.addEventListener('ended', onEnded)
+  if (videoTrack) {
+    videoTrack.contentHint = 'detail'
+    videoTrack.addEventListener('ended', onEnded)
+    try {
+      await videoTrack.applyConstraints({
+        width: { max: 1280 },
+        height: { max: 720 },
+        frameRate: { max: 30 },
+      })
+    } catch {
+      /* 部分源不支持二次约束 */
+    }
+  }
 
   const pc = new RTCPeerConnection({
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
   })
 
-  // 先建立会话 → 本地预览立刻可用，不依赖 SRS 是否连上
   activeSession = { pc, displayStream, streamKey, onEnded, pushOk: false }
   onPreviewReady?.()
 
-  displayStream.getTracks().forEach(track => pc.addTrack(track, displayStream))
+  const audioTrack = displayStream.getAudioTracks()[0]
+  if (videoTrack) {
+    preferH264Transceiver(pc, videoTrack, displayStream)
+  }
+  if (audioTrack) {
+    pc.addTrack(audioTrack, displayStream)
+  }
+
+  await tunePublishSenders(pc)
 
   const offer = await pc.createOffer()
   await pc.setLocalDescription(offer)
@@ -113,9 +176,17 @@ export async function startScreenPublish(streamKey, { onPreviewReady } = {}) {
 
   try {
     await waitIceConnected(pc)
-    activeSession.pushOk = true
   } catch (e) {
-    throw new Error(`${e.message || '推流连接失败'}（本地预览仍可用，观众可能看不到）`)
+    throw new Error(`${e.message || '推流连接失败'}（本地预览仍可用，观众看不到）`)
+  }
+
+  const srsReady = await waitStreamPlayable(streamKey, 30000)
+  if (srsReady) {
+    activeSession.pushOk = true
+  } else {
+    throw new Error(
+      `SRS 已连接但未产出可播放画面（frames=0）。请：① 勿共享当前浏览器标签页；② 重新执行 deploy\\srs-docker.ps1 加载新配置；③ 或改用 OBS RTMP 推流`
+    )
   }
 
   return activeSession

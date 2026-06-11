@@ -30,7 +30,7 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8080',
+        target: 'http://127.0.0.1:8081',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api/, ''),
         timeout: 120000,
@@ -41,7 +41,7 @@ export default defineConfig({
         rewrite: (p) => p.replace(/^\/srs-api/, '')
       },
       '/live-media': {
-        target: 'http://127.0.0.1:8088',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/live-media/, '/live'),
         timeout: 0,

@@ -127,7 +127,6 @@ public class SearchServiceImpl implements SearchService {
             dto.setTitle(room.getTitle());
             dto.setAnchorId(room.getAnchorId());
             dto.setAnchorNickname(anchor != null ? anchor.getNickname() : "未知主播");
-            dto.setStreamKey(room.getStreamKey());
             dto.setIsLive(room.getIsLive());
             if (Boolean.TRUE.equals(room.getIsLive()) && room.getStreamKey() != null) {
                 dto.setPlayUrl(liveStreamHelper.playUrl(room.getStreamKey()));

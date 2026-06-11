@@ -3,22 +3,14 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { attachLivePlayer } from '@/utils/livePlayer'
 import AppAvatar from '@/components/AppAvatar.vue'
-import { fetchLiveDetail, startLive } from '@/api/live'
+import { fetchLiveDetail } from '@/api/live'
 import { getUser } from '@/utils/auth'
-import {
-  startScreenPublish,
-  stopScreenPublish,
-  isScreenPublishing,
-  isPushActive,
-  getPublishingStreamKey,
-  getLocalPreviewStream,
-} from '@/utils/srsScreenPublish'
 import { fetchComments, addComment } from '@/api/comment'
 import CommentItem from '@/components/CommentItem.vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import { isLoggedIn } from '@/utils/auth'
-import { resolvePlayUrl } from '@/utils/lanUrl'
-import { ElMessage } from 'element-plus'
+import { waitStreamPlayable, parseStreamKeyFromPlayUrl } from '@/utils/srsStream'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const route = useRoute()
 const roomId = computed(() => Number(route.params.id))
@@ -31,18 +23,13 @@ const showEmojiPicker = ref(false)
 const loggedIn = ref(isLoggedIn())
 const playError = ref(false)
 const playerLoading = ref(false)
+const waitingAnchor = ref(false)
 const videoRef = ref(null)
-const previewVideoRef = ref(null)
-const screenLoading = ref(false)
 
 const isAnchor = computed(() => {
   const u = getUser()
   return u?.id != null && room.value?.anchorId === u.id
 })
-
-const sharingThisRoom = computed(
-  () => isScreenPublishing() && getPublishingStreamKey() === room.value?.streamKey
-)
 
 let pollTimer = null
 let playerRetryTimer = null
@@ -129,69 +116,20 @@ function onPlayerClick() {
   }
 }
 
-async function onAnchorScreenShare() {
-  if (!room.value?.streamKey) return
-  screenLoading.value = true
-  try {
-    if (!room.value.isLive) {
-      const res = await startLive(room.value.id)
-      if (res.data.code !== 200) {
-        ElMessage.error(res.data.message || '开播失败')
-        return
-      }
-      await load()
-    }
-    await startScreenPublish(room.value.streamKey, { onPreviewReady: syncLocalPreview })
-    await syncLocalPreview()
-    if (isPushActive()) {
-      ElMessage.success('屏幕分享已开始，观众稍后即可看到画面')
-    } else {
-      ElMessage.warning('本地预览已开启，推流到 SRS 未完全成功')
-    }
-  } catch (e) {
-    if (e?.name === 'NotAllowedError') {
-      ElMessage.warning('已取消屏幕分享或未授权')
-    } else if (isScreenPublishing()) {
-      await syncLocalPreview()
-      ElMessage.warning(e.message || '推流异常，本地预览仍可用')
-    } else {
-      ElMessage.error(e.message || '屏幕分享失败')
-    }
-  } finally {
-    screenLoading.value = false
-  }
+function showScreenShareNotReady() {
+  ElMessageBox.alert(
+    '浏览器屏幕分享功能尚未完善，请前往创作中心使用 OBS 推流。',
+    '功能未完善',
+    { confirmButtonText: '知道了', type: 'info' }
+  )
 }
 
-function onAnchorScreenStop() {
-  stopScreenPublish()
-  syncLocalPreview()
-  ElMessage.info('已停止屏幕分享')
-}
-
-async function syncLocalPreview() {
-  for (let i = 0; i < 15; i += 1) {
-    await nextTick()
-    const video = previewVideoRef.value
-    const stream = sharingThisRoom.value ? getLocalPreviewStream() : null
-    if (!video) {
-      await new Promise(r => setTimeout(r, 50))
-      continue
-    }
-    if (!stream) {
-      video.srcObject = null
-      return
-    }
-    stream.getVideoTracks().forEach(t => { t.enabled = true })
-    if (video.srcObject !== stream) video.srcObject = stream
-    try {
-      await video.play()
-    } catch {
-      /* ignore */
-    }
-    if (video.readyState >= 2) return
-    await new Promise(r => setTimeout(r, 80))
-  }
-}
+/*
+ * 屏幕分享（暂未启用，实现见 srsScreenPublish.js）
+ * async function onAnchorScreenShare() { ... }
+ * function onAnchorScreenStop() { ... }
+ * async function syncLocalPreview() { ... }
+ */
 
 function destroyPlayer() {
   if (livePlayer) {
@@ -242,13 +180,30 @@ function stopPlayerRetry() {
 }
 
 async function syncPlayer() {
-  if (room.value?.isLive && room.value?.playUrl && !playError.value) {
-    await nextTick()
-    attachPlayer(room.value.playUrl)
-  } else if (!room.value?.isLive) {
-    destroyPlayer()
-    stopPlayerRetry()
+  if (!room.value?.isLive || !room.value?.playUrl) {
+    waitingAnchor.value = false
+    if (!room.value?.isLive) {
+      destroyPlayer()
+      stopPlayerRetry()
+    }
+    return
   }
+  const streamKey = room.value.streamKey || parseStreamKeyFromPlayUrl(room.value.playUrl)
+  if (streamKey) {
+    waitingAnchor.value = true
+    playerLoading.value = true
+    const ready = await waitStreamPlayable(streamKey, 45000)
+    waitingAnchor.value = false
+    if (!ready) {
+      playError.value = true
+      playerLoading.value = false
+      startPlayerRetry()
+      return
+    }
+  }
+
+  await nextTick()
+  attachPlayer(room.value.playUrl)
 }
 
 onMounted(async () => {
@@ -277,10 +232,6 @@ watch(() => [room.value?.isLive, room.value?.playUrl], async () => {
   await syncPlayer()
 })
 
-watch(sharingThisRoom, () => {
-  syncLocalPreview()
-})
-
 watch(() => room.value?.isLive, isLive => {
   if (isLive) {
     loadComments()
@@ -301,15 +252,7 @@ watch(() => room.value?.isLive, isLive => {
           <div class="player">
             <span v-if="room.isLive" class="live-badge">直播中</span>
             <video
-              v-show="sharingThisRoom"
-              ref="previewVideoRef"
-              class="player-video"
-              autoplay
-              muted
-              playsinline
-            />
-            <video
-              v-show="!sharingThisRoom && room.isLive && room.playUrl"
+              v-show="room.isLive && room.playUrl"
               ref="videoRef"
               class="player-video"
               controls
@@ -320,21 +263,20 @@ watch(() => room.value?.isLive, isLive => {
               @click="onPlayerClick"
             />
             <div
-              v-if="!sharingThisRoom && room.isLive && room.playUrl && playerLoading && !playError"
+              v-if="room.isLive && room.playUrl && (playerLoading || waitingAnchor) && !playError"
               class="player-loading"
             >
-              <p>正在连接直播流…</p>
-              <p class="hint">若长时间黑屏，请点击画面尝试播放</p>
+              <p>{{ waitingAnchor ? '等待主播推流进入 SRS…' : '正在连接直播流…' }}</p>
+              <p class="hint">请保持本页面打开，稍候即可看到画面</p>
             </div>
             <div
-              v-if="!sharingThisRoom && (!room.isLive || !room.playUrl || playError)"
+              v-if="!room.isLive || !room.playUrl || playError"
               class="player-placeholder"
             >
               <template v-if="room.isLive">
                 <p>等待直播画面</p>
-                <p class="hint">主播请在创作中心点「屏幕分享开播」，或使用 OBS 推流；每 5 秒自动重试。</p>
-                <p v-if="isAnchor" class="hint">你是主播，可点击下方按钮直接分享屏幕。</p>
-                <p class="play-url">拉流：{{ resolvePlayUrl(room.playUrl) || '未配置' }}</p>
+                <p class="hint">主播请用 OBS 推流；若画面黑屏请点一下视频尝试播放。每 8 秒自动重试。</p>
+                <p v-if="isAnchor" class="hint">你是主播，请前往创作中心完成 OBS 开播设置。</p>
               </template>
               <template v-else>
                 <p>直播间未开播或已结束</p>
@@ -351,22 +293,8 @@ watch(() => room.value?.isLive, isLive => {
               </div>
             </div>
             <div v-if="isAnchor" class="anchor-actions">
-              <el-button
-                v-if="!sharingThisRoom"
-                type="primary"
-                size="small"
-                :loading="screenLoading"
-                @click="onAnchorScreenShare"
-              >
-                {{ room.isLive ? '开始屏幕分享' : '屏幕分享开播' }}
-              </el-button>
-              <el-button
-                v-else
-                type="warning"
-                size="small"
-                @click="onAnchorScreenStop"
-              >
-                停止分享
+              <el-button type="primary" size="small" @click="showScreenShareNotReady">
+                屏幕分享（未完善）
               </el-button>
             </div>
           </el-card>

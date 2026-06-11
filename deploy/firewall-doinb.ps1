@@ -1,4 +1,4 @@
-# doinb 本地开发：放行 / 删除 5 个端口（需管理员 PowerShell）
+# doinb 本地开发：放行 / 删除端口（需管理员 PowerShell）
 # 用法：
 #   放行：  powershell -ExecutionPolicy Bypass -File .\deploy\firewall-doinb.ps1 -Action add
 #   删除：  powershell -ExecutionPolicy Bypass -File .\deploy\firewall-doinb.ps1 -Action remove
@@ -11,14 +11,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# 8787 前端 Vite | 8080 后端 | 8088 SRS HLS | 1935 SRS RTMP | 8010 SRS WebRTC
+# 8787 前端 Vite | 8081 后端 | 8080 SRS HLS | 1935 SRS RTMP | 8000 SRS WebRTC
 $Rules = @(
     @{ Name = 'doinb-8787'; Port = 8787; Proto = 'TCP'; Desc = 'doinb frontend vite' },
-    @{ Name = 'doinb-8080'; Port = 8080; Proto = 'TCP'; Desc = 'doinb backend api' },
-    @{ Name = 'doinb-8088'; Port = 8088; Proto = 'TCP'; Desc = 'doinb srs hls' },
+    @{ Name = 'doinb-8081'; Port = 8081; Proto = 'TCP'; Desc = 'doinb backend api' },
+    @{ Name = 'doinb-8080'; Port = 8080; Proto = 'TCP'; Desc = 'doinb srs hls flv' },
     @{ Name = 'doinb-1935'; Port = 1935; Proto = 'TCP'; Desc = 'doinb srs rtmp' },
-    @{ Name = 'doinb-8010-tcp'; Port = 8010; Proto = 'TCP'; Desc = 'doinb srs webrtc tcp' },
-    @{ Name = 'doinb-8010-udp'; Port = 8010; Proto = 'UDP'; Desc = 'doinb srs webrtc udp' }
+    @{ Name = 'doinb-8000-tcp'; Port = 8000; Proto = 'TCP'; Desc = 'doinb srs webrtc tcp' },
+    @{ Name = 'doinb-8000-udp'; Port = 8000; Proto = 'UDP'; Desc = 'doinb srs webrtc udp' }
 )
 
 function Require-Admin {
@@ -42,6 +42,14 @@ foreach ($rule in $Rules) {
     } else {
         netsh advfirewall firewall delete rule name="$name" | Out-Null
         Write-Host "[-] 已删除规则 $name" -ForegroundColor Yellow
+    }
+}
+
+# 清理旧版非标准端口规则（8088 HLS、8010 WebRTC、8080 后端）
+$LegacyNames = @('doinb-8088', 'doinb-8010-tcp', 'doinb-8010-udp')
+if ($Action -eq 'add') {
+    foreach ($legacy in $LegacyNames) {
+        netsh advfirewall firewall delete rule name="$legacy" 2>$null | Out-Null
     }
 }
 
