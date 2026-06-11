@@ -7,3 +7,6 @@ spring:
 
 jwt:
   secret: "改成至少32个字符的随机字符串用于JWT签名"
+
+# 直播无需在此配置 IP；观众/主播用同一网站地址访问即可。
+# 局域网开播请用电脑 IP 打开网站（如 http://10.x.x.x:8787），并执行 deploy\srs-docker.ps1。

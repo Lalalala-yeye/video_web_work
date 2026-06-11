@@ -1,13 +1,16 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { attachLivePlayer } from '@/utils/livePlayer'
 import AppAvatar from '@/components/AppAvatar.vue'
 import { fetchLiveDetail } from '@/api/live'
+import { getUser } from '@/utils/auth'
 import { fetchComments, addComment } from '@/api/comment'
 import CommentItem from '@/components/CommentItem.vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import { isLoggedIn } from '@/utils/auth'
-import { ElMessage } from 'element-plus'
+import { waitStreamPlayable, parseStreamKeyFromPlayUrl } from '@/utils/srsStream'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const route = useRoute()
 const roomId = computed(() => Number(route.params.id))
@@ -19,8 +22,18 @@ const commentText = ref('')
 const showEmojiPicker = ref(false)
 const loggedIn = ref(isLoggedIn())
 const playError = ref(false)
+const playerLoading = ref(false)
+const waitingAnchor = ref(false)
+const videoRef = ref(null)
+
+const isAnchor = computed(() => {
+  const u = getUser()
+  return u?.id != null && room.value?.anchorId === u.id
+})
 
 let pollTimer = null
+let playerRetryTimer = null
+let livePlayer = null
 
 async function load() {
   loading.value = true
@@ -96,19 +109,127 @@ function onVideoError() {
   playError.value = true
 }
 
+function onPlayerClick() {
+  const v = videoRef.value
+  if (v && v.paused) {
+    v.play().catch(() => {})
+  }
+}
+
+function showScreenShareNotReady() {
+  ElMessageBox.alert(
+    '浏览器屏幕分享功能尚未完善，请前往创作中心使用 OBS 推流。',
+    '功能未完善',
+    { confirmButtonText: '知道了', type: 'info' }
+  )
+}
+
+/*
+ * 屏幕分享（暂未启用，实现见 srsScreenPublish.js）
+ * async function onAnchorScreenShare() { ... }
+ * function onAnchorScreenStop() { ... }
+ * async function syncLocalPreview() { ... }
+ */
+
+function destroyPlayer() {
+  if (livePlayer) {
+    livePlayer.destroy()
+    livePlayer = null
+  }
+  playerLoading.value = false
+}
+
+function attachPlayer(url) {
+  destroyPlayer()
+  const video = videoRef.value
+  if (!url || !video) return
+
+  playerLoading.value = true
+  livePlayer = attachLivePlayer(video, url, {
+    onPlaying: () => {
+      playError.value = false
+      playerLoading.value = false
+      stopPlayerRetry()
+    },
+    onError: () => {
+      playError.value = true
+      playerLoading.value = false
+      startPlayerRetry()
+    },
+  })
+}
+
+function startPlayerRetry() {
+  stopPlayerRetry()
+  if (!room.value?.isLive) return
+  playerRetryTimer = setInterval(async () => {
+    if (!room.value?.isLive || !room.value?.playUrl) return
+    const v = videoRef.value
+    if (v && v.readyState >= 2 && !v.paused && !playError.value) return
+    playError.value = false
+    playerLoading.value = true
+    await syncPlayer()
+  }, 8000)
+}
+
+function stopPlayerRetry() {
+  if (playerRetryTimer) {
+    clearInterval(playerRetryTimer)
+    playerRetryTimer = null
+  }
+}
+
+async function syncPlayer() {
+  if (!room.value?.isLive || !room.value?.playUrl) {
+    waitingAnchor.value = false
+    if (!room.value?.isLive) {
+      destroyPlayer()
+      stopPlayerRetry()
+    }
+    return
+  }
+  const streamKey = room.value.streamKey || parseStreamKeyFromPlayUrl(room.value.playUrl)
+  if (streamKey) {
+    waitingAnchor.value = true
+    playerLoading.value = true
+    const ready = await waitStreamPlayable(streamKey, 45000)
+    waitingAnchor.value = false
+    if (!ready) {
+      playError.value = true
+      playerLoading.value = false
+      startPlayerRetry()
+      return
+    }
+  }
+
+  await nextTick()
+  attachPlayer(room.value.playUrl)
+}
+
 onMounted(async () => {
   await load()
   await loadComments()
+  await syncPlayer()
   startPolling()
 })
 
-onUnmounted(stopPolling)
+onUnmounted(() => {
+  stopPolling()
+  stopPlayerRetry()
+  destroyPlayer()
+})
 
 watch(roomId, async () => {
   stopPolling()
   await load()
   await loadComments()
+  await syncPlayer()
   startPolling()
+})
+
+watch(() => [room.value?.isLive, room.value?.playUrl], async () => {
+  playError.value = false
+  await syncPlayer()
 })
 
 watch(() => room.value?.isLive, isLive => {
@@ -118,6 +239,7 @@ watch(() => room.value?.isLive, isLive => {
   } else {
     comments.value = []
     stopPolling()
+    stopPlayerRetry()
   }
 })
 </script>
@@ -129,22 +251,32 @@ watch(() => room.value?.isLive, isLive => {
         <div class="player-area">
           <div class="player">
             <span v-if="room.isLive" class="live-badge">直播中</span>
-            <template v-if="room.isLive && room.playUrl && !playError">
-              <video
-                class="player-video"
-                :src="room.playUrl"
-                controls
-                autoplay
-                muted
-                playsinline
-                @error="onVideoError"
-              />
-            </template>
-            <div v-else class="player-placeholder">
+            <video
+              v-show="room.isLive && room.playUrl"
+              ref="videoRef"
+              class="player-video"
+              controls
+              autoplay
+              muted
+              playsinline
+              @error="onVideoError"
+              @click="onPlayerClick"
+            />
+            <div
+              v-if="room.isLive && room.playUrl && (playerLoading || waitingAnchor) && !playError"
+              class="player-loading"
+            >
+              <p>{{ waitingAnchor ? '等待主播推流进入 SRS…' : '正在连接直播流…' }}</p>
+              <p class="hint">请保持本页面打开，稍候即可看到画面</p>
+            </div>
+            <div
+              v-if="!room.isLive || !room.playUrl || playError"
+              class="player-placeholder"
+            >
               <template v-if="room.isLive">
-                <p>直播画面加载失败</p>
-                <p class="hint">当前为演示架构，尚未接入流媒体服务（SRS / 云直播）。</p>
-                <p class="play-url">拉流地址：{{ room.playUrl || '未配置' }}</p>
+                <p>等待直播画面</p>
+                <p class="hint">主播请用 OBS 推流；若画面黑屏请点一下视频尝试播放。每 8 秒自动重试。</p>
+                <p v-if="isAnchor" class="hint">你是主播，请前往创作中心完成 OBS 开播设置。</p>
               </template>
               <template v-else>
                 <p>直播间未开播或已结束</p>
@@ -155,10 +287,15 @@ watch(() => room.value?.isLive, isLive => {
           <el-card shadow="never" class="info-card">
             <div class="author-row">
               <AppAvatar :size="40" :name="room.anchorNickname" :user-id="room.anchorId" />
-              <div>
+              <div class="author-meta">
                 <h1>{{ room.title }}</h1>
                 <p class="anchor">{{ room.anchorNickname }}</p>
               </div>
+            </div>
+            <div v-if="isAnchor" class="anchor-actions">
+              <el-button type="primary" size="small" @click="showScreenShareNotReady">
+                屏幕分享（未完善）
+              </el-button>
             </div>
           </el-card>
         </div>
@@ -248,6 +385,26 @@ watch(() => room.value?.isLive, isLive => {
   z-index: 1;
 }
 
+.player-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2;
+  text-align: center;
+  padding: 16px;
+}
+
+.player-loading .hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .player-placeholder {
   height: 100%;
   display: flex;
@@ -276,9 +433,13 @@ watch(() => room.value?.isLive, isLive => {
   align-items: center;
 }
 
-.author-row h1 {
+.author-meta h1 {
   font-size: 18px;
   margin-bottom: 4px;
+}
+
+.anchor-actions {
+  margin-top: 12px;
 }
 
 .anchor {

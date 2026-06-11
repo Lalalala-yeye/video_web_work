@@ -70,6 +70,12 @@ function goAdmin() {
   min-height: calc(100vh - var(--doinb-header-height) - 48px);
 }
 
+.studio-main {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
 .studio-sidebar {
   width: 200px;
   flex-shrink: 0;

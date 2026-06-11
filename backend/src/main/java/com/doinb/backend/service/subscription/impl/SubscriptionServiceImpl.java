@@ -2,6 +2,7 @@ package com.doinb.backend.service.subscription.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.doinb.backend.config.LiveStreamHelper;
 import com.doinb.backend.mapper.LiveRoomMapper;
 import com.doinb.backend.mapper.SubscriptionMapper;
 import com.doinb.backend.mapper.UserMapper;
@@ -31,21 +32,23 @@ import java.util.stream.Collectors;
 public class SubscriptionServiceImpl implements SubscriptionService {
 
     private static final int STATUS_PUBLISHED = 1;
-    private static final String DEMO_PLAY_PREFIX = "http://localhost:8080/live/play/";
 
     private final SubscriptionMapper subscriptionMapper;
     private final UserMapper userMapper;
     private final VideoMapper videoMapper;
     private final LiveRoomMapper liveRoomMapper;
+    private final LiveStreamHelper liveStreamHelper;
 
     public SubscriptionServiceImpl(SubscriptionMapper subscriptionMapper,
                                    UserMapper userMapper,
                                    VideoMapper videoMapper,
-                                   LiveRoomMapper liveRoomMapper) {
+                                   LiveRoomMapper liveRoomMapper,
+                                   LiveStreamHelper liveStreamHelper) {
         this.subscriptionMapper = subscriptionMapper;
         this.userMapper = userMapper;
         this.videoMapper = videoMapper;
         this.liveRoomMapper = liveRoomMapper;
+        this.liveStreamHelper = liveStreamHelper;
     }
 
     @Override
@@ -213,9 +216,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         dto.setTitle(room.getTitle());
         dto.setAnchorId(room.getAnchorId());
         dto.setAnchorNickname(anchor != null ? anchor.getNickname() : "未知主播");
-        dto.setStreamKey(room.getStreamKey());
         dto.setIsLive(room.getIsLive());
-        dto.setPlayUrl(DEMO_PLAY_PREFIX + room.getStreamKey());
+        if (Boolean.TRUE.equals(room.getIsLive()) && room.getStreamKey() != null) {
+            dto.setPlayUrl(liveStreamHelper.playUrl(room.getStreamKey()));
+        }
         return dto;
     }
 

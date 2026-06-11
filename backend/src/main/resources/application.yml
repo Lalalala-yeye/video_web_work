@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 
 spring:
   profiles:
@@ -16,9 +16,9 @@ spring:
 upload:
   path: uploads
 
-# 直播 HLS 拉流地址前缀（接入 SRS/云直播后修改）
+# 直播媒体路径前缀（相对路径；播放/推流主机名由前端按用户访问域名拼接）
 live:
-  play-url-prefix: http://localhost:8080/live/play/
+  media-path-prefix: /live/
 
 mybatis-plus:
   configuration:

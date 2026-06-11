@@ -3,6 +3,7 @@ package com.doinb.backend.service.live.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.doinb.backend.config.LiveStreamHelper;
 import com.doinb.backend.mapper.LiveRoomMapper;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.pojo.CustomResponse;
@@ -11,7 +12,6 @@ import com.doinb.backend.pojo.dto.PageResult;
 import com.doinb.backend.pojo.entity.LiveRoom;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.service.live.LiveRoomService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -28,13 +28,14 @@ public class LiveRoomServiceImpl implements LiveRoomService {
 
     private final LiveRoomMapper liveRoomMapper;
     private final UserMapper userMapper;
+    private final LiveStreamHelper liveStreamHelper;
 
-    @Value("${live.play-url-prefix:http://localhost:8080/live/play/}")
-    private String playUrlPrefix;
-
-    public LiveRoomServiceImpl(LiveRoomMapper liveRoomMapper, UserMapper userMapper) {
+    public LiveRoomServiceImpl(LiveRoomMapper liveRoomMapper,
+                               UserMapper userMapper,
+                               LiveStreamHelper liveStreamHelper) {
         this.liveRoomMapper = liveRoomMapper;
         this.userMapper = userMapper;
+        this.liveStreamHelper = liveStreamHelper;
     }
 
     @Override
@@ -47,7 +48,7 @@ public class LiveRoomServiceImpl implements LiveRoomService {
                 .eq(LiveRoom::getIsLive, true)
                 .orderByDesc(LiveRoom::getSessionStart));
 
-        return new PageResult<>(mpPage.getTotal(), safePage, safeSize, toDTOList(mpPage.getRecords()));
+        return new PageResult<>(mpPage.getTotal(), safePage, safeSize, toDTOList(mpPage.getRecords(), false));
     }
 
     @Override
@@ -59,8 +60,9 @@ public class LiveRoomServiceImpl implements LiveRoomService {
         if (!Boolean.TRUE.equals(room.getIsLive()) && !canManage(viewerUserId, viewerRole, room)) {
             return fail(404, "直播间未开播或已结束");
         }
+        boolean includePrivate = canManage(viewerUserId, viewerRole, room);
         CustomResponse resp = ok("OK");
-        resp.setData(toDTO(room));
+        resp.setData(toDTO(room, includePrivate));
         return resp;
     }
 
@@ -82,7 +84,7 @@ public class LiveRoomServiceImpl implements LiveRoomService {
         liveRoomMapper.insert(room);
 
         CustomResponse resp = ok("创建成功，请点击开播");
-        resp.setData(toDTO(room));
+        resp.setData(toDTO(room, true));
         return resp;
     }
 
@@ -138,7 +140,7 @@ public class LiveRoomServiceImpl implements LiveRoomService {
                 .eq(LiveRoom::getAnchorId, userId)
                 .orderByDesc(LiveRoom::getId));
 
-        return new PageResult<>(mpPage.getTotal(), safePage, safeSize, toDTOList(mpPage.getRecords()));
+        return new PageResult<>(mpPage.getTotal(), safePage, safeSize, toDTOList(mpPage.getRecords(), true));
     }
 
     private boolean canManage(Integer userId, Integer role, LiveRoom room) {
@@ -148,7 +150,7 @@ public class LiveRoomServiceImpl implements LiveRoomService {
         return userId != null && Objects.equals(room.getAnchorId(), userId);
     }
 
-    private List<LiveRoomDTO> toDTOList(List<LiveRoom> rooms) {
+    private List<LiveRoomDTO> toDTOList(List<LiveRoom> rooms, boolean includePrivate) {
         if (rooms.isEmpty()) {
             return List.of();
         }
@@ -161,27 +163,29 @@ public class LiveRoomServiceImpl implements LiveRoomService {
 
         List<LiveRoomDTO> list = new ArrayList<>();
         for (LiveRoom room : rooms) {
-            list.add(toDTO(room, anchorMap.get(room.getAnchorId())));
+            list.add(toDTO(room, anchorMap.get(room.getAnchorId()), includePrivate));
         }
         return list;
     }
 
-    private LiveRoomDTO toDTO(LiveRoom room) {
+    private LiveRoomDTO toDTO(LiveRoom room, boolean includePrivate) {
         User anchor = userMapper.selectById(room.getAnchorId());
-        return toDTO(room, anchor);
+        return toDTO(room, anchor, includePrivate);
     }
 
-    private LiveRoomDTO toDTO(LiveRoom room, User anchor) {
+    private LiveRoomDTO toDTO(LiveRoom room, User anchor, boolean includePrivate) {
         LiveRoomDTO dto = new LiveRoomDTO();
         dto.setId(room.getId());
         dto.setTitle(room.getTitle());
         dto.setAnchorId(room.getAnchorId());
         dto.setAnchorNickname(anchor != null ? anchor.getNickname() : "未知主播");
-        dto.setStreamKey(room.getStreamKey());
+        if (includePrivate) {
+            dto.setStreamKey(room.getStreamKey());
+        }
         dto.setIsLive(room.getIsLive());
         dto.setSessionStart(room.getSessionStart());
         if (Boolean.TRUE.equals(room.getIsLive()) && room.getStreamKey() != null) {
-            dto.setPlayUrl(playUrlPrefix + room.getStreamKey() + ".m3u8");
+            dto.setPlayUrl(liveStreamHelper.playUrl(room.getStreamKey()));
         }
         return dto;
     }
