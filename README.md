@@ -1,6 +1,6 @@
 # doinb 视频网站（video_web）
 
-课程项目 **doinb** 的前后端仓库：Spring Boot 后端 + Vue 3 用户端，支持视频点播、评论互动、关注、通知私信、创作中心等；直播为**房间状态管理 + 演示播放**（无真实推流）；管理员仅有后端 API，无独立管理端 UI。
+课程项目 **doinb** 的前后端仓库：Spring Boot 后端 + Vue 3 用户端，支持视频点播、评论互动、关注、通知私信、创作中心、管理后台等；直播为**房间状态管理 + OBS 推流地址 + 演示播放**（无内置浏览器推流）。
 
 仓库地址：https://github.com/Lalalala-yeye/video_web_work.git
 
@@ -29,7 +29,7 @@
 
 | 层级 | 技术 |
 |------|------|
-| 后端 | Java 25、Spring Boot 4、Spring Security、MyBatis-Plus、MySQL、JWT |
+| 后端 | Java 25、Spring Boot 4、Spring Security、MyBatis-Plus 3.5（Boot4 Starter）、MySQL、JWT |
 | 前端 | Vue 3、Vite、Vue Router、Element Plus、Axios |
 | 存储 | MySQL 存元数据；视频/封面/头像存本地 `uploads/` |
 
@@ -49,13 +49,16 @@ video_web/
 ├── web/                     # Vue 用户端（端口 8787）
 │   ├── public/              # favicon、like 图标、emojis 等静态资源
 │   └── src/
+│       ├── api/             # 按模块封装的接口
+│       ├── components/      # 导航、卡片、评论、管理表格等
 │       ├── network/request.js
 │       ├── utils/auth.js    # 多账号登录态
 │       ├── router/
-│       └── views/
+│       └── views/           # 首页、播放、创作中心、管理后台等
 ├── database/
 │   └── database.sql         # 全量建表（新库执行）
 ├── uploads/                 # 运行时上传目录（勿提交）
+├── 交付文档/                 # 用户手册等交付材料
 └── 功能测试和完善.md         # 迭代需求与增量 SQL
 ```
 
@@ -178,7 +181,12 @@ Vite 代理：`/api/*` → `http://localhost:8080/*`（见 `web/vite.config.js`�
 | `/subscribe` | 关注动态 |
 | `/search` | 搜索 |
 | `/studio/upload` | 创作中心 · 上传视频 |
-| `/studio/edit` | 创作中心 · 修改视频 |
+| `/studio/edit`、`/studio/edit/:id` | 创作中心 · 修改视频（左侧列表切换稿件） |
+| `/studio/live` | 创作中心 · 我的直播（创建房间、开播/停播、OBS 推流说明） |
+| `/admin/dashboard` | 管理后台 · 概览（需 `role=2`） |
+| `/admin/pending` | 待审核稿件（新上传 / 修改后复审） |
+| `/admin/report` | 举报待复核 |
+| `/admin/preview/:id` | 管理员预览视频 |
 | `/profile` | 个人中心、播放历史 |
 | `/user/:id` | 他人公开展示页（关注、私信） |
 | `/messages/:roomId` | 私信会话 |
@@ -192,18 +200,19 @@ Vite 代理：`/api/*` → `http://localhost:8080/*`（见 `web/vite.config.js`�
 
 - [x] 注册 / 登录 / 退出；单设备多账号切换
 - [x] 视频列表、播放、播放进度、播放历史（含封面）
-- [x] 视频上传；创作中心上传 / 编辑（标题、简介、封面、文件、状态）
+- [x] 视频上传；创作中心上传 / 编辑（标题、简介、封面、文件、可见范围；切换稿件时自动清空上传缓存）
 - [x] 评论（Unicode + 图片表情）、视频/评论赞踩、转发链接
 - [x] 关注 / 取消关注、关注动态
 - [x] 搜索（视频 / 用户）
 - [x] 个人资料（头像上传、简介）、公开展示页
 - [x] 通知（点赞、私信）、私信会话
-- [x] 直播列表、直播间页、直播评论（后端 API）
+- [x] 直播列表、直播间页、直播评论；创作中心直播房间管理
+- [x] 管理后台 UI：待审核、举报复审、视频预览与通过/驳回
 
 ### 部分完成 / 演示级
 
-- [ ] **直播**：仅有房间创建/开播/停播 API，**无真实推流**；前端暂无主播开播管理页，播放区为占位演示
-- [ ] **管理员**：仅有 `/admin/account/login` 等后端接口；**无管理后台 UI**；`role=2` 可在后端获得更高权限
+- [ ] **直播播放**：支持房间状态与 OBS 推流地址展示，**无内置浏览器推流**；观众端播放区为演示占位
+- [ ] **直播推流**：需自行使用 OBS 等工具推至提示的 RTMP 地址；浏览器屏幕分享尚未完善
 
 ### 基础设施
 
@@ -225,6 +234,8 @@ Vite 代理：`/api/*` → `http://localhost:8080/*`（见 `web/vite.config.js`�
 ```sql
 UPDATE users SET role = 2 WHERE username = '你的管理员账号';
 ```
+
+管理员登录后，可在创作中心侧栏进入 **管理后台**，或直接访问 `/admin/dashboard`。
 
 ---
 
@@ -282,7 +293,15 @@ git status
 
 演示视频建议 **50MB 以内、1080p 以下**；过大文件经开发代理播放可能占用大量内存。
 
-### 8. 昵称或提示显示 `????`
+### 8. 8080 端口被占用
+
+旧的后端进程未退出。Windows 可先查占用：`netstat -ano | findstr :8080`，再结束对应 `java.exe` 进程，或直接使用已在运行的实例。
+
+### 9. 登录报 500 / JWT 相关错误
+
+`application-local.yml` 中 `jwt.secret` 长度须 **≥ 32 字符**。
+
+### 10. 昵称或提示显示 `????`
 
 多为历史脏数据或旧版本编码问题。可执行：
 
@@ -300,6 +319,7 @@ UPDATE users SET nickname = CONCAT('用户_', username) WHERE nickname LIKE '??_
 |------|----------|
 | 用户 / 鉴权 | `UserAccountController`、`UserController`、`web/src/utils/auth.js` |
 | 视频 | `VideoController`、`web/src/views/studio/`、`VideoDetailView.vue` |
+| 管理后台 | `AdminVideoController`、`web/src/views/admin/` |
 | 评论 / 赞踩 | `CommentController`、`ReactionController` |
 | 关注 | `SubscriptionController`、`FollowButton.vue` |
 | 通知 / 私信 | `NotificationController`、`MessageController` |
@@ -313,7 +333,5 @@ UPDATE users SET nickname = CONCAT('用户_', username) WHERE nickname LIKE '??_
 ## 相关文档
 
 - [`功能测试和完善.md`](功能测试和完善.md) — 版本迭代、测试项、数据库增量 SQL
+- [`交付文档/用户手册.md`](交付文档/用户手册.md) — 面向最终用户的操作说明
 - `设计说明书/` — 课程设计说明书与需求规格
-
-
-n5pq%J0zX_aK~G85M29NAxNI+hA
