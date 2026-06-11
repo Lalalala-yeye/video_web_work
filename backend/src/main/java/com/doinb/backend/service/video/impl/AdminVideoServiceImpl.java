@@ -4,12 +4,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.mapper.VideoMapper;
+import com.doinb.backend.mapper.VideoReportMapper;
 import com.doinb.backend.pojo.CustomResponse;
 import com.doinb.backend.pojo.VideoStatus;
 import com.doinb.backend.pojo.dto.PageResult;
 import com.doinb.backend.pojo.dto.VideoDTO;
+import com.doinb.backend.pojo.dto.VideoReportDTO;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.pojo.entity.Video;
+import com.doinb.backend.pojo.entity.VideoReport;
+import com.doinb.backend.service.notification.NotificationService;
 import com.doinb.backend.service.video.AdminVideoService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -27,23 +31,76 @@ public class AdminVideoServiceImpl implements AdminVideoService {
 
     private final VideoMapper videoMapper;
     private final UserMapper userMapper;
+    private final VideoReportMapper videoReportMapper;
+    private final NotificationService notificationService;
 
     @Value("${upload.path:uploads}")
     private String uploadPath;
 
-    public AdminVideoServiceImpl(VideoMapper videoMapper, UserMapper userMapper) {
+    public AdminVideoServiceImpl(VideoMapper videoMapper,
+                                 UserMapper userMapper,
+                                 VideoReportMapper videoReportMapper,
+                                 NotificationService notificationService) {
         this.videoMapper = videoMapper;
         this.userMapper = userMapper;
+        this.videoReportMapper = videoReportMapper;
+        this.notificationService = notificationService;
     }
 
     @Override
-    public PageResult<VideoDTO> listPending(long page, long size) {
+    public PageResult<VideoDTO> listPending(Integer adminRole, long page, long size) {
+        requireAdmin(adminRole);
         return listByStatus(VideoStatus.PENDING, page, size);
     }
 
     @Override
-    public PageResult<VideoDTO> listReportReview(long page, long size) {
+    public PageResult<VideoDTO> listReportReview(Integer adminRole, long page, long size) {
+        requireAdmin(adminRole);
         return listByStatus(VideoStatus.REPORT_REVIEW, page, size);
+    }
+
+    @Override
+    public CustomResponse getVideoForPreview(Integer adminRole, Integer videoId) {
+        if (adminRole == null || adminRole != ROLE_ADMIN) {
+            return fail(403, "需要管理员权限");
+        }
+        if (videoId == null) {
+            return fail(400, "视频 id 不能为空");
+        }
+        Video video = videoMapper.selectById(videoId);
+        if (video == null) {
+            return fail(404, "视频不存在");
+        }
+        User author = userMapper.selectById(video.getAuthorId());
+        CustomResponse resp = ok("OK");
+        resp.setData(toDTO(video, author));
+        return resp;
+    }
+
+    @Override
+    public List<VideoReportDTO> listReports(Integer adminRole, Integer videoId) {
+        requireAdmin(adminRole);
+        if (videoId == null) {
+            throw new IllegalArgumentException("videoId 不能为空");
+        }
+        List<VideoReport> reports = videoReportMapper.selectList(new LambdaQueryWrapper<VideoReport>()
+                .eq(VideoReport::getVideoId, videoId)
+                .orderByDesc(VideoReport::getCreateTime));
+        List<VideoReportDTO> list = new ArrayList<>();
+        for (VideoReport report : reports) {
+            User reporter = userMapper.selectById(report.getReporterId());
+            VideoReportDTO dto = new VideoReportDTO();
+            dto.setId(report.getId());
+            dto.setVideoId(report.getVideoId());
+            dto.setReporterId(report.getReporterId());
+            dto.setReason(report.getReason());
+            dto.setCreateTime(report.getCreateTime());
+            if (reporter != null) {
+                dto.setReporterNickname(reporter.getNickname());
+            }
+            list.add(dto);
+        }
+        return list;
     }
 
     private PageResult<VideoDTO> listByStatus(int status, long page, long size) {
@@ -70,7 +127,7 @@ public class AdminVideoServiceImpl implements AdminVideoService {
     }
 
     @Override
-    public CustomResponse approve(Integer adminRole, Integer videoId) {
+    public CustomResponse approve(Integer adminRole, Integer adminUserId, Integer videoId) {
         if (adminRole == null || adminRole != ROLE_ADMIN) {
             return fail(403, "需要管理员权限");
         }
@@ -84,6 +141,9 @@ public class AdminVideoServiceImpl implements AdminVideoService {
         video.setStatus(VideoStatus.PUBLISHED);
         video.setReportCount(0);
         videoMapper.updateById(video);
+        if (adminUserId != null) {
+            notificationService.notifyVideoApproved(adminUserId, videoId);
+        }
         return ok("已通过审核");
     }
 
@@ -161,5 +221,11 @@ public class AdminVideoServiceImpl implements AdminVideoService {
         resp.setCode(code);
         resp.setMessage(message);
         return resp;
+    }
+
+    private void requireAdmin(Integer adminRole) {
+        if (adminRole == null || adminRole != ROLE_ADMIN) {
+            throw new SecurityException("需要管理员权限");
+        }
     }
 }

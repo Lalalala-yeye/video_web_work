@@ -32,7 +32,7 @@ function go(path) {
 }
 
 function goAdmin() {
-  router.push('/admin/pending')
+  router.push('/admin')
 }
 </script>
 
@@ -118,7 +118,7 @@ function goAdmin() {
 
 .sidebar-item.active {
   color: var(--doinb-primary);
-  background: #ecf5ff;
+  background: var(--doinb-primary-bg);
   font-weight: 500;
   border-right: 3px solid var(--doinb-primary);
 }

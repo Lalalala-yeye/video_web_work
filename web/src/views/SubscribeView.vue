@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const loading = ref(false)
+const loadError = ref('')
 const items = ref([])
 
 async function load() {
@@ -18,11 +19,16 @@ async function load() {
     return
   }
   loading.value = true
+  loadError.value = ''
   try {
-    const res = await fetchFeed(1, 20)
+    const res = await fetchFeed(1, 20, { skipErrorHandler: true })
     if (res.data.code === 200) {
       items.value = res.data.data?.records || []
+    } else {
+      loadError.value = res.data.message || '关注动态加载失败'
     }
+  } catch {
+    loadError.value = '暂时连接不上后端服务，请确认后端已启动后重试'
   } finally {
     loading.value = false
   }
@@ -37,7 +43,18 @@ onMounted(load)
     <p class="page-subtitle">你关注的 UP 主最新视频与直播</p>
 
     <div v-loading="loading">
-      <div v-if="items.length" class="feed-list">
+      <el-result
+        v-if="loadError"
+        icon="warning"
+        title="加载失败"
+        :sub-title="loadError"
+        class="state-panel"
+      >
+        <template #extra>
+          <el-button type="primary" @click="load">重试</el-button>
+        </template>
+      </el-result>
+      <div v-else-if="items.length" class="card-grid">
         <template v-for="(item, idx) in items" :key="idx">
           <VideoCard
             v-if="item.type === 'video' && item.video"
@@ -51,6 +68,7 @@ onMounted(load)
             v-else-if="item.type === 'live' && item.liveRoom"
             :id="item.liveRoom.id"
             :title="item.liveRoom.title"
+            :cover-url="item.liveRoom.coverUrl"
             :anchor-nickname="item.liveRoom.anchorNickname"
             :is-live="item.liveRoom.isLive"
           />
@@ -66,9 +84,10 @@ onMounted(load)
 </template>
 
 <style scoped>
-.feed-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+.state-panel {
+  background: #fff;
+  border: 1px solid var(--doinb-border-light);
+  border-radius: var(--doinb-radius);
 }
+
 </style>

@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { VideoPlay } from '@element-plus/icons-vue'
 import AppAvatar from './AppAvatar.vue'
 import { resolveMediaUrl } from '@/utils/media'
@@ -13,7 +14,7 @@ const props = defineProps({
   createTime: { type: String, default: '' }
 })
 
-const cover = resolveMediaUrl(props.coverUrl)
+const cover = computed(() => resolveMediaUrl(props.coverUrl))
 </script>
 
 <template>
@@ -22,15 +23,15 @@ const cover = resolveMediaUrl(props.coverUrl)
       <img v-if="cover" :src="cover" :alt="title" class="cover" />
       <div v-else class="cover cover--placeholder">暂无封面</div>
       <div class="cover-mask">
-        <el-icon class="play-icon" :size="28"><VideoPlay /></el-icon>
+        <el-icon class="play-icon" :size="22"><VideoPlay /></el-icon>
       </div>
     </div>
     <div class="info">
       <h3 class="title">{{ title }}</h3>
       <div class="meta">
-        <AppAvatar :size="24" :src="authorAvatar" :name="authorNickname" />
+        <AppAvatar :size="18" :src="authorAvatar" :name="authorNickname" />
         <span class="author">{{ authorNickname }}</span>
-        <span class="time">{{ formatRelativeTime(createTime) }}</span>
+        <span v-if="createTime" class="time">{{ formatRelativeTime(createTime) }}</span>
       </div>
     </div>
   </router-link>
@@ -39,23 +40,28 @@ const cover = resolveMediaUrl(props.coverUrl)
 <style scoped>
 .video-card {
   display: block;
-  background: #fff;
-  border-radius: var(--doinb-radius);
-  overflow: hidden;
-  border: 1px solid var(--doinb-border-light);
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.video-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  background: transparent;
+  border: none;
+  transition: opacity 0.2s;
 }
 
 .cover-wrap {
   position: relative;
   aspect-ratio: 16 / 9;
   background: var(--doinb-bg-page);
+  border-radius: 6px;
   overflow: hidden;
+}
+
+.cover-wrap::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22%;
+  background: rgba(25, 28, 42, 0.18);
+  pointer-events: none;
 }
 
 .cover {
@@ -66,7 +72,7 @@ const cover = resolveMediaUrl(props.coverUrl)
 }
 
 .video-card:hover .cover {
-  transform: scale(1.05);
+  transform: scale(1.035);
 }
 
 .cover--placeholder {
@@ -84,7 +90,7 @@ const cover = resolveMediaUrl(props.coverUrl)
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0);
-  transition: background 0.2s;
+  transition: background 0.25s;
 }
 
 .video-card:hover .cover-mask {
@@ -94,35 +100,36 @@ const cover = resolveMediaUrl(props.coverUrl)
 .play-icon {
   color: #fff;
   opacity: 0;
-  transition: opacity 0.2s;
+  filter: drop-shadow(0 5px 14px rgba(0, 0, 0, 0.22));
+  transition: opacity 0.2s, transform 0.2s;
 }
 
 .video-card:hover .play-icon {
   opacity: 1;
+  transform: scale(1.08);
 }
 
 .info {
-  padding: 12px;
+  padding: 8px 0 0;
 }
 
 .title {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--doinb-text-primary);
   line-height: 1.4;
-  min-height: 2.8em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 4px;
+  font-size: 11px;
   color: var(--doinb-text-secondary);
 }
 
@@ -135,5 +142,13 @@ const cover = resolveMediaUrl(props.coverUrl)
 
 .time {
   flex-shrink: 0;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+@media (min-width: 1200px) {
+  .time {
+    display: none;
+  }
 }
 </style>

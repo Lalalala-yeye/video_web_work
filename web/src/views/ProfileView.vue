@@ -9,8 +9,11 @@ import { fetchHistoryList, fetchMyVideos } from '@/api/video'
 import { resolveMediaUrl } from '@/utils/media'
 import { useRouter } from 'vue-router'
 import { postParams } from '@/network/request'
+import { MACARON_THEMES } from '@/constants/macaronThemes'
+import { getMacaronThemeId, setMacaronThemeId } from '@/utils/macaronTheme'
 
 const router = useRouter()
+const macaronThemeId = ref(getMacaronThemeId())
 const user = ref(getUser())
 const activeTab = ref('history')
 const history = ref([])
@@ -90,6 +93,12 @@ async function onAvatarSelected(e) {
   }
 }
 
+function onPickMacaronTheme(id) {
+  macaronThemeId.value = id
+  setMacaronThemeId(id)
+  ElMessage.success('外观主题已切换')
+}
+
 async function saveProfile() {
   const res = await postParams('/user/info/update', {
     nickname: editForm.nickname,
@@ -165,6 +174,31 @@ onMounted(async () => {
           <el-button type="primary" @click="saveProfile">保存资料</el-button>
         </el-form-item>
       </el-form>
+    </el-card>
+
+    <el-card shadow="never" class="theme-card">
+      <h2 class="theme-card-title">外观主题</h2>
+      <p class="theme-card-hint">8 组马卡龙配色，仅影响用户端页面；管理后台保持蓝色。</p>
+      <div class="theme-grid">
+        <button
+          v-for="theme in MACARON_THEMES"
+          :key="theme.id"
+          type="button"
+          class="theme-option"
+          :class="{ active: macaronThemeId === theme.id }"
+          @click="onPickMacaronTheme(theme.id)"
+        >
+          <span class="theme-swatches">
+            <span
+              v-for="(color, idx) in theme.colors"
+              :key="idx"
+              class="theme-swatch"
+              :style="{ background: color }"
+            />
+          </span>
+          <span class="theme-name">{{ theme.name }}</span>
+        </button>
+      </div>
     </el-card>
 
     <el-tabs v-model="activeTab" class="tabs">
@@ -335,5 +369,72 @@ onMounted(async () => {
 .progress {
   font-size: 13px;
   color: var(--doinb-text-secondary);
+}
+
+.theme-card {
+  border-radius: var(--doinb-radius);
+  margin-bottom: 24px;
+}
+
+.theme-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.theme-card-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--doinb-text-secondary);
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 720px) {
+  .theme-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.theme-option {
+  border: 2px solid var(--doinb-border-light);
+  border-radius: var(--doinb-radius-sm);
+  background: var(--doinb-bg-card);
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s;
+}
+
+.theme-option:hover {
+  border-color: var(--doinb-macaron-b);
+}
+
+.theme-option.active {
+  border-color: var(--doinb-primary);
+  background: var(--doinb-primary-bg);
+}
+
+.theme-swatches {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.theme-swatch {
+  flex: 1;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.theme-name {
+  font-size: 12px;
+  color: var(--doinb-text-regular);
+  font-weight: 500;
 }
 </style>

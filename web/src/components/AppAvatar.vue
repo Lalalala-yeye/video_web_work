@@ -61,7 +61,7 @@ function initials(name) {
   justify-content: center;
   border-radius: 50%;
   overflow: hidden;
-  background: #ecf5ff;
+  background: var(--doinb-primary-bg);
   color: var(--doinb-primary);
   font-weight: 500;
   flex-shrink: 0;

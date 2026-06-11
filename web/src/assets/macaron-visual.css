@@ -1,0 +1,178 @@
+/* 马卡龙视觉层：三色有机配合（仅用户端，管理后台不加载此类） */
+
+html[class*='theme-macaron-'] body {
+  background: var(--doinb-bg-page);
+}
+
+html[class*='theme-macaron-'] .app-layout {
+  position: relative;
+}
+
+html[class*='theme-macaron-'] .main {
+  position: relative;
+  z-index: 1;
+}
+
+html[class*='theme-macaron-'] .page-container {
+  position: relative;
+}
+
+html[class*='theme-macaron-'] .page-container::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--doinb-header-height) + 18px) 0 0;
+  z-index: -1;
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, transparent 0 calc(100% - 96px), color-mix(in srgb, var(--doinb-macaron-a) 16%, white) calc(100% - 96px) 100%),
+    var(--doinb-bg-card);
+  box-shadow:
+    0 26px 54px rgba(36, 38, 56, 0.1),
+    0 10px 28px rgba(36, 38, 56, 0.08),
+    0 0 0 1px color-mix(in srgb, var(--doinb-border-light) 78%, transparent);
+}
+
+/* 顶栏：半透明 + 三色底边 */
+html[class*='theme-macaron-'] .top-nav {
+  height: 64px;
+  background: color-mix(in srgb, var(--doinb-bg-card) 78%, transparent);
+  backdrop-filter: blur(18px);
+  border-bottom: none;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--doinb-border-light) 75%, transparent);
+}
+
+html[class*='theme-macaron-'] .top-nav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--doinb-macaron-a) 0 28%, var(--doinb-macaron-b) 28% 52%, var(--doinb-macaron-c) 52% 76%, transparent 76% 100%);
+  opacity: 0.9;
+}
+
+html[class*='theme-macaron-'] .logo-text {
+  color: var(--doinb-text-primary);
+}
+
+html[class*='theme-macaron-'] .nav-link.active {
+  position: relative;
+}
+
+html[class*='theme-macaron-'] .nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--doinb-macaron-c);
+}
+
+html[class*='theme-macaron-'] .search-form .el-input__wrapper {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--doinb-bg-card) 72%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--doinb-border-light) 85%, transparent) inset,
+    0 10px 24px color-mix(in srgb, var(--doinb-macaron-a) 14%, transparent);
+}
+
+/* 卡片：无边框，仅封面圆角 + 悬停微动效 */
+html[class*='theme-macaron-'] .video-card,
+html[class*='theme-macaron-'] .live-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+html[class*='theme-macaron-'] .video-card::before,
+html[class*='theme-macaron-'] .live-card::before {
+  display: none;
+}
+
+html[class*='theme-macaron-'] .video-card:hover,
+html[class*='theme-macaron-'] .live-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+html[class*='theme-macaron-'] .cover--placeholder {
+  background:
+    linear-gradient(135deg, transparent 0 42%, color-mix(in srgb, var(--doinb-macaron-b) 88%, white) 42% 62%, transparent 62% 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--doinb-macaron-a) 86%, white) 0 38%, color-mix(in srgb, var(--doinb-macaron-c) 72%, white) 38% 100%);
+}
+
+html[class*='theme-macaron-'] .live-card .cover--placeholder {
+  background: #11111c;
+}
+
+/* Element 卡片 */
+html[class*='theme-macaron-'] .el-card {
+  border-radius: 4px;
+  border: 1px solid var(--doinb-border-light);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--doinb-macaron-a) 12%, transparent);
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  html[class*='theme-macaron-'] .page-container::before {
+    inset: calc(var(--doinb-header-height) + 10px) 0 0;
+  }
+}
+
+html[class*='theme-macaron-'] .el-card::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, var(--doinb-macaron-a) 0 34%, var(--doinb-macaron-b) 34% 67%, var(--doinb-macaron-c) 67% 100%);
+  opacity: 0.7;
+}
+
+/* 登录注册 */
+html[class*='theme-macaron-'] .auth-page {
+  position: relative;
+}
+
+html[class*='theme-macaron-'] .auth-card {
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--doinb-border-light) !important;
+  box-shadow:
+    0 16px 48px color-mix(in srgb, var(--doinb-macaron-c) 12%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--doinb-macaron-b) 20%, transparent) !important;
+  overflow: hidden;
+}
+
+html[class*='theme-macaron-'] .auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--doinb-macaron-a) 0 34%, var(--doinb-macaron-b) 34% 67%, var(--doinb-macaron-c) 67% 100%);
+}
+
+html[class*='theme-macaron-'] .logo-box {
+  background: var(--doinb-primary) !important;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--doinb-primary) 35%, transparent);
+}
+
+/* 创作中心侧栏 */
+html[class*='theme-macaron-'] .studio-sidebar,
+html[class*='theme-macaron-'] .theme-card {
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--doinb-macaron-a) 15%, transparent);
+}
+
+html[class*='theme-macaron-'] .sidebar-item.active {
+  border-right: none;
+  border-left: 3px solid var(--doinb-primary);
+  background: var(--doinb-primary-bg);
+}
+
+/* 空状态 */
+html[class*='theme-macaron-'] .el-empty__description {
+  color: var(--doinb-text-secondary);
+}

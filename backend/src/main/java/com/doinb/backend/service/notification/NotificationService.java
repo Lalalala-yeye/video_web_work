@@ -17,4 +17,7 @@ public interface NotificationService {
     void notifyCommentLike(Integer actorId, Integer commentId);
 
     void notifyMessage(Integer senderId, Integer recipientId, Integer roomId, String preview);
+
+    /** 视频审核通过，通知发布者 */
+    void notifyVideoApproved(Integer adminId, Integer videoId);
 }

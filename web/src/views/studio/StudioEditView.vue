@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   fetchMyVideos,
+  fetchMyVideoDetail,
   updateVideo,
   deleteVideo,
   videoStatusLabel,
@@ -28,6 +29,8 @@ const form = reactive({
 
 const videoFile = ref(null)
 const coverFile = ref(null)
+/** 切换稿件时递增，强制重建 el-upload，避免上一稿文件残留在缓存区 */
+const uploadKey = ref(0)
 
 const editId = computed(() => {
   const id = route.params.id
@@ -46,6 +49,21 @@ async function loadList() {
   }
 }
 
+function resetUploadBuffers() {
+  videoFile.value = null
+  coverFile.value = null
+  uploadKey.value += 1
+}
+
+function resetFormState() {
+  selectedId.value = null
+  form.title = ''
+  form.description = ''
+  form.visibility = 'public'
+  currentCover.value = ''
+  resetUploadBuffers()
+}
+
 function applyVideo(v) {
   if (!v) return false
   selectedId.value = v.id
@@ -53,8 +71,6 @@ function applyVideo(v) {
   form.description = v.description || ''
   form.visibility = statusToVisibility(v.status)
   currentCover.value = v.coverUrl || ''
-  videoFile.value = null
-  coverFile.value = null
   return true
 }
 
@@ -66,6 +82,13 @@ async function loadVideo(id) {
   if (!id) return
   loading.value = true
   try {
+    const res = await fetchMyVideoDetail(id)
+    if (res.data.code === 200 && res.data.data) {
+      applyVideo(res.data.data)
+      const idx = videos.value.findIndex(item => Number(item.id) === Number(id))
+      if (idx >= 0) videos.value[idx] = res.data.data
+      return
+    }
     let v = findVideo(id)
     if (!v) {
       await loadList()
@@ -88,6 +111,11 @@ function onCoverChange(_uploadFile, fileList) {
 }
 
 function selectVideo(id) {
+  if (saving.value) {
+    ElMessage.warning('正在保存，请稍候再切换')
+    return
+  }
+  if (Number(id) === Number(selectedId.value)) return
   router.push(`/studio/edit/${id}`)
 }
 
@@ -115,8 +143,10 @@ async function onSave() {
       return
     }
     ElMessage.success(res.data.message || '保存成功')
+    const savedId = selectedId.value
+    resetUploadBuffers()
     await loadList()
-    await loadVideo(selectedId.value)
+    await loadVideo(savedId)
   } finally {
     saving.value = false
   }
@@ -145,14 +175,13 @@ onMounted(async () => {
   if (editId.value) await loadVideo(editId.value)
 })
 
-watch(editId, id => {
-  if (id) loadVideo(id)
-  else {
-    selectedId.value = null
-    form.title = ''
-    form.description = ''
-    form.visibility = 'public'
-    currentCover.value = ''
+watch(editId, (id, prevId) => {
+  if (Number(id) === Number(prevId)) return
+  if (id) {
+    resetFormState()
+    loadVideo(id)
+  } else {
+    resetFormState()
   }
 })
 </script>
@@ -171,7 +200,8 @@ watch(editId, id => {
             :key="v.id"
             type="button"
             class="video-item"
-            :class="{ active: selectedId === v.id }"
+            :class="{ active: selectedId === v.id, disabled: saving }"
+            :disabled="saving"
             @click="selectVideo(v.id)"
           >
             <img v-if="v.coverUrl" :src="resolveMediaUrl(v.coverUrl)" alt="" class="thumb" />
@@ -187,17 +217,25 @@ watch(editId, id => {
 
       <el-card v-loading="loading" shadow="never" class="form-card">
         <template v-if="selectedId">
-          <el-form label-position="top">
+          <el-form :key="`edit-${selectedId}-${uploadKey}`" label-position="top">
             <el-form-item v-if="currentCover && !coverFile" label="当前封面">
               <img :src="resolveMediaUrl(currentCover)" alt="" class="current-cover" />
             </el-form-item>
             <el-form-item label="更换封面（可选）">
-              <el-upload :auto-upload="false" :limit="1" accept="image/*" list-type="picture" @change="onCoverChange">
+              <el-upload
+                :key="`cover-${selectedId}-${uploadKey}`"
+                :auto-upload="false"
+                :limit="1"
+                accept="image/*"
+                list-type="picture"
+                @change="onCoverChange"
+              >
                 <el-button>选择新封面</el-button>
               </el-upload>
             </el-form-item>
             <el-form-item label="更换视频文件（可选）">
               <el-upload
+                :key="`video-${selectedId}-${uploadKey}`"
                 :auto-upload="false"
                 :limit="1"
                 accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
@@ -276,7 +314,13 @@ watch(editId, id => {
 
 .video-item.active {
   border-color: var(--doinb-primary);
-  background: #ecf5ff;
+  background: var(--doinb-primary-bg);
+}
+
+.video-item:disabled,
+.video-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .thumb {

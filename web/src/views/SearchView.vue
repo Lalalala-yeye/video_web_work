@@ -12,17 +12,23 @@ const router = useRouter()
 const keyword = ref('')
 const activeTab = ref('video')
 const loading = ref(false)
+const loadError = ref('')
 const results = ref({ videos: [], liveRooms: [], users: [] })
 
 async function doSearch() {
   const q = keyword.value.trim()
   if (!q) return
   loading.value = true
+  loadError.value = ''
   try {
-    const res = await searchApi(q)
+    const res = await searchApi(q, { skipErrorHandler: true })
     if (res.data.code === 200) {
       results.value = res.data.data || { videos: [], liveRooms: [], users: [] }
+    } else {
+      loadError.value = res.data.message || '搜索失败'
     }
+  } catch {
+    loadError.value = '暂时连接不上后端服务，请确认后端已启动后重试'
   } finally {
     loading.value = false
   }
@@ -38,6 +44,7 @@ watch(() => route.query.keyword, syncFromRoute)
 
 function onSearchSubmit() {
   const q = keyword.value.trim()
+  if (!q) return
   router.push({ path: '/search', query: { keyword: q } })
 }
 </script>
@@ -58,12 +65,24 @@ function onSearchSubmit() {
     </el-input>
 
     <template v-if="keyword">
-      <h1 class="page-title">"{{ keyword }}" 的搜索结果</h1>
+      <h1 class="page-title">“{{ keyword }}” 的搜索结果</h1>
       <p class="page-subtitle">
         共 {{ (results.videos?.length || 0) + (results.liveRooms?.length || 0) + (results.users?.length || 0) }} 条
       </p>
 
-      <el-tabs v-model="activeTab" v-loading="loading">
+      <el-result
+        v-if="loadError"
+        icon="warning"
+        title="搜索失败"
+        :sub-title="loadError"
+        class="state-panel"
+      >
+        <template #extra>
+          <el-button type="primary" @click="doSearch">重试</el-button>
+        </template>
+      </el-result>
+
+      <el-tabs v-else v-model="activeTab" v-loading="loading">
         <el-tab-pane :label="`视频 (${results.videos?.length || 0})`" name="video">
           <div v-if="results.videos?.length" class="card-grid">
             <VideoCard
@@ -85,6 +104,7 @@ function onSearchSubmit() {
               :key="r.id"
               :id="r.id"
               :title="r.title"
+              :cover-url="r.coverUrl"
               :anchor-nickname="r.anchorNickname"
               :is-live="r.isLive"
             />
@@ -113,6 +133,12 @@ function onSearchSubmit() {
 .search-bar {
   max-width: 640px;
   margin-bottom: 24px;
+}
+
+.state-panel {
+  background: #fff;
+  border: 1px solid var(--doinb-border-light);
+  border-radius: var(--doinb-radius);
 }
 
 .user-list {
