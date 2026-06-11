@@ -54,7 +54,7 @@ onMounted(load)
           <el-button type="primary" @click="load">重试</el-button>
         </template>
       </el-result>
-      <div v-else-if="items.length" class="feed-list">
+      <div v-else-if="items.length" class="card-grid">
         <template v-for="(item, idx) in items" :key="idx">
           <VideoCard
             v-if="item.type === 'video' && item.video"
@@ -90,9 +90,4 @@ onMounted(load)
   border-radius: var(--doinb-radius);
 }
 
-.feed-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-}
 </style>

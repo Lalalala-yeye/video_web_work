@@ -23,15 +23,15 @@ const cover = computed(() => resolveMediaUrl(props.coverUrl))
       <img v-if="cover" :src="cover" :alt="title" class="cover" />
       <div v-else class="cover cover--placeholder">暂无封面</div>
       <div class="cover-mask">
-        <el-icon class="play-icon" :size="28"><VideoPlay /></el-icon>
+        <el-icon class="play-icon" :size="22"><VideoPlay /></el-icon>
       </div>
     </div>
     <div class="info">
       <h3 class="title">{{ title }}</h3>
       <div class="meta">
-        <AppAvatar :size="24" :src="authorAvatar" :name="authorNickname" />
+        <AppAvatar :size="18" :src="authorAvatar" :name="authorNickname" />
         <span class="author">{{ authorNickname }}</span>
-        <span class="time">{{ formatRelativeTime(createTime) }}</span>
+        <span v-if="createTime" class="time">{{ formatRelativeTime(createTime) }}</span>
       </div>
     </div>
   </router-link>
@@ -40,22 +40,16 @@ const cover = computed(() => resolveMediaUrl(props.coverUrl))
 <style scoped>
 .video-card {
   display: block;
-  background: #fff;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid var(--doinb-border-light);
-  transition: box-shadow 0.25s, transform 0.25s, filter 0.25s;
-}
-
-.video-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  background: transparent;
+  border: none;
+  transition: opacity 0.2s;
 }
 
 .cover-wrap {
   position: relative;
   aspect-ratio: 16 / 9;
   background: var(--doinb-bg-page);
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -116,38 +110,26 @@ const cover = computed(() => resolveMediaUrl(props.coverUrl))
 }
 
 .info {
-  position: relative;
-  padding: 14px 14px 15px;
-}
-
-.info::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 5px;
-  background: var(--card-line, var(--doinb-macaron-c));
+  padding: 8px 0 0;
 }
 
 .title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--doinb-text-primary);
-  line-height: 1.35;
-  min-height: 2.7em;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 4px;
+  font-size: 11px;
   color: var(--doinb-text-secondary);
 }
 
@@ -160,5 +142,13 @@ const cover = computed(() => resolveMediaUrl(props.coverUrl))
 
 .time {
   flex-shrink: 0;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+@media (min-width: 1200px) {
+  .time {
+    display: none;
+  }
 }
 </style>
