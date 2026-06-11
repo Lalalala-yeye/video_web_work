@@ -7,11 +7,12 @@ import CommentItem from '@/components/CommentItem.vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import FollowButton from '@/components/FollowButton.vue'
 import { fetchVideoDetail, saveProgress, reportVideo } from '@/api/video'
+import { fetchAdminVideoDetail } from '@/api/admin'
 import { fetchComments, addComment } from '@/api/comment'
 import { reactVideo } from '@/api/reaction'
 import { fetchFollowing } from '@/api/subscription'
 import { resolveMediaUrl } from '@/utils/media'
-import { getUser, isLoggedIn } from '@/utils/auth'
+import { getUser, isLoggedIn, isAdmin } from '@/utils/auth'
 import { LIKE_ICON_URL, DISLIKE_ICON_URL } from '@/constants/staticAssets'
 
 const route = useRoute()
@@ -37,11 +38,19 @@ const coverSrc = computed(() => resolveMediaUrl(video.value?.coverUrl))
 const shareUrl = computed(() => `${window.location.origin}/video/${videoId.value}`)
 
 const lastSavedProgress = ref(-1)
+const adminPreview = ref(false)
 
 async function loadVideo() {
   loading.value = true
+  adminPreview.value = false
   try {
-    const res = await fetchVideoDetail(videoId.value)
+    let res = await fetchVideoDetail(videoId.value, { skipErrorHandler: true })
+    if (res.data.code !== 200 && isAdmin()) {
+      res = await fetchAdminVideoDetail(videoId.value)
+      if (res.data.code === 200) {
+        adminPreview.value = true
+      }
+    }
     if (res.data.code === 200) {
       video.value = res.data.data
       reactions.value = res.data.data?.reactions || { likeCount: 0, dislikeCount: 0, userReaction: 0 }
@@ -188,6 +197,7 @@ watch(videoId, () => {
     <template v-if="video">
       <div class="layout">
         <div class="main-col">
+          <p v-if="adminPreview" class="admin-preview-hint">管理员预览：该视频尚未对全站公开</p>
           <div class="player-wrap">
             <video
               v-if="videoSrc"
@@ -302,6 +312,15 @@ watch(videoId, () => {
 <style scoped>
 .layout {
   max-width: 900px;
+}
+
+.admin-preview-hint {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #e6a23c;
+  background: #fdf6ec;
+  border-radius: var(--doinb-radius-sm);
 }
 
 .player-wrap {

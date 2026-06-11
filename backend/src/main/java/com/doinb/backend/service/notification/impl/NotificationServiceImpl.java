@@ -31,6 +31,10 @@ public class NotificationServiceImpl implements NotificationService {
     public static final int TYPE_LIKE_VIDEO = 1;
     public static final int TYPE_LIKE_COMMENT = 2;
     public static final int TYPE_MESSAGE = 3;
+    public static final int TYPE_VIDEO_APPROVED = 4;
+
+    /** 管理员/系统通知统一展示名（不暴露具体操作的管理员账号） */
+    public static final String SYSTEM_ACTOR_NAME = "doinb";
 
     private final NotificationMapper notificationMapper;
     private final UserMapper userMapper;
@@ -114,6 +118,16 @@ public class NotificationServiceImpl implements NotificationService {
         insertNotification(recipientId, TYPE_MESSAGE, senderId, roomId, truncate(preview, 80));
     }
 
+    @Override
+    public void notifyVideoApproved(Integer adminId, Integer videoId) {
+        Video video = videoMapper.selectById(videoId);
+        if (video == null || video.getAuthorId() == null || Objects.equals(video.getAuthorId(), adminId)) {
+            return;
+        }
+        insertNotification(video.getAuthorId(), TYPE_VIDEO_APPROVED, adminId, videoId,
+                "你的视频《" + truncate(video.getTitle(), 20) + "》已通过审核并公开发布");
+    }
+
     private void insertNotification(Integer userId, int type, Integer actorId, Integer refId, String preview) {
         Notification n = new Notification();
         n.setUserId(userId);
@@ -142,9 +156,14 @@ public class NotificationServiceImpl implements NotificationService {
             dto.setId(row.getId());
             dto.setType(row.getType());
             dto.setActorId(row.getActorId());
-            User actor = userMap.get(row.getActorId());
-            dto.setActorNickname(actor != null ? actor.getNickname() : "用户");
-            dto.setActorAvatar(actor != null ? actor.getAvatar() : null);
+            if (usesSystemActorName(row.getType())) {
+                dto.setActorNickname(SYSTEM_ACTOR_NAME);
+                dto.setActorAvatar(null);
+            } else {
+                User actor = userMap.get(row.getActorId());
+                dto.setActorNickname(actor != null ? actor.getNickname() : "用户");
+                dto.setActorAvatar(actor != null ? actor.getAvatar() : null);
+            }
             dto.setRefId(row.getRefId());
             dto.setPreview(row.getPreview());
             dto.setIsRead(row.getIsRead());
@@ -169,7 +188,8 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private String buildLinkPath(Notification row, Comment comment) {
-        if (Objects.equals(row.getType(), TYPE_LIKE_VIDEO)) {
+        if (Objects.equals(row.getType(), TYPE_LIKE_VIDEO)
+                || Objects.equals(row.getType(), TYPE_VIDEO_APPROVED)) {
             return "/video/" + row.getRefId();
         }
         if (Objects.equals(row.getType(), TYPE_LIKE_COMMENT) && comment != null
@@ -180,6 +200,11 @@ public class NotificationServiceImpl implements NotificationService {
             return "/messages/" + row.getRefId();
         }
         return null;
+    }
+
+    /** 由平台/管理员触发的通知，前端统一显示为 doinb */
+    private boolean usesSystemActorName(int type) {
+        return type == TYPE_VIDEO_APPROVED;
     }
 
     private String truncate(String text, int max) {

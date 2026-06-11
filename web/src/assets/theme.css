@@ -1,7 +1,12 @@
+/* 默认配色：管理后台 / 未挂载马卡龙主题时使用 */
 :root {
   --doinb-primary: #409eff;
   --el-color-primary: #409eff;
   --doinb-primary-light: #66b1ff;
+  --doinb-primary-bg: #ecf5ff;
+  --doinb-macaron-a: #ecf5ff;
+  --doinb-macaron-b: #66b1ff;
+  --doinb-macaron-c: #409eff;
   --doinb-bg-page: #f5f7fa;
   --doinb-bg-card: #ffffff;
   --doinb-text-primary: #303133;
@@ -15,4 +20,180 @@
   --doinb-content-max: 1280px;
   --doinb-radius: 8px;
   --doinb-radius-sm: 4px;
+}
+
+/* 用户端马卡龙：8 组配色共用排版变量 */
+html[class*='theme-macaron-'] {
+  --doinb-text-primary: #4d4d5c;
+  --doinb-text-regular: #6e6e7e;
+  --doinb-text-secondary: #9494a8;
+  --doinb-text-placeholder: #c8c0c8;
+  --doinb-bg-card: #ffffff;
+  --doinb-danger: #f5a89a;
+  --doinb-radius: 12px;
+  --doinb-radius-sm: 8px;
+}
+
+html[class*='theme-macaron-'] .el-card {
+  border-color: var(--doinb-border-light);
+}
+
+/* 1 · 梦幻云海 */
+html.theme-macaron-1 {
+  --doinb-macaron-a: #e7c3e8;
+  --doinb-macaron-b: #fcbfbf;
+  --doinb-macaron-c: #0c6edd;
+  --doinb-primary: #0c6edd;
+  --el-color-primary: #0c6edd;
+  --doinb-primary-light: #6eb3f0;
+  --doinb-primary-bg: #f5ebf6;
+  --doinb-bg-page: #fbf6fc;
+  --doinb-border: #ecd8ef;
+  --doinb-border-light: #f8f0f9;
+  --el-color-primary-light-3: #9ec5f3;
+  --el-color-primary-light-5: #d4e8fb;
+  --el-color-primary-light-7: #e8f3fd;
+  --el-color-primary-light-8: #f2f8fe;
+  --el-color-primary-light-9: #f8fbff;
+  --el-color-primary-dark-2: #0a5bc4;
+}
+
+/* 2 · 山峦暮色 */
+html.theme-macaron-2 {
+  --doinb-macaron-a: #e5adae;
+  --doinb-macaron-b: #d0abb3;
+  --doinb-macaron-c: #60576c;
+  --doinb-primary: #60576c;
+  --el-color-primary: #60576c;
+  --doinb-primary-light: #9a92a8;
+  --doinb-primary-bg: #f3e8e9;
+  --doinb-bg-page: #faf3f4;
+  --doinb-border: #e8d4d6;
+  --doinb-border-light: #f6ecee;
+  --el-color-primary-light-3: #a39aad;
+  --el-color-primary-light-5: #d4ced9;
+  --el-color-primary-light-7: #e8e4eb;
+  --el-color-primary-light-8: #f2f0f4;
+  --el-color-primary-light-9: #f9f8fa;
+  --el-color-primary-dark-2: #4e4658;
+}
+
+/* 3 · 梦幻人像 */
+html.theme-macaron-3 {
+  --doinb-macaron-a: #e9849e;
+  --doinb-macaron-b: #937460;
+  --doinb-macaron-c: #96b2af;
+  --doinb-primary: #937460;
+  --el-color-primary: #937460;
+  --doinb-primary-light: #b8a088;
+  --doinb-primary-bg: #fdeef3;
+  --doinb-bg-page: #fdf5f7;
+  --doinb-border: #f0d4dc;
+  --doinb-border-light: #faf0f4;
+  --el-color-primary-light-3: #c4b19e;
+  --el-color-primary-light-5: #e4d9ce;
+  --el-color-primary-light-7: #f0ebe4;
+  --el-color-primary-light-8: #f7f4f0;
+  --el-color-primary-light-9: #fbf9f7;
+  --el-color-primary-dark-2: #7a614f;
+}
+
+/* 4 · 鲸鱼云端（默认） */
+html.theme-macaron-4 {
+  --doinb-macaron-a: #fef3d7;
+  --doinb-macaron-b: #f5aed6;
+  --doinb-macaron-c: #46abdb;
+  --doinb-primary: #46abdb;
+  --el-color-primary: #46abdb;
+  --doinb-primary-light: #8ccce8;
+  --doinb-primary-bg: #fdf0f8;
+  --doinb-bg-page: #fef9f3;
+  --doinb-border: #f5e1d0;
+  --doinb-border-light: #fdf5eb;
+  --el-color-primary-light-3: #91cfeb;
+  --el-color-primary-light-5: #d4edf7;
+  --el-color-primary-light-7: #e9f6fb;
+  --el-color-primary-light-8: #f4fafd;
+  --el-color-primary-light-9: #f9fdfe;
+  --el-color-primary-dark-2: #3a96c2;
+}
+
+/* 5 · 星海漫步 */
+html.theme-macaron-5 {
+  --doinb-macaron-a: #fbfc85;
+  --doinb-macaron-b: #feb795;
+  --doinb-macaron-c: #3d7292;
+  --doinb-primary: #3d7292;
+  --el-color-primary: #3d7292;
+  --doinb-primary-light: #6e9bb5;
+  --doinb-primary-bg: #fff5e8;
+  --doinb-bg-page: #fffef8;
+  --doinb-border: #f5e8d4;
+  --doinb-border-light: #fdf8ee;
+  --el-color-primary-light-3: #7aa3bc;
+  --el-color-primary-light-5: #c5d9e6;
+  --el-color-primary-light-7: #e0ecf3;
+  --el-color-primary-light-8: #f0f6f9;
+  --el-color-primary-light-9: #f7fafc;
+  --el-color-primary-dark-2: #335f7a;
+}
+
+/* 6 · 山林微风 */
+html.theme-macaron-6 {
+  --doinb-macaron-a: #f3d049;
+  --doinb-macaron-b: #7288b9;
+  --doinb-macaron-c: #567240;
+  --doinb-primary: #567240;
+  --el-color-primary: #567240;
+  --doinb-primary-light: #8aa872;
+  --doinb-primary-bg: #faf4dc;
+  --doinb-bg-page: #fffcf0;
+  --doinb-border: #e8e4c8;
+  --doinb-border-light: #f7f4e6;
+  --el-color-primary-light-3: #92a882;
+  --el-color-primary-light-5: #cdd9c4;
+  --el-color-primary-light-7: #e4ebdf;
+  --el-color-primary-light-8: #f1f5ee;
+  --el-color-primary-light-9: #f8faf7;
+  --el-color-primary-dark-2: #465f34;
+}
+
+/* 7 · 日暮西山 */
+html.theme-macaron-7 {
+  --doinb-macaron-a: #85b5c6;
+  --doinb-macaron-b: #ec9289;
+  --doinb-macaron-c: #637287;
+  --doinb-primary: #637287;
+  --el-color-primary: #637287;
+  --doinb-primary-light: #94a3b5;
+  --doinb-primary-bg: #e8f4f7;
+  --doinb-bg-page: #f4f9fa;
+  --doinb-border: #d4e4ea;
+  --doinb-border-light: #edf5f7;
+  --el-color-primary-light-3: #96a5b6;
+  --el-color-primary-light-5: #ccd4de;
+  --el-color-primary-light-7: #e3e8ee;
+  --el-color-primary-light-8: #f1f3f6;
+  --el-color-primary-light-9: #f8f9fb;
+  --el-color-primary-dark-2: #525f70;
+}
+
+/* 8 · 浮光跃金 */
+html.theme-macaron-8 {
+  --doinb-macaron-a: #c6e0da;
+  --doinb-macaron-b: #9aa9d6;
+  --doinb-macaron-c: #278cbc;
+  --doinb-primary: #278cbc;
+  --el-color-primary: #278cbc;
+  --doinb-primary-light: #6aafd4;
+  --doinb-primary-bg: #e8f4f1;
+  --doinb-bg-page: #f0f8f6;
+  --doinb-border: #d0e6e0;
+  --doinb-border-light: #eaf4f1;
+  --el-color-primary-light-3: #6aafd4;
+  --el-color-primary-light-5: #c5e3f0;
+  --el-color-primary-light-7: #dff0f7;
+  --el-color-primary-light-8: #eef7fb;
+  --el-color-primary-light-9: #f6fbfd;
+  --el-color-primary-dark-2: #2078a2;
 }

@@ -68,8 +68,8 @@ defineProps({
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  background: var(--doinb-danger);
-  color: #fff;
+  background: var(--doinb-macaron-b);
+  color: var(--doinb-text-primary);
   font-size: 12px;
   border-radius: var(--doinb-radius-sm);
 }

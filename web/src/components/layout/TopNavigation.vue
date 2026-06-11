@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { Search, ArrowDown, User, SwitchButton } from '@element-plus/icons-vue'
 import AppAvatar from '@/components/AppAvatar.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
-import { getUser, isLoggedIn, clearAuth, clearAllAccounts, refreshStoredUser, getAccounts, switchAccount, openLoginInNewTab, AUTH_UPDATED_EVENT } from '@/utils/auth'
+import { getUser, isLoggedIn, isAdmin, clearAuth, clearAllAccounts, refreshStoredUser, getAccounts, switchAccount, openLoginInNewTab, AUTH_UPDATED_EVENT } from '@/utils/auth'
 import { logout as logoutApi } from '@/api/user'
 import { FAVICON_URL, BELL_ICON_URL } from '@/constants/staticAssets'
 
@@ -205,6 +205,9 @@ function closeNotifications() {
           <router-link to="/profile" class="menu-item" @click="showMenu = false">
             <el-icon><User /></el-icon>
             个人中心
+          </router-link>
+          <router-link v-if="isAdmin()" to="/admin" class="menu-item menu-item--admin" @click="showMenu = false">
+            管理后台
           </router-link>
           <button type="button" class="menu-item menu-item--danger" @click="onLogout">
             <el-icon><SwitchButton /></el-icon>
@@ -469,6 +472,11 @@ function closeNotifications() {
 
 .menu-item:hover {
   background: var(--doinb-bg-page);
+}
+
+.menu-item--admin {
+  color: var(--doinb-primary);
+  font-weight: 500;
 }
 
 .menu-item--danger {

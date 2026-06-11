@@ -106,7 +106,7 @@ function pickImage(item) {
 }
 
 .emoji-btn:hover {
-  background: #ecf5ff;
+  background: var(--doinb-primary-bg);
 }
 
 .emoji-thumb {

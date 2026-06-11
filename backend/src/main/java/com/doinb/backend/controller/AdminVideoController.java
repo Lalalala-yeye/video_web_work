@@ -23,7 +23,12 @@ public class AdminVideoController {
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "10") long size) {
         CustomResponse resp = new CustomResponse();
-        resp.setData(adminVideoService.listPending(page, size));
+        try {
+            resp.setData(adminVideoService.listPending(currentUser.getRole(), page, size));
+        } catch (SecurityException e) {
+            resp.setCode(403);
+            resp.setMessage(e.getMessage());
+        }
         return resp;
     }
 
@@ -32,13 +37,38 @@ public class AdminVideoController {
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "10") long size) {
         CustomResponse resp = new CustomResponse();
-        resp.setData(adminVideoService.listReportReview(page, size));
+        try {
+            resp.setData(adminVideoService.listReportReview(currentUser.getRole(), page, size));
+        } catch (SecurityException e) {
+            resp.setCode(403);
+            resp.setMessage(e.getMessage());
+        }
+        return resp;
+    }
+
+    @GetMapping("/getone")
+    public CustomResponse getOne(@RequestParam Integer id) {
+        return adminVideoService.getVideoForPreview(currentUser.getRole(), id);
+    }
+
+    @GetMapping("/reports")
+    public CustomResponse listReports(@RequestParam Integer videoId) {
+        CustomResponse resp = new CustomResponse();
+        try {
+            resp.setData(adminVideoService.listReports(currentUser.getRole(), videoId));
+        } catch (SecurityException e) {
+            resp.setCode(403);
+            resp.setMessage(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            resp.setCode(400);
+            resp.setMessage(e.getMessage());
+        }
         return resp;
     }
 
     @PostMapping("/approve")
     public CustomResponse approve(@RequestParam Integer videoId) {
-        return adminVideoService.approve(currentUser.getRole(), videoId);
+        return adminVideoService.approve(currentUser.getRole(), currentUser.getUserId(), videoId);
     }
 
     @PostMapping("/reject")

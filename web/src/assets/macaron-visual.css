@@ -1,0 +1,197 @@
+/* 马卡龙视觉层：三色有机配合（仅用户端，管理后台不加载此类） */
+
+html[class*='theme-macaron-'] body {
+  background: var(--doinb-bg-page);
+}
+
+html[class*='theme-macaron-'] .app-layout {
+  position: relative;
+}
+
+html[class*='theme-macaron-'] .main {
+  position: relative;
+  z-index: 1;
+}
+
+/* 顶栏：半透明 + 三色底边 */
+html[class*='theme-macaron-'] .top-nav {
+  background: color-mix(in srgb, var(--doinb-bg-card) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: none;
+  box-shadow: 0 1px 0 var(--doinb-border-light);
+}
+
+html[class*='theme-macaron-'] .top-nav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--doinb-macaron-a) 0%,
+    var(--doinb-macaron-b) 38%,
+    var(--doinb-macaron-c) 72%,
+    var(--doinb-macaron-a) 100%
+  );
+  opacity: 0.75;
+}
+
+html[class*='theme-macaron-'] .logo-text {
+  background: linear-gradient(
+    120deg,
+    var(--doinb-macaron-c) 0%,
+    var(--doinb-primary) 55%,
+    var(--doinb-macaron-b) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+html[class*='theme-macaron-'] .nav-link.active {
+  position: relative;
+}
+
+html[class*='theme-macaron-'] .nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--doinb-macaron-b), var(--doinb-primary));
+}
+
+/* 卡片：顶色条 + 悬停光晕 */
+html[class*='theme-macaron-'] .video-card,
+html[class*='theme-macaron-'] .live-card {
+  position: relative;
+  border: 1px solid var(--doinb-border-light);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--doinb-macaron-c) 6%, transparent);
+}
+
+html[class*='theme-macaron-'] .video-card::before,
+html[class*='theme-macaron-'] .live-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--doinb-radius) var(--doinb-radius) 0 0;
+  background: linear-gradient(
+    90deg,
+    var(--doinb-macaron-a),
+    var(--doinb-macaron-b),
+    var(--doinb-macaron-c)
+  );
+  z-index: 1;
+  opacity: 0.9;
+}
+
+html[class*='theme-macaron-'] .video-card:hover,
+html[class*='theme-macaron-'] .live-card:hover {
+  box-shadow:
+    0 8px 24px color-mix(in srgb, var(--doinb-macaron-c) 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--doinb-macaron-b) 35%, transparent);
+}
+
+html[class*='theme-macaron-'] .cover--placeholder {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--doinb-macaron-a) 70%, white),
+    color-mix(in srgb, var(--doinb-macaron-b) 50%, white)
+  );
+}
+
+html[class*='theme-macaron-'] .live-card .cover--placeholder {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--doinb-macaron-c) 25%, #1a1a2e),
+    color-mix(in srgb, var(--doinb-macaron-b) 35%, #1a1a2e)
+  );
+}
+
+/* Element 卡片 */
+html[class*='theme-macaron-'] .el-card {
+  border-radius: var(--doinb-radius);
+  border: 1px solid var(--doinb-border-light);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--doinb-macaron-a) 12%, transparent);
+  overflow: hidden;
+}
+
+html[class*='theme-macaron-'] .el-card::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--doinb-macaron-a),
+    var(--doinb-macaron-b),
+    var(--doinb-macaron-c)
+  );
+  opacity: 0.7;
+}
+
+/* 登录注册 */
+html[class*='theme-macaron-'] .auth-page {
+  position: relative;
+}
+
+html[class*='theme-macaron-'] .auth-card {
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--doinb-border-light) !important;
+  box-shadow:
+    0 16px 48px color-mix(in srgb, var(--doinb-macaron-c) 12%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--doinb-macaron-b) 20%, transparent) !important;
+  overflow: hidden;
+}
+
+html[class*='theme-macaron-'] .auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--doinb-macaron-a),
+    var(--doinb-macaron-b),
+    var(--doinb-macaron-c)
+  );
+}
+
+html[class*='theme-macaron-'] .logo-box {
+  background: linear-gradient(
+    145deg,
+    var(--doinb-macaron-b),
+    var(--doinb-primary)
+  ) !important;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--doinb-primary) 35%, transparent);
+}
+
+/* 创作中心侧栏 */
+html[class*='theme-macaron-'] .studio-sidebar,
+html[class*='theme-macaron-'] .theme-card {
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--doinb-macaron-a) 15%, transparent);
+}
+
+html[class*='theme-macaron-'] .sidebar-item.active {
+  border-right: none;
+  border-left: 3px solid var(--doinb-primary);
+  background: linear-gradient(
+    90deg,
+    var(--doinb-primary-bg),
+    color-mix(in srgb, var(--doinb-macaron-a) 40%, white)
+  );
+}
+
+/* 空状态 */
+html[class*='theme-macaron-'] .el-empty__description {
+  color: var(--doinb-text-secondary);
+}

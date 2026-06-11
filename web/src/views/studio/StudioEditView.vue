@@ -276,7 +276,7 @@ watch(editId, id => {
 
 .video-item.active {
   border-color: var(--doinb-primary);
-  background: #ecf5ff;
+  background: var(--doinb-primary-bg);
 }
 
 .thumb {

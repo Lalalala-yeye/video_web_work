@@ -70,6 +70,7 @@ function typeLabel(type) {
   if (type === 1) return '赞了你的视频'
   if (type === 2) return '赞了你的评论'
   if (type === 3) return '发来私信'
+  if (type === 4) return '通过了你的视频'
   return '通知'
 }
 
@@ -179,7 +180,7 @@ defineExpose({ loadUnread, unreadCount })
 }
 
 .item.unread {
-  background: #f0f7ff;
+  background: var(--doinb-primary-bg);
 }
 
 .item-body {

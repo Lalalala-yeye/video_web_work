@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import LiveCard from '@/components/LiveCard.vue'
+import PageHero from '@/components/visual/PageHero.vue'
 import { fetchLiveList } from '@/api/live'
 
 const loading = ref(false)
@@ -32,8 +33,7 @@ watch(page, load)
 
 <template>
   <div class="page-container">
-    <h1 class="page-title">直播</h1>
-    <p class="page-subtitle">发现正在进行的精彩直播</p>
+    <PageHero title="直播" subtitle="发现正在进行的精彩直播，角标使用当前主题中间色点缀" />
 
     <div v-loading="loading">
       <div v-if="rooms.length" class="card-grid">

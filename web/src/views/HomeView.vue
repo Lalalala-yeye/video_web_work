@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import VideoCard from '@/components/VideoCard.vue'
+import PageHero from '@/components/visual/PageHero.vue'
 import { fetchVideoList } from '@/api/video'
 
 const loading = ref(false)
@@ -33,8 +34,7 @@ onMounted(loadVideos)
 
 <template>
   <div class="page-container">
-    <h1 class="page-title">推荐视频</h1>
-    <p class="page-subtitle">为你精选的优质内容</p>
+    <PageHero title="推荐视频" subtitle="为你精选的优质内容" />
 
     <div v-loading="loading">
       <div v-if="videos.length" class="card-grid">

@@ -34,7 +34,8 @@ async function onSubmit() {
     saveLoginResult(res.data.data)
     await refreshStoredUser(true)
     ElMessage.success(res.data.message || '登录成功')
-    router.push('/')
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+    router.push(redirect && redirect.startsWith('/') ? redirect : '/')
   } finally {
     loading.value = false
   }
