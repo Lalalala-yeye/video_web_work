@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { followUser, unfollowUser } from '@/api/subscription'
 import { isLoggedIn } from '@/utils/auth'
+import { parseRouteId } from '@/utils/format'
 
 const props = defineProps({
   targetId: { type: Number, required: true },
@@ -28,6 +29,10 @@ async function toggleFollow() {
   if (!isLoggedIn()) {
     ElMessage.warning('请先登录')
     router.push('/login')
+    return
+  }
+  if (parseRouteId(props.targetId) == null) {
+    ElMessage.error('无效的用户')
     return
   }
   loading.value = true

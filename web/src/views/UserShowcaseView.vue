@@ -11,9 +11,11 @@ import { fetchFollowing } from '@/api/subscription'
 import { getUser, isLoggedIn } from '@/utils/auth'
 import { SEND_ICON_URL } from '@/constants/staticAssets'
 
+import { parseRouteId } from '@/utils/format'
+
 const route = useRoute()
 const router = useRouter()
-const userId = computed(() => Number(route.params.id))
+const userId = computed(() => parseRouteId(route.params.id))
 
 const loading = ref(true)
 const messaging = ref(false)
@@ -51,6 +53,12 @@ async function syncFollowState(showcaseData) {
 }
 
 async function load() {
+  if (userId.value == null) {
+    showcase.value = null
+    loading.value = false
+    ElMessage.warning('无效的用户链接')
+    return
+  }
   loading.value = true
   try {
     const res = await fetchUserShowcase(userId.value)
@@ -102,6 +110,7 @@ watch(userId, load)
               <h1>{{ showcase.profile.nickname || '用户' }}</h1>
               <div v-if="!isSelf" class="header-actions">
                 <FollowButton
+                  v-if="userId != null"
                   :target-id="userId"
                   :following="following"
                   @update:following="following = $event"
