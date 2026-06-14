@@ -15,8 +15,10 @@ import { resolveMediaUrl } from '@/utils/media'
 import { getUser, isLoggedIn, isAdmin } from '@/utils/auth'
 import { LIKE_ICON_URL, DISLIKE_ICON_URL } from '@/constants/staticAssets'
 
+import { parseRouteId } from '@/utils/format'
+
 const route = useRoute()
-const videoId = computed(() => Number(route.params.id))
+const videoId = computed(() => parseRouteId(route.params.id))
 
 const loading = ref(true)
 const video = ref(null)
@@ -41,6 +43,11 @@ const lastSavedProgress = ref(-1)
 const adminPreview = ref(false)
 
 async function loadVideo() {
+  if (videoId.value == null) {
+    video.value = null
+    loading.value = false
+    return
+  }
   loading.value = true
   adminPreview.value = false
   try {
@@ -80,6 +87,7 @@ async function syncAuthorFollow() {
 }
 
 async function loadComments() {
+  if (videoId.value == null) return
   const res = await fetchComments(videoId.value, 1)
   if (res.data.code === 200) {
     comments.value = res.data.data?.records || []
@@ -256,7 +264,7 @@ watch(videoId, () => {
                 </div>
               </div>
               <FollowButton
-                v-if="!isSelfAuthor"
+                v-if="!isSelfAuthor && video.authorId"
                 :target-id="video.authorId"
                 :following="authorFollowing"
                 @update:following="authorFollowing = $event"

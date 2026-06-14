@@ -22,3 +22,11 @@ export function formatCount(num) {
   if (num >= 10000) return `${(num / 10000).toFixed(1)}万`
   return String(num)
 }
+
+/** 解析路由或接口中的正整数 id，无效时返回 null（避免 NaN 传给后端） */
+export function parseRouteId(value) {
+  if (value == null || value === '') return null
+  const n = Number(value)
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) return null
+  return n
+}

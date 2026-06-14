@@ -85,7 +85,10 @@ export const post = (url, data, config = {}) => instance.post(url, data, config)
 export function postParams(url, params, config = {}) {
   const body = new URLSearchParams()
   Object.entries(params).forEach(([key, value]) => {
-    if (value != null && value !== '') body.append(key, value)
+    if (value == null || value === '') return
+    if (typeof value === 'number' && Number.isNaN(value)) return
+    if (value === 'NaN') return
+    body.append(key, value)
   })
   return instance.post(url, body, config)
 }

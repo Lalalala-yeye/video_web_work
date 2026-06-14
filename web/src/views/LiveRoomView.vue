@@ -12,8 +12,10 @@ import { isLoggedIn } from '@/utils/auth'
 import { waitStreamPlayable, parseStreamKeyFromPlayUrl } from '@/utils/srsStream'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+import { parseRouteId } from '@/utils/format'
+
 const route = useRoute()
-const roomId = computed(() => Number(route.params.id))
+const roomId = computed(() => parseRouteId(route.params.id))
 
 const loading = ref(true)
 const room = ref(null)
@@ -36,6 +38,11 @@ let playerRetryTimer = null
 let livePlayer = null
 
 async function load() {
+  if (roomId.value == null) {
+    room.value = null
+    loading.value = false
+    return
+  }
   loading.value = true
   try {
     const res = await fetchLiveDetail(roomId.value)
@@ -51,6 +58,7 @@ async function load() {
 }
 
 async function loadComments() {
+  if (roomId.value == null) return
   if (!room.value?.isLive) {
     comments.value = []
     return
