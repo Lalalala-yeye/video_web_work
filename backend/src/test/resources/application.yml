@@ -1,0 +1,9 @@
+# 测试 classpath 优先于 src/main/resources/application.yml
+# 不要激活 local，避免去加载本机 application-local.yml / MySQL
+spring:
+  profiles:
+    active: test
+
+jwt:
+  secret: "ci-test-secret-at-least-32-characters!!"
+  expire: 86400000
