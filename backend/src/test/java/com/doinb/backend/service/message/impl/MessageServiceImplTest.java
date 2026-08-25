@@ -132,4 +132,97 @@ class MessageServiceImplTest {
         assertEquals(404, resp.getCode());
         assertEquals("会话不存在", resp.getMessage());
     }
+
+    @Test
+    void openRoom_whenPeerIdNull_returns400() {
+        CustomResponse resp = service.openRoom(10, null);
+
+        assertEquals(400, resp.getCode());
+        assertEquals("对方用户 id 不能为空", resp.getMessage());
+        verify(dmRoomMapper, never()).insert(any(DmRoom.class));
+    }
+
+    @Test
+    void openRoom_whenRoomAbsent_createsRoom() {
+        when(userMapper.selectById(11)).thenReturn(new User());
+        when(dmRoomMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(dmMessageMapper.selectPage(any(), any())).thenAnswer(invocation -> {
+            Page<DmMessage> page = invocation.getArgument(0);
+            page.setRecords(List.of());
+            page.setTotal(0);
+            return page;
+        });
+
+        CustomResponse resp = service.openRoom(10, 11);
+
+        assertEquals(200, resp.getCode());
+        verify(dmRoomMapper).insert(any(DmRoom.class));
+        DmRoomDTO data = (DmRoomDTO) resp.getData();
+        assertEquals(11, data.getPeerId());
+    }
+
+    @Test
+    void getRoom_whenNotMember_returns404() {
+        DmRoom room = new DmRoom();
+        room.setId(2);
+        room.setUserA(99);
+        room.setUserB(100);
+        when(dmRoomMapper.selectById(2)).thenReturn(room);
+
+        CustomResponse resp = service.getRoom(10, 2, 1, 50);
+
+        assertEquals(404, resp.getCode());
+        assertEquals("会话不存在", resp.getMessage());
+    }
+
+    @Test
+    void getRoom_whenMember_returns200() {
+        DmRoom room = new DmRoom();
+        room.setId(2);
+        room.setUserA(10);
+        room.setUserB(11);
+        when(dmRoomMapper.selectById(2)).thenReturn(room);
+        User peer = new User();
+        peer.setId(11);
+        peer.setNickname("对方昵称");
+        when(userMapper.selectById(11)).thenReturn(peer);
+        when(dmMessageMapper.selectPage(any(), any())).thenAnswer(invocation -> {
+            Page<DmMessage> page = invocation.getArgument(0);
+            page.setRecords(List.of());
+            page.setTotal(0);
+            return page;
+        });
+
+        CustomResponse resp = service.getRoom(10, 2, 1, 50);
+
+        assertEquals(200, resp.getCode());
+        DmRoomDTO data = (DmRoomDTO) resp.getData();
+        assertEquals("对方昵称", data.getPeerNickname());
+    }
+
+    @Test
+    void send_whenContentTooLong_returns400() {
+        String longContent = "a".repeat(501);
+
+        CustomResponse resp = service.send(10, 2, longContent);
+
+        assertEquals(400, resp.getCode());
+        assertEquals("消息不能超过500字", resp.getMessage());
+        verify(dmMessageMapper, never()).insert(any(DmMessage.class));
+    }
+
+    @Test
+    void send_whenNotMember_returns404() {
+        DmRoom room = new DmRoom();
+        room.setId(2);
+        room.setUserA(99);
+        room.setUserB(100);
+        when(dmRoomMapper.selectById(2)).thenReturn(room);
+
+        CustomResponse resp = service.send(10, 2, "你好");
+
+        assertEquals(404, resp.getCode());
+        assertEquals("会话不存在", resp.getMessage());
+        verify(dmMessageMapper, never()).insert(any(DmMessage.class));
+    }
 }

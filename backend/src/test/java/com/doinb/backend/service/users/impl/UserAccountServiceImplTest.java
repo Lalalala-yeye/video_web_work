@@ -1,5 +1,6 @@
 package com.doinb.backend.service.users.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.pojo.CustomResponse;
 import com.doinb.backend.pojo.dto.UserDTO;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Map;
@@ -200,5 +202,123 @@ class UserAccountServiceImplTest {
 
         assertEquals(200, resp.getCode());
         assertEquals("已退出登录", resp.getMessage());
+    }
+
+    @Test
+    void register_whenPasswordBlank_returns403() {
+        CustomResponse resp = service.register("user_a", "  ", "  ");
+
+        assertEquals(403, resp.getCode());
+        assertEquals("密码不能为空", resp.getMessage());
+        verify(userMapper, never()).insert(any(User.class));
+    }
+
+    @Test
+    void register_whenUsernameTooLong_returns403() {
+        String longName = "a".repeat(51);
+
+        CustomResponse resp = service.register(longName, "123456", "123456");
+
+        assertEquals(403, resp.getCode());
+        assertEquals("账号长度不能超过50", resp.getMessage());
+        verify(userMapper, never()).insert(any(User.class));
+    }
+
+    @Test
+    void register_whenPasswordTooLong_returns403() {
+        String longPwd = "a".repeat(51);
+
+        CustomResponse resp = service.register("user_a", longPwd, longPwd);
+
+        assertEquals(403, resp.getCode());
+        assertEquals("密码长度不能超过50", resp.getMessage());
+        verify(userMapper, never()).insert(any(User.class));
+    }
+
+    @Test
+    void updatePassword_whenNewPasswordBlank_returns500() {
+        CustomResponse resp = service.updatePassword("old", "  ");
+
+        assertEquals(500, resp.getCode());
+        assertEquals("新密码不能为空", resp.getMessage());
+    }
+
+    @Test
+    void updatePassword_whenNewPasswordTooLong_returns500() {
+        String longPwd = "a".repeat(51);
+
+        CustomResponse resp = service.updatePassword("old", longPwd);
+
+        assertEquals(500, resp.getCode());
+        assertEquals("新密码长度不能超过50", resp.getMessage());
+    }
+
+    @Test
+    void updatePassword_whenOldPasswordWrong_returns403() {
+        setLoginUser(new User());
+        when(authenticationProvider.authenticate(any())).thenThrow(new BadCredentialsException("bad"));
+
+        CustomResponse resp = service.updatePassword("wrong_old", "newpass");
+
+        assertEquals(403, resp.getCode());
+        assertEquals("旧密码不正确", resp.getMessage());
+    }
+
+    @Test
+    void updatePassword_whenSamePassword_returns500() {
+        User user = new User();
+        user.setId(10);
+        user.setUsername("user_a");
+        setLoginUser(user);
+        when(authenticationProvider.authenticate(any())).thenReturn(mock(Authentication.class));
+
+        CustomResponse resp = service.updatePassword("same", "same");
+
+        assertEquals(500, resp.getCode());
+        assertEquals("新密码不能与旧密码相同", resp.getMessage());
+    }
+
+    @Test
+    void updatePassword_whenValid_returns200() {
+        User user = new User();
+        user.setId(10);
+        user.setUsername("user_a");
+        setLoginUser(user);
+        when(authenticationProvider.authenticate(any())).thenReturn(mock(Authentication.class));
+        when(passwordEncoder.encode("newpass")).thenReturn("hashed");
+
+        CustomResponse resp = service.updatePassword("oldpass", "newpass");
+
+        assertEquals(200, resp.getCode());
+        assertEquals("密码修改成功，请重新登录", resp.getMessage());
+        verify(userMapper).update(any(), any(Wrapper.class));
+    }
+
+    @Test
+    void adminPersonalInfo_whenNotAdmin_returns403() {
+        when(currentUser.isAdmin()).thenReturn(false);
+
+        CustomResponse resp = service.adminPersonalInfo();
+
+        assertEquals(403, resp.getCode());
+        assertEquals("您不是管理员，无权访问", resp.getMessage());
+    }
+
+    @Test
+    void adminPersonalInfo_whenAdmin_returns200() {
+        when(currentUser.isAdmin()).thenReturn(true);
+        when(currentUser.getUserId()).thenReturn(10);
+        when(userService.getUserById(10)).thenReturn(new UserDTO());
+
+        CustomResponse resp = service.adminPersonalInfo();
+
+        assertEquals(200, resp.getCode());
+        assertEquals("OK", resp.getMessage());
+    }
+
+    private void setLoginUser(User user) {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getPrincipal()).thenReturn(new UserDetailsImpl(user));
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 }
