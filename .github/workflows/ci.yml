@@ -1,0 +1,25 @@
+# 测试门禁：单测 + MockMvc 集成测。失败则整条流水线停止，不打镜像。
+name: Test gate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend-test:
+    name: Backend unit + API tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Run tests (no MySQL)
+        run: |
+          chmod +x mvnw
+          ./mvnw -B test
