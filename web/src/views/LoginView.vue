@@ -36,6 +36,8 @@ async function onSubmit() {
     ElMessage.success(res.data.message || '登录成功')
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
     router.push(redirect && redirect.startsWith('/') ? redirect : '/')
+  } catch (err) {
+    ElMessage.error(err.response?.data?.message || '登录失败')
   } finally {
     loading.value = false
   }

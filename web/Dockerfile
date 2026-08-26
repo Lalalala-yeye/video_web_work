@@ -17,6 +17,7 @@ WORKDIR /usr/share/nginx/html
 
 #从构建产物复制dist打包后的静态文件
 COPY --from=builder /app/dist ./
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

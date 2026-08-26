@@ -55,8 +55,12 @@ video_web/
 │       ├── utils/auth.js    # 多账号登录态
 │       ├── router/
 │       └── views/           # 首页、播放、创作中心、管理后台等
+├── docker-compose.yml       # 前端 + 后端 + MySQL 三容器
+├── .env.example             # 容器环境变量模板
 ├── database/
-│   └── database.sql         # 全量建表（新库执行）
+│   ├── database.sql         # 建表（新库 / compose 首次自动执行）
+│   ├── migrate.sql          # 旧库增量迁移
+│   └── seed.sql             # 测试数据（compose 首次自动执行）
 ├── uploads/                 # 运行时上传目录（勿提交）
 ├── 交付文档/                 # 用户手册等交付材料
 └── 功能测试和完善.md         # 迭代需求与增量 SQL
@@ -66,16 +70,54 @@ video_web/
 
 ## 环境要求
 
-- **JDK 25**
-- **MySQL 8.x**
-- **Node.js** 20.19+ 或 22.12+（见 `web/package.json`）
 - **Git**
-
-后端使用项目自带 Maven Wrapper（`backend/mvnw.cmd`），无需单独安装 Maven。
+- **用 Docker 启动（推荐换机器 / 课设容器化）**：安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) 即可，不必本机装 JDK / Node / MySQL。
+- **本机开发**：JDK 25、MySQL 8.x、Node.js 20.19+ 或 22.12+（见 `web/package.json`）。后端用项目自带 Maven Wrapper（`backend/mvnw.cmd`）。
 
 ---
 
-## 本地启动
+## 用 Docker 启动（换机器按这里做）
+
+前端、后端、数据库各跑在独立容器里。数据库用官方 `mysql:8.0`；前后端用仓库里的 Dockerfile。首次会构建镜像，需要几分钟。
+
+```powershell
+git clone https://github.com/Lalalala-yeye/video_web_work.git
+cd video_web
+copy .env.example .env
+docker compose up --build -d
+```
+
+打开 http://localhost:8787  
+
+健康检查：http://localhost:8081/health  
+
+| 容器 | 宿主机端口 | 说明 |
+|------|------------|------|
+| web | 8787 | Nginx 静态页，`/api` 反代到后端 |
+| backend | 8081 | Spring Boot |
+| mysql | 3307 | 映射到容器 3306，避免和本机 MySQL 抢端口 |
+
+建表脚本 `database/database.sql` 与测试数据 `database/seed.sql` 仅在 **空数据卷第一次启动** 时自动执行。演示账号（密码均为 `123456`）：
+
+| 用户名 | 角色 |
+|--------|------|
+| `demo_admin` | 管理员 |
+| `demo_author` | 作者 |
+| `demo_user` | 观众 |
+
+本机已有早期数据库、缺列缺表时，手动执行 `database/migrate.sql`（compose 新库不必跑）。
+
+```powershell
+docker compose logs -f backend
+docker compose down          # 停容器，保留数据
+docker compose down -v       # 停容器并清空数据库（会丢演示数据）
+```
+
+变量名与 CI 相同，见 `.env.example`（`MYSQL_*`、`JWT_SECRET`）。不要把填好的 `.env` 提交进 Git。
+
+---
+
+## 本地启动（不容器化）
 
 ### 1. 克隆仓库
 
@@ -244,14 +286,15 @@ UPDATE users SET role = 2 WHERE username = '你的管理员账号';
 **可以提交：**
 
 - 源代码、`application.yml`、`application-local.example.yml`
-- `database/database.sql`、`功能测试和完善.md`
+- `database/database.sql`、`database/migrate.sql`、`database/seed.sql`
+- `docker-compose.yml`、`.env.example`、`功能测试和完善.md`
 
 **禁止提交：**
 
 - `application-local.yml`（含真实密码）
 - `node_modules/`、`backend/target/`
 - `uploads/`、大体积视频文件
-- `.env` 等本地密钥文件
+- `.env` 等本地密钥文件（提交 `.env.example` 即可）
 
 提交前：
 
