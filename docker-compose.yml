@@ -1,0 +1,57 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: doinb-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-test}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-doinb}
+    ports:
+      - "3307:3306"
+    volumes:
+      - doinb-mysql-data:/var/lib/mysql
+      - ./database/database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_PASSWORD:-test}", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend
+    image: doinb-backend:local
+    container_name: doinb-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ci
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-doinb}
+      MYSQL_USER: ${MYSQL_USER:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-test}
+      JWT_SECRET: ${JWT_SECRET:-compose-demo-secret-at-least-32-chars!!}
+      UPLOAD_PATH: /app/uploads
+    ports:
+      - "8081:8081"
+    volumes:
+      # 沿用本机已上传的视频/封面/头像，避免容器里只有空目录
+      - ./backend/uploads:/app/uploads
+
+  web:
+    build:
+      context: ./web
+    image: doinb-web:local
+    container_name: doinb-web
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8787:80"
+
+volumes:
+  doinb-mysql-data:

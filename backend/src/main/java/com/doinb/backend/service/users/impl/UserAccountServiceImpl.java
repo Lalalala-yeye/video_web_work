@@ -11,6 +11,8 @@ import com.doinb.backend.service.utils.CurrentUser;
 import com.doinb.backend.utils.JwtUtil;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -107,7 +109,11 @@ public class UserAccountServiceImpl implements UserAccountService {
         Authentication authenticate;
         try {
             authenticate = authenticationProvider.authenticate(authRequest);
+        } catch (UsernameNotFoundException e) {
+            return fail(403, "账号不存在");
         } catch (BadCredentialsException e) {
+            return fail(403, "账号或密码不正确");
+        } catch (AuthenticationException e) {
             return fail(403, "账号或密码不正确");
         }
         UserDetailsImpl loginUser = (UserDetailsImpl) authenticate.getPrincipal();
