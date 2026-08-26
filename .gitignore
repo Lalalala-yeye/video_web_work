@@ -17,6 +17,8 @@ application-local.yml
 uploads/
 *.mp4
 *.mov
+# 例外：E2E 测试用的固定小素材（200KB 假文件，仅用于上传接口测试）
+!web/e2e/fixtures/*.mp4
 
 # 系统
 .DS_Store

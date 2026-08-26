@@ -141,6 +141,15 @@ async function toggleVideoReaction(reaction) {
   const res = await reactVideo(videoId.value, next)
   if (res.data.code === 200) {
     reactions.value = res.data.data
+    if (next === 1) {
+      ElMessage.success('点赞成功')
+    } else if (next === -1) {
+      ElMessage.success('已点踩')
+    } else {
+      ElMessage.info('已取消')
+    }
+  } else {
+    ElMessage.error(res.data.message || '操作失败，请重试')
   }
 }
 
