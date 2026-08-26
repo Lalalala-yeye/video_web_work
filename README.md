@@ -117,6 +117,21 @@ docker compose down -v       # 停容器并清空数据库（会丢演示数据�
 
 ---
 
+## CI 测试门禁
+
+`.github/workflows/ci.yml`（workflow 名 **Test gate**）三层，一层不过后面不跑：
+
+| 顺序 | Job | 测什么 |
+|------|-----|--------|
+| 1 | Backend unit + API tests | JUnit 单测 + MockMvc，不启 MySQL |
+| 2 | Postman Newman | 真库 API 冒烟（15 条） |
+| 3 | Selenium E2E | 无头 Chrome 点页面：账号 / 互动 / 创作中心+直播 / 通知私信后台 |
+
+E2E 需要管理员种子账号 `demo_admin` / `123456`（`database/seed.sql`）。OBS 真推流不进 CI。
+
+
+---
+
 ## 本地启动（不容器化）
 
 ### 1. 克隆仓库
