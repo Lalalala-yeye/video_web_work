@@ -32,6 +32,15 @@ async function toggleReaction(reaction) {
   const res = await reactComment(props.id, next)
   if (res.data.code === 200) {
     emit('reaction-updated', props.id, res.data.data)
+    if (next === 1) {
+      ElMessage.success('评论已点赞')
+    } else if (next === -1) {
+      ElMessage.success('评论已点踩')
+    } else {
+      ElMessage.info('已取消')
+    }
+  } else {
+    ElMessage.error(res.data.message || '操作失败，请重试')
   }
 }
 
