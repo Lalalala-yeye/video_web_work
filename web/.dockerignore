@@ -1,0 +1,14 @@
+node_modules
+
+# 打包输出产物
+dist
+
+# git、编辑器配置
+.git
+.gitignore
+.vscode
+.idea
+
+#环境配置文件
+.env.local
+.env.*.local
