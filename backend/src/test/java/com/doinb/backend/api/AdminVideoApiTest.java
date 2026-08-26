@@ -150,6 +150,23 @@ class AdminVideoApiTest {
     }
 
     @Test
+    void approve_whenVideoMissing_returnsJson404() throws Exception {
+        CustomResponse body = new CustomResponse();
+        body.setCode(404);
+        body.setMessage("视频不存在");
+        when(adminVideoService.approve(2, 99, 99999)).thenReturn(body);
+
+        mockMvc.perform(post("/admin/video/approve")
+                        .param("videoId", "99999")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(404))
+                .andExpect(jsonPath("$.message").value("视频不存在"));
+
+        verify(adminVideoService).approve(2, 99, 99999);
+    }
+
+    @Test
     void reject_withAdminToken_forwardsVideoId() throws Exception {
         CustomResponse body = new CustomResponse();
         body.setMessage("已驳回");
