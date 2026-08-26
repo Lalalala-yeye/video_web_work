@@ -15,7 +15,11 @@ export async function createDriver() {
   if (process.env.E2E_HEADLESS === '1') {
     options.addArguments('--headless=new')
   }
-  options.addArguments('--window-size=1280,900', '--disable-gpu', '--no-sandbox')
+  // CI 容器 /dev/shm 很小，不加这条 Chrome 容易静默崩
+  options.addArguments('--window-size=1280,900', '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage')
+  if (process.env.CHROME_BIN) {
+    options.setChromeBinaryPath(process.env.CHROME_BIN)
+  }
   return new Builder().forBrowser('chrome').setChromeOptions(options).build()
 }
 
