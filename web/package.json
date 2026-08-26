@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "e2e": "node e2e/01-auth.js",
+    "e2e:auth": "node e2e/01-auth.js"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
