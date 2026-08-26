@@ -1,0 +1,6 @@
+target/
+uploads/
+application-local.yml
+*.log
+.git
+.gitignore
