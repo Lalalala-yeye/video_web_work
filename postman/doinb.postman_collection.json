@@ -1,0 +1,341 @@
+{
+  "info": {
+    "name": "doinb API CI",
+    "description": "真库冒烟：对应测试报告主成功/异常。CI 用 Newman 跑。新增请求请带 Tests 断言 $.code 或 HTTP status。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "username", "value": "" },
+    { "key": "password", "value": "123456" },
+    { "key": "token", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('username')) {",
+          "  pm.collectionVariables.set('username', 'ci_' + Date.now());",
+          "  pm.collectionVariables.set('password', '123456');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "H000 健康检查",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('H000 HTTP 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('H000 code=200', () => pm.expect(j.code).to.eql(200));",
+            "pm.test('H000 data', () => pm.expect(j.data).to.eql('doinb-backend ok'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "U001 注册-密码不一致",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('U001 code=403', () => pm.expect(j.code).to.eql(403));",
+            "pm.test('U001 message', () => pm.expect(j.message).to.eql('两次输入的密码不一致'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"123456\",\n  \"confirmedPassword\": \"654321\"\n}"
+        },
+        "url": "{{baseUrl}}/user/account/register"
+      }
+    },
+    {
+      "name": "U000 注册成功",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('U000 code=200', () => pm.expect(j.code).to.eql(200));",
+            "pm.test('U000 message', () => pm.expect(j.message).to.include('注册成功'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"confirmedPassword\": \"{{password}}\"\n}"
+        },
+        "url": "{{baseUrl}}/user/account/register"
+      }
+    },
+    {
+      "name": "U002 注册-账号已存在",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('U002 code=403', () => pm.expect(j.code).to.eql(403));",
+            "pm.test('U002 message', () => pm.expect(j.message).to.eql('账号已存在'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"confirmedPassword\": \"{{password}}\"\n}"
+        },
+        "url": "{{baseUrl}}/user/account/register"
+      }
+    },
+    {
+      "name": "U011 登录-密码错误",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('U011 code=403', () => pm.expect(j.code).to.eql(403));",
+            "pm.test('U011 message', () => pm.expect(j.message).to.eql('账号或密码不正确'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"wrong_pass\"\n}"
+        },
+        "url": "{{baseUrl}}/user/account/login"
+      }
+    },
+    {
+      "name": "U010 登录成功",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('U010 code=200', () => pm.expect(j.code).to.eql(200));",
+            "pm.test('U010 含 token', () => pm.expect(j.data.token).to.be.a('string'));",
+            "if (j.data && j.data.token) { pm.collectionVariables.set('token', j.data.token); }"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": "{{baseUrl}}/user/account/login"
+      }
+    },
+    {
+      "name": "U031 未登录获取信息",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('U031 HTTP 403', () => pm.response.to.have.status(403));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/user/personal/info"
+      }
+    },
+    {
+      "name": "U030 获取个人信息",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('U030 HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('U030 code=200', () => pm.expect(j.code).to.eql(200));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/user/personal/info"
+      }
+    },
+    {
+      "name": "U061 用户不存在",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('U061 code=404', () => pm.expect(j.code).to.eql(404));",
+            "pm.test('U061 message', () => pm.expect(j.message).to.eql('用户不存在'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/user/info/get-one?uid=99999"
+      }
+    },
+    {
+      "name": "S001 搜索无结果",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('S001 code=200', () => pm.expect(j.code).to.eql(200));",
+            "pm.test('S001 videos empty', () => pm.expect(j.data.videos).to.eql([]));",
+            "pm.test('S001 users empty', () => pm.expect(j.data.users).to.eql([]));",
+            "pm.test('S001 liveRooms empty', () => pm.expect(j.data.liveRooms).to.eql([]));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/search?keyword=xyznotexist123&videoLimit=10&liveLimit=10&userLimit=10"
+      }
+    },
+    {
+      "name": "V000 视频列表",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('V000 code=200', () => pm.expect(j.code).to.eql(200));",
+            "pm.test('V000 有分页结构', () => {",
+            "  pm.expect(j.data).to.have.property('records');",
+            "  pm.expect(j.data).to.have.property('total');",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/video/list?page=1&size=12"
+      }
+    },
+    {
+      "name": "V011 视频不存在",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('V011 code=404', () => pm.expect(j.code).to.eql(404));",
+            "pm.test('V011 message', () => pm.expect(j.message).to.eql('视频不存在或未发布'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/video/getone?id=99999"
+      }
+    },
+    {
+      "name": "C001 未登录发评论",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('C001 HTTP 403', () => pm.response.to.have.status(403));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "targetId", "value": "12" },
+            { "key": "targetType", "value": "1" },
+            { "key": "content", "value": "测试评论" }
+          ]
+        },
+        "url": "{{baseUrl}}/comment/add"
+      }
+    },
+    {
+      "name": "C002 target 不存在",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('C002 HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('C002 code=404', () => pm.expect(j.code).to.eql(404));",
+            "pm.test('C002 message', () => pm.expect(j.message).to.eql('视频不存在'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "targetId", "value": "99999" },
+            { "key": "targetType", "value": "1" },
+            { "key": "content", "value": "xx" }
+          ]
+        },
+        "url": "{{baseUrl}}/comment/add"
+      }
+    },
+    {
+      "name": "U040 登出",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const j = pm.response.json();",
+            "pm.test('U040 code=200', () => pm.expect(j.code).to.eql(200));",
+            "pm.test('U040 message', () => pm.expect(j.message).to.eql('已退出登录'));"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/user/account/logout"
+      }
+    }
+  ]
+}
