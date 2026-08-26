@@ -20,7 +20,14 @@ npx --yes newman@6 run postman/doinb.postman_collection.json -e postman/doinb.ci
 
 ## CI
 
-`.github/workflows/ci.yml` 在单元+MockMvc 通过后：起 MySQL → 建表 → 启动后端（`SPRING_PROFILES_ACTIVE=ci`，库账号来自环境变量 `MYSQL_*`）→ Newman。失败则整条流水线红。
+`.github/workflows/ci.yml` 测试门禁顺序：
+
+1. 后端单测 + MockMvc（不启 MySQL）
+2. 起 MySQL → 建表 → 启动后端 → Newman
+3. 再起一套栈 + 无头 Chrome，跑 `web` 里 Selenium E2E（`npm run e2e:ci`）
+
+任一层失败则整条流水线红，后面不打镜像。
+
 
 后端镜像 / compose / K8s 与 CI **同一套变量名**，不要再用 `SPRING_DATASOURCE_*`。完整表见 `backend/src/main/resources/application-ci.yml` 文件头注释。
 

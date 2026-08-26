@@ -84,3 +84,26 @@ npm run e2e:msg-admin
 
 覆盖：发私信、通知「发来私信」、普通用户进 `/admin` 被拦、管理员概览 / 待审通过 / 举报复审页、点赞后通知「赞了你的视频」。
 
+## CI（GitHub Actions）
+
+门禁顺序：后端单测 + MockMvc → Postman/Newman → **本目录 Selenium**。
+
+E2E job 会自己起 MySQL（建表 + `seed.sql`）、后端 8081、Vite 8787、无头 Chrome，然后：
+
+```text
+npm run e2e:ci
+```
+
+即依次跑 01 / 03 / 04 / 05。失败时把 `e2e/artifacts/` 截图上传为 artifact。
+
+本机对齐 CI（三个服务都已开）：
+
+```powershell
+cd web
+$env:E2E_HEADLESS="1"
+npm run e2e:ci
+```
+
+OBS 真推流、SRS 播放不在 CI 里测。
+
+
