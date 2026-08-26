@@ -3,6 +3,8 @@ package com.doinb.backend.api;
 import com.doinb.backend.controller.CommentController;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.pojo.CustomResponse;
+import com.doinb.backend.pojo.dto.CommentDTO;
+import com.doinb.backend.pojo.dto.PageResult;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.service.comment.CommentService;
 import com.doinb.backend.service.users.UserService;
@@ -14,7 +16,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,5 +73,40 @@ class CommentApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("评论成功"));
+    }
+
+    @Test
+    void list_withoutToken_returnsDefaultPage() throws Exception {
+        when(commentService.listByTarget(12, 1, 1, 20, null))
+                .thenReturn(new PageResult<CommentDTO>(0, 1, 20, List.of()));
+
+        mockMvc.perform(get("/comment/list")
+                        .param("targetId", "12")
+                        .param("targetType", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.page").value(1))
+                .andExpect(jsonPath("$.data.size").value(20))
+                .andExpect(jsonPath("$.data.records").isEmpty());
+
+        verify(commentService).listByTarget(12, 1, 1, 20, null);
+    }
+
+    @Test
+    void list_withCustomPaging_serializesMultipleRecords() throws Exception {
+        when(commentService.listByTarget(12, 1, 2, 2, null))
+                .thenReturn(new PageResult<CommentDTO>(5, 2, 2, List.of(new CommentDTO(), new CommentDTO())));
+
+        mockMvc.perform(get("/comment/list")
+                        .param("targetId", "12")
+                        .param("targetType", "1")
+                        .param("page", "2")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(5))
+                .andExpect(jsonPath("$.data.page").value(2))
+                .andExpect(jsonPath("$.data.records.length()").value(2));
+
+        verify(commentService).listByTarget(12, 1, 2, 2, null);
     }
 }
