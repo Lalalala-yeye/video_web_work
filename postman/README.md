@@ -1,0 +1,32 @@
+# Postman / Newman（真库 API 冒烟）
+
+Collection：`doinb.postman_collection.json`  
+环境：`doinb.ci.postman_environment.json`（`baseUrl=http://127.0.0.1:8081`）
+
+覆盖报告用例：H000、U000/U001/U002、U010/U011、U030/U031/U040、U061、S001、V000/V011、C001/C002。  
+每条都有 Tests 断言。不要把没有断言的请求加进 CI。
+
+## 本地
+
+1. MySQL 建库并执行 `database/database.sql`
+2. 后端用能连上该库的配置启动（端口 8081）
+3. 安装 Newman 后执行：
+
+```bash
+npx --yes newman@6 run postman/doinb.postman_collection.json -e postman/doinb.ci.postman_environment.json --bail
+```
+
+也可在 Postman 里 Import 这两个 JSON 后手工跑。注册用户名每次自动生成 `ci_<时间戳>`，可重复跑。
+
+## CI
+
+`.github/workflows/ci.yml` 在单元+MockMvc 通过后：起 MySQL → 建表 → 启动后端（`SPRING_PROFILES_ACTIVE=ci`，库账号来自环境变量 `MYSQL_*`）→ Newman。失败则整条流水线红。
+
+本机若用同一套变量（不要把真实密码提交进仓库）：
+
+```bash
+export SPRING_PROFILES_ACTIVE=ci
+export MYSQL_HOST=127.0.0.1 MYSQL_PORT=3306 MYSQL_DATABASE=doinb
+export MYSQL_USER=root MYSQL_PASSWORD=你的密码
+export JWT_SECRET=至少32个字符的随机串
+```

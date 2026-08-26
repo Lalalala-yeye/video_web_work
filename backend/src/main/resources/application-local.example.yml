@@ -10,3 +10,7 @@ jwt:
 
 # 直播无需在此配置 IP；观众/主播用同一网站地址访问即可。
 # 局域网开播请用电脑 IP 打开网站（如 http://10.x.x.x:8787），并执行 deploy\srs-docker.ps1。
+#
+# 也可用环境变量代替本文件（容器 / CI 推荐）：
+#   MYSQL_HOST MYSQL_PORT MYSQL_DATABASE MYSQL_USER MYSQL_PASSWORD JWT_SECRET
+#   SPRING_PROFILES_ACTIVE=ci
