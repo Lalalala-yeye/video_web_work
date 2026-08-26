@@ -57,3 +57,30 @@ OK  未登录访问后台会跳转登录
 
 登录复用 `web/e2e/helpers.js` 里的 `login(driver, user, pass)`。  
 不要改 `helpers.js`（有需要开 PR 给人 1）。各写各的：`02-browse.js` … `05-msg-admin.js`。
+
+## 人 4：创作中心和直播
+
+```powershell
+cd web
+npm run e2e:studio
+```
+
+覆盖：未登录进创作中心、上传校验、私密上传、修改视频、创建直播间、屏幕分享「功能未完善」、OBS 开播（**不**要求本机 OBS 真推流）、公开直播列表与进入直播间、停播。
+
+## 人 5：通知 + 私信 + 后台
+
+```powershell
+cd web
+npm run e2e:msg-admin
+```
+
+需要库里有管理员账号（seed 默认 `demo_admin` / `123456`，role=2）。可覆盖：
+
+```powershell
+$env:E2E_ADMIN_USER="demo_admin"
+$env:E2E_ADMIN_PASSWORD="123456"
+npm run e2e:msg-admin
+```
+
+覆盖：发私信、通知「发来私信」、普通用户进 `/admin` 被拦、管理员概览 / 待审通过 / 举报复审页、点赞后通知「赞了你的视频」。
+
