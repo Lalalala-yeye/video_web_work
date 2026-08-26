@@ -15,6 +15,7 @@ import com.doinb.backend.service.notification.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -141,7 +142,7 @@ class ReactionServiceImplTest {
 
         assertEquals(200, resp.getCode());
         verify(videoReactionMapper, never()).insert(any(VideoReaction.class));
-        verify(videoReactionMapper, never()).deleteById(any());
+        verify(videoReactionMapper, never()).deleteById(any(Serializable.class));
     }
 
     @Test
