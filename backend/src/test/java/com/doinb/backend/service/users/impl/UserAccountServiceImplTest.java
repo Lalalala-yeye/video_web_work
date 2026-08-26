@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -113,6 +114,17 @@ class UserAccountServiceImplTest {
 
         assertEquals(403, resp.getCode());
         assertEquals("账号或密码不正确", resp.getMessage());
+    }
+
+    @Test
+    void login_whenUserMissing_returns403() {
+        when(authenticationProvider.authenticate(any()))
+                .thenThrow(new UsernameNotFoundException("用户不存在"));
+
+        CustomResponse resp = service.login("no_such_user", "123456");
+
+        assertEquals(403, resp.getCode());
+        assertEquals("账号不存在", resp.getMessage());
     }
 
     @Test

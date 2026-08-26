@@ -16,10 +16,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /build/target/*.jar app.jar
-# 敏感配置一律运行期注入（-e / K8s Secret），镜像内不落任何密钥
-ENV SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/doinb?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai \
-    SPRING_DATASOURCE_USERNAME=root \
-    SPRING_DATASOURCE_PASSWORD=must-set-at-run \
+# 与 CI / compose 同一套变量（见 application-ci.yml）。密码与 JWT 必须运行期覆盖。
+# compose 会把 MYSQL_HOST 设为 mysql；单独 docker run 时默认连宿主机 MySQL。
+ENV SPRING_PROFILES_ACTIVE=ci \
+    MYSQL_HOST=host.docker.internal \
+    MYSQL_PORT=3306 \
+    MYSQL_DATABASE=doinb \
+    MYSQL_USER=root \
+    MYSQL_PASSWORD=must-set-at-run \
     JWT_SECRET=must-set-at-run-at-least-32-chars!!! \
     UPLOAD_PATH=/app/uploads
 # 视频与头像的上传目录挂卷持久化

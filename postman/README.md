@@ -22,6 +22,8 @@ npx --yes newman@6 run postman/doinb.postman_collection.json -e postman/doinb.ci
 
 `.github/workflows/ci.yml` 在单元+MockMvc 通过后：起 MySQL → 建表 → 启动后端（`SPRING_PROFILES_ACTIVE=ci`，库账号来自环境变量 `MYSQL_*`）→ Newman。失败则整条流水线红。
 
+后端镜像 / compose / K8s 与 CI **同一套变量名**，不要再用 `SPRING_DATASOURCE_*`。完整表见 `backend/src/main/resources/application-ci.yml` 文件头注释。
+
 本机若用同一套变量（不要把真实密码提交进仓库）：
 
 ```bash
