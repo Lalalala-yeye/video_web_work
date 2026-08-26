@@ -1,0 +1,209 @@
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage[UTF8,fontset=none]{ctex}
+\setCJKmainfont{Microsoft YaHei}
+\setCJKsansfont{Microsoft YaHei}
+\setmainfont{Arial}
+\setsansfont{Arial}
+\setmonofont{Consolas}
+\setCJKmonofont{Microsoft YaHei}
+\usetikzlibrary{arrows.meta,backgrounds,fit,positioning}
+
+\definecolor{ink}{HTML}{1F2937}
+\definecolor{muted}{HTML}{64748B}
+\definecolor{blue}{HTML}{2563EB}
+\definecolor{bluefill}{HTML}{EFF6FF}
+\definecolor{greenfill}{HTML}{F0FDF4}
+\definecolor{orangefill}{HTML}{FFF7ED}
+\definecolor{purplefill}{HTML}{FAF5FF}
+\definecolor{groupborder}{HTML}{CBD5E1}
+
+\tikzset{
+  font=\sffamily,
+  entity/.style={draw=ink, rounded corners=2pt, fill=white,
+    minimum width=42mm, text width=38mm, align=left,
+    inner sep=3.5mm, line width=.75pt},
+  userentity/.style={entity, fill=bluefill},
+  contententity/.style={entity, fill=greenfill},
+  relationentity/.style={entity, fill=orangefill},
+  messageentity/.style={entity, fill=purplefill},
+  relation/.style={draw=blue, line width=.85pt},
+  logical/.style={draw=muted, dashed, line width=.8pt},
+  cardinality/.style={font=\scriptsize\bfseries, text=ink, fill=white,
+    inner sep=1pt},
+  role/.style={font=\scriptsize, text=muted, fill=white, inner sep=1pt},
+  group/.style={draw=groupborder, rounded corners=5pt, line width=.8pt,
+    inner sep=4mm},
+  grouptitle/.style={font=\bfseries\small, text=ink, fill=white,
+    inner sep=1.5pt}
+}
+
+\newcommand{\field}[2]{\textbf{#1}\;\texttt{#2}\\}
+\newcommand{\normalfield}[1]{\texttt{#1}\\}
+
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+  \node[font=\bfseries\LARGE, text=ink] (title) at (10.5,14.2)
+    {doinb 视频平台——数据库 ER 图};
+  \node[below=1mm of title, font=\small, text=muted]
+    {PK 表示主键，FK 表示外键；实线表示外键关系，虚线表示由 target\_type 决定的逻辑关联};
+
+  % 用户域
+  \node[userentity] (users) at (0,1) {
+    \textbf{users（用户）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \normalfield{username, password}
+    \normalfield{nickname, avatar, bio}
+    \normalfield{role}
+  };
+
+  \node[relationentity] (subscriptions) at (0,8.2) {
+    \textbf{subscriptions（关注关系）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{follower\_id}
+    \field{FK}{target\_id}
+    \normalfield{create\_time}
+  };
+
+  % 内容域
+  \node[contententity] (videos) at (7,6.4) {
+    \textbf{videos（视频）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{author\_id}
+    \normalfield{title, description}
+    \normalfield{cover\_url, video\_url}
+    \normalfield{status, report\_count}
+  };
+
+  \node[contententity] (live) at (7,0) {
+    \textbf{live\_rooms（直播间）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{anchor\_id}
+    \normalfield{title, stream\_key}
+    \normalfield{is\_live}
+    \normalfield{session\_start, ended\_at}
+  };
+
+  \node[contententity] (comments) at (14,1.2) {
+    \textbf{comments（评论）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{user\_id}
+    \normalfield{target\_id}
+    \normalfield{target\_type}
+    \normalfield{content, create\_time}
+  };
+
+  % 视频与评论关联域
+  \node[relationentity] (history) at (14,9.2) {
+    \textbf{play\_history（播放历史）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK/FK}{user\_id}
+    \field{PK/FK}{video\_id}
+    \normalfield{progress, update\_time}
+  };
+
+  \node[relationentity] (videoReactions) at (21,9.2) {
+    \textbf{video\_reactions（视频互动）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{user\_id}
+    \field{FK}{video\_id}
+    \normalfield{reaction}
+  };
+
+  \node[relationentity] (reports) at (21,4.0) {
+    \textbf{video\_reports（视频举报）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{video\_id}
+    \field{FK}{reporter\_id}
+    \normalfield{reason, create\_time}
+  };
+
+  \node[relationentity] (commentReactions) at (21,-1.6) {
+    \textbf{comment\_reactions（评论互动）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{user\_id}
+    \field{FK}{comment\_id}
+    \normalfield{reaction}
+  };
+
+  % 消息域
+  \node[messageentity] (notifications) at (0,-7.0) {
+    \textbf{notifications（通知）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{user\_id}
+    \field{FK}{actor\_id}
+    \normalfield{type, ref\_id, preview}
+    \normalfield{is\_read, create\_time}
+  };
+
+  \node[messageentity] (rooms) at (7,-7.0) {
+    \textbf{dm\_rooms（私信会话）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{user\_a}
+    \field{FK}{user\_b}
+    \normalfield{update\_time}
+  };
+
+  \node[messageentity] (messages) at (14,-7.0) {
+    \textbf{dm\_messages（私信消息）}\\[-1mm]\rule{38mm}{.45pt}\\
+    \field{PK}{id}
+    \field{FK}{room\_id}
+    \field{FK}{sender\_id}
+    \normalfield{content, create\_time}
+  };
+
+  % 关系与基数
+  \draw[relation] (users.north west) -- (subscriptions.south west)
+    node[cardinality,pos=.08,left]{1} node[cardinality,pos=.92,left]{N}
+    node[role,pos=.52,left]{关注者};
+  \draw[relation] (users.north east) -- (subscriptions.south east)
+    node[cardinality,pos=.08,right]{1} node[cardinality,pos=.92,right]{N}
+    node[role,pos=.52,right]{被关注者};
+
+  \draw[relation] (users.north east) -- (videos.west)
+    node[cardinality,pos=.08,above]{1} node[cardinality,pos=.90,above]{N};
+  \draw[relation] (users.east) -- (live.west)
+    node[cardinality,pos=.08,below]{1} node[cardinality,pos=.90,below]{N};
+  \draw[relation] (users.south east) -- ++(.5,-2.0) -- ++(9.5,0) -| (comments.south west)
+    node[cardinality,pos=.05,above]{1} node[cardinality,pos=.94,above]{N};
+
+  \draw[relation] (videos.north east) -- ++(.5,.5) |- (history.west)
+    node[cardinality,pos=.05,above]{1} node[cardinality,pos=.94,above]{N};
+  \draw[relation] (users.north west) -- ++(-.5,8.2) -| (history.north)
+    node[cardinality,pos=.03,left]{1} node[cardinality,pos=.97,right]{N};
+  \draw[relation] (videos.north) -- ++(0,3.2) -| (videoReactions.north)
+    node[cardinality,pos=.03,left]{1} node[cardinality,pos=.97,right]{N};
+  \draw[relation] (users.north west) -- ++(-1.0,8.8) -| (videoReactions.north)
+    node[cardinality,pos=.03,left]{1} node[cardinality,pos=.97,right]{N};
+
+  \draw[relation] (videos.east) -- (reports.west)
+    node[cardinality,pos=.08,above]{1} node[cardinality,pos=.92,above]{N};
+  \draw[relation] (users.north west) -- ++(-1.5,9.4) -- ++(28.0,0) |- (reports.east)
+    node[cardinality,pos=.03,below]{1} node[cardinality,pos=.97,right]{N};
+
+  \draw[relation] (comments.east) -- (commentReactions.west)
+    node[cardinality,pos=.08,above]{1} node[cardinality,pos=.92,above]{N};
+  \draw[relation] (users.south west) -- ++(-.5,-9.0) -- ++(23.5,0) |- (commentReactions.south)
+    node[cardinality,pos=.03,left]{1} node[cardinality,pos=.97,right]{N};
+
+  \draw[logical] (videos.south east) -- (comments.north west)
+    node[role,pos=.52,above,sloped]{视频评论};
+  \draw[logical] (live.north east) -- (comments.south west)
+    node[role,pos=.52,below,sloped]{直播评论};
+
+  \draw[relation] (users.south west) -- (notifications.north west)
+    node[cardinality,pos=.08,left]{1} node[cardinality,pos=.92,left]{N}
+    node[role,pos=.50,left]{接收者};
+  \draw[relation] (users.south east) -- (notifications.north east)
+    node[cardinality,pos=.08,right]{1} node[cardinality,pos=.92,right]{N}
+    node[role,pos=.50,right]{触发者};
+  \draw[relation] (users.south east) -- (rooms.north west)
+    node[cardinality,pos=.03,left]{1} node[cardinality,pos=.97,right]{N}
+    node[role,pos=.74,above]{会话双方};
+  \draw[relation] (rooms.east) -- (messages.west)
+    node[cardinality,pos=.08,above]{1} node[cardinality,pos=.92,above]{N};
+  \draw[relation] (users.south west) -- ++(-1.0,-9.8) -| (messages.south)
+    node[cardinality,pos=.03,left]{1} node[cardinality,pos=.97,right]{N}
+    node[role,pos=.78,below]{发送者};
+
+\end{tikzpicture}
+\end{document}

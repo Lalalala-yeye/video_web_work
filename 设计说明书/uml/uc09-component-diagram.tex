@@ -1,0 +1,147 @@
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage[UTF8]{ctex}
+\usetikzlibrary{arrows.meta,backgrounds,fit,positioning,shadows.blur,shapes.geometric}
+
+\definecolor{ink}{HTML}{1F2937}
+\definecolor{muted}{HTML}{5B6472}
+\definecolor{lineblue}{HTML}{2563EB}
+\definecolor{frontendfill}{HTML}{EFF6FF}
+\definecolor{backendfill}{HTML}{F0FDF4}
+\definecolor{datafill}{HTML}{FFF7ED}
+\definecolor{actorfill}{HTML}{F8FAFC}
+\definecolor{groupborder}{HTML}{CBD5E1}
+
+\tikzset{
+  font=\sffamily,
+  >={Latex[length=3mm,width=2mm]},
+  actor/.style={
+    draw=ink, rounded corners=2pt, fill=actorfill,
+    minimum width=28mm, minimum height=13mm,
+    align=center, line width=.8pt, font=\bfseries\sffamily
+  },
+  component/.style={
+    draw=ink, rounded corners=2pt, fill=white,
+    minimum width=45mm, minimum height=18mm,
+    text width=41mm, align=center, inner sep=4pt,
+    line width=.8pt, blur shadow={shadow opacity=.10}
+  },
+  datastore/.style={
+    cylinder, shape border rotate=90, aspect=.27,
+    draw=ink, fill=white, minimum width=39mm, minimum height=18mm,
+    align=center, line width=.8pt
+  },
+  dependency/.style={-Latex, draw=muted, line width=.8pt},
+  request/.style={-Latex, draw=lineblue, line width=1.1pt},
+  labeltext/.style={font=\scriptsize\sffamily, fill=white, inner sep=1.5pt, text=muted},
+  group/.style={draw=groupborder, rounded corners=5pt, line width=.8pt, inner sep=7mm},
+  grouptitle/.style={font=\bfseries\small\sffamily, text=ink, fill=white, inner sep=2pt},
+  note/.style={draw=groupborder, rounded corners=2pt, fill=actorfill,
+    text width=202mm, align=left, inner sep=5pt, font=\small\sffamily, text=ink}
+}
+
+% 在组件框右上角绘制 UML component 标识。
+\newcommand{\componentglyph}[1]{%
+  \begin{scope}[shift={(#1.north east)},xshift=-2.5mm,yshift=-1.5mm,draw=ink,line width=.55pt]
+    \draw (-3mm,-1.7mm) rectangle (0,1.7mm);
+    \draw (-4.2mm,0.6mm) rectangle (-2.5mm,1.55mm);
+    \draw (-4.2mm,-1.55mm) rectangle (-2.5mm,-0.6mm);
+  \end{scope}%
+}
+
+\begin{document}
+\begin{tikzpicture}[node distance=8mm and 12mm]
+
+  \node[font=\bfseries\LARGE\sffamily, text=ink] (title)
+    {UC09 举报与管理员复审——UML 组件图};
+  \node[below=1.5mm of title, font=\small\sffamily, text=muted] (subtitle)
+    {展示举报提交、复审查询以及恢复公开／转为私密／删除处置所依赖的系统组件};
+
+  % 参与者
+  \node[actor, below left=17mm and 92mm of subtitle] (reporter) {注册用户\\（举报人）};
+  \node[actor, below=30mm of reporter] (admin) {管理员\\（role=2）};
+
+  % 前端组件
+  \node[component, right=16mm of reporter] (videoView)
+    {\textbf{VideoDetailView}\\\footnotesize 视频详情与举报入口};
+  \node[component, right=16mm of admin, yshift=9mm] (reportView)
+    {\textbf{AdminReportView}\\\footnotesize 举报复审列表};
+  \node[component, below=6mm of reportView] (previewView)
+    {\textbf{\footnotesize AdminVideoPreviewView}\\\footnotesize 视频预览与处置};
+  \node[component, right=13mm of reportView, yshift=10mm] (axios)
+    {\textbf{request.js / Axios}\\\footnotesize JWT 与统一响应处理};
+
+  % 后端组件
+  \node[component, right=15mm of axios, yshift=12mm] (security)
+    {\textbf{\footnotesize SecurityConfig + JWT Filter}\\\footnotesize 身份认证与访问控制};
+  \node[component, right=12mm of security, yshift=9mm] (videoController)
+    {\textbf{VideoController}\\\footnotesize POST /video/report};
+  \node[component, below=10mm of videoController] (adminController)
+    {\textbf{\footnotesize AdminVideoController}\\\footnotesize /admin/video/*};
+  \node[component, right=12mm of videoController] (videoService)
+    {\textbf{VideoService}\\\footnotesize 举报校验、计数与状态流转};
+  \node[component, below=10mm of videoService] (adminService)
+    {\textbf{\footnotesize AdminVideoService}\\\footnotesize 查询、通过、驳回与删除};
+  \node[component, below=8mm of adminService] (notificationService)
+    {\textbf{\footnotesize NotificationService}\\\footnotesize 生成处置结果通知};
+
+  % 数据访问与基础设施组件
+  \node[component, right=12mm of videoService, yshift=-9mm] (mapperLayer)
+    {\textbf{MyBatis-Plus Mapper 层}\\\footnotesize VideoReportMapper · VideoMapper};
+  \node[datastore, right=13mm of mapperLayer] (mysql)
+    {\textbf{MySQL 8}\\\footnotesize video\_reports / videos\\notifications};
+  \node[component, below=13mm of mysql] (uploads)
+    {\textbf{本地 uploads/}\\\footnotesize 视频与封面文件};
+
+  % 业务请求与组件依赖
+  \draw[request] (reporter) -- node[labeltext,above]{提交举报} (videoView);
+  \draw[request] (admin) -- node[labeltext,above]{进入复审} (reportView);
+  \draw[request] (admin.east) to[out=0,in=180] node[labeltext,below]{预览／处置} (previewView.west);
+  \draw[request] (videoView) -- node[labeltext,above]{POST /video/report} (axios);
+  \draw[request] (reportView) -- (axios);
+  \draw[request] (previewView.east) to[out=0,in=-120] (axios.south);
+  \draw[request] (axios) -- node[labeltext,above]{HTTP + JWT} (security);
+
+  \draw[request] (security) -- node[labeltext,above]{举报请求} (videoController);
+  \draw[request] (security.south) to[out=-90,in=180]
+    node[labeltext,below]{管理员接口} (adminController.west);
+  \draw[dependency] (videoController) -- node[labeltext,above]{调用} (videoService);
+  \draw[dependency] (adminController) -- node[labeltext,above]{调用} (adminService);
+
+  \draw[dependency] (videoService.east) to[out=0,in=150]
+    node[labeltext,above]{新增举报／更新状态} (mapperLayer.north west);
+  \draw[dependency] (adminService.east) to[out=0,in=-150]
+    node[labeltext,below]{查询明细／执行处置} (mapperLayer.south west);
+  \draw[dependency] (adminService.south) -- node[labeltext,right]{处置通知} (notificationService.north);
+
+  \draw[dependency] (mapperLayer) -- node[labeltext,above]{SQL} (mysql);
+  \draw[dependency] (notificationService.east) to[out=0,in=-145] (mysql.south west);
+  \draw[dependency] (adminService.south east) to[out=-35,in=180]
+    node[labeltext,below]{删除媒体文件} (uploads.west);
+
+  % UML component glyphs
+  \foreach \n in {videoView,reportView,previewView,axios,security,videoController,
+                   adminController,videoService,adminService,notificationService,
+                   mapperLayer,uploads}{\componentglyph{\n}}
+
+  % 分层边界放到背景，避免遮盖组件。
+  \begin{scope}[on background layer]
+    \node[group, fill=frontendfill, fit=(videoView)(reportView)(previewView)(axios)] (frontendGroup) {};
+    \node[group, fill=backendfill, fit=(security)(videoController)(adminController)
+      (videoService)(adminService)(notificationService)] (backendGroup) {};
+    \node[group, fill=datafill, fit=(mapperLayer)(mysql)(uploads)] (dataGroup) {};
+  \end{scope}
+  \node[grouptitle, anchor=south west] at ([xshift=2mm,yshift=1mm]frontendGroup.north west)
+    {Vue 3 前端};
+  \node[grouptitle, anchor=south west] at ([xshift=2mm,yshift=1mm]backendGroup.north west)
+    {Spring Boot 后端};
+  \node[grouptitle, anchor=south west] at ([xshift=2mm,yshift=1mm]dataGroup.north west)
+    {数据与文件基础设施};
+
+  \node[note, text width=365mm, below=12mm of previewView, anchor=north west] (stateNote) at (reporter.south west |- previewView.south) {
+    \textbf{核心状态规则：}\quad
+    已发布（status=1）在举报数达到阈值后进入举报复审（status=2）；管理员可恢复公开（status=1）、
+    转为私密（status=3）或删除视频记录及其媒体文件。所有管理接口必须通过 JWT 与 role=2 校验。
+  };
+
+\end{tikzpicture}
+\end{document}
