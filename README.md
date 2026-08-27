@@ -62,6 +62,7 @@ video_web/
 │   ├── migrate.sql          # 旧库增量迁移
 │   └── seed.sql             # 测试数据（compose 首次自动执行）
 ├── uploads/                 # 运行时上传目录（勿提交）
+├── deploy/k8s/              # Kubernetes 清单、部署验证与滚动更新脚本
 ├── 交付文档/                 # 用户手册等交付材料
 └── 功能测试和完善.md         # 迭代需求与增量 SQL
 ```
@@ -142,12 +143,25 @@ ghcr.io/<GitHub用户名>/doinb-web:<sha>
 本仓库示例（把 tag 换成 Actions 摘要或 `git rev-parse --short=7 HEAD`）：
 
 ```powershell
-docker pull ghcr.io/lalalala-yeye/doinb-backend:6fd3943
-docker pull ghcr.io/lalalala-yeye/doinb-web:6fd3943
+docker pull ghcr.io/lalalala-yeye/doinb-backend:cde7310
+docker pull ghcr.io/lalalala-yeye/doinb-web:cde7310
 ```
 
 私有包需先登录：`echo $env:GITHUB_TOKEN | docker login ghcr.io -u 你的用户名 --password-stdin`。  
 仓库 → **Packages** 里若包是 private，把 Visibility 改成 Public 后别人才能免登录 pull。镜像名必须全小写。
+
+---
+
+## Kubernetes 部署（CD-02）
+
+仓库已提供 MySQL、backend、web 的 Deployment/Service、健康探针和滚动更新验证脚本，默认部署 CD-01 生成的固定版本镜像：
+
+```text
+ghcr.io/lalalala-yeye/doinb-backend:cde7310
+ghcr.io/lalalala-yeye/doinb-web:cde7310
+```
+
+密钥不会写入清单，需要在部署时创建 Kubernetes Secret。完整的 namespace 创建、密钥注入、数据库初始化、页面访问和滚动更新步骤见 [`deploy/k8s/README.md`](deploy/k8s/README.md)，本地集群的实际验收结果与截图见 [`deploy/k8s/EVIDENCE.md`](deploy/k8s/EVIDENCE.md)。
 
 
 ---
