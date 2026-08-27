@@ -154,7 +154,9 @@ docker pull ghcr.io/lalalala-yeye/doinb-web:cde7310
 
 ## Kubernetes 部署（CD-02）
 
-仓库已提供 MySQL、backend、web 的 Deployment/Service、健康探针和滚动更新验证脚本，默认部署 CD-01 生成的固定版本镜像：
+GitHub Actions 的 **Test gate** 在打完镜像后会跑 **Deploy kind + health (CD-02)**：在 runner 上起 kind 集群，部署本次 push 的 SHA 镜像（MySQL 8 + backend + web），并从集群内检查 backend `/health`、web `/` 和 `/api/health`。失败则整个 workflow 失败。
+
+本地集群仍可用下面的清单和脚本。仓库已提供 MySQL、backend、web 的 Deployment/Service、健康探针和滚动更新验证脚本，默认部署 CD-01 生成的固定版本镜像：
 
 ```text
 ghcr.io/lalalala-yeye/doinb-backend:cde7310

@@ -2,6 +2,8 @@
 
 本目录把 CD-01 产生的版本镜像部署为 MySQL、backend、web 三个工作负载。默认使用固定 tag `cde7310`，不使用 `latest`。
 
+GitHub Actions 的 **Deploy kind + health (CD-02)** 会在打完镜像后，用本次 commit 的 SHA tag 在 runner 的 kind 集群里自动部署并探活。下面步骤用于本机集群验收。
+
 下面分为三部分：正式部署实验、滚动更新实验、调试与故障恢复。前两部分用于正式执行和取证，第三部分仅在实验失败时使用。
 
 # 第一部分：正式部署实验
