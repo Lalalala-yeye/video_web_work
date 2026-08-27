@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "e2e": "node e2e/01-auth.js",
     "e2e:auth": "node e2e/01-auth.js",
+    "e2e:browse": "node e2e/02-browse.js",
     "e2e:interaction": "node e2e/03-interaction.js",
     "e2e:studio": "node e2e/04-studio-live.js",
     "e2e:msg-admin": "node e2e/05-msg-admin.js",
