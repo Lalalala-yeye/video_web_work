@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { By, until } from 'selenium-webdriver'
+import { By, Key, until } from 'selenium-webdriver'
 import {
   BASE_URL,
   createDriver,
@@ -107,12 +107,26 @@ async function uploadPublicVideo(driver, title) {
   return match ? match[1] : null
 }
 
-/** 在搜索页输入关键词并点「搜索」，等待跳转到结果页 */
+/** 在搜索页输入关键词并点「搜索」，等待跳转到结果页（不要用顶栏同 placeholder 的输入框） */
 async function doSearch(driver, keyword) {
   await driver.get(`${BASE_URL}/search`)
-  await fillByPlaceholder(driver, '搜索视频、直播、用户', keyword)
-  await clickXpath(driver, "//div[contains(@class,'search-bar')]//button[contains(., '搜索')]")
-  await driver.wait(until.urlContains('/search?'), 12000)
+  const input = await driver.wait(until.elementLocated(By.css('.search-bar input')), 12000)
+  await input.click()
+  await input.sendKeys(Key.CONTROL, 'a', Key.BACK_SPACE)
+  await input.sendKeys(keyword)
+  const btn = await driver.wait(
+    until.elementLocated(By.css('.search-bar button, .search-bar .el-button')),
+    12000
+  )
+  await driver.executeScript('arguments[0].click()', btn)
+  await driver.wait(
+    async () => {
+      const url = await driver.getCurrentUrl()
+      return url.includes('/search?') && url.includes('keyword=')
+    },
+    12000,
+    '搜索后 URL 应带 keyword 查询参数'
+  )
 }
 
 async function run() {
