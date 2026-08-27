@@ -1,0 +1,219 @@
+meta:
+  system: doinb 视频平台
+  version: 1.0
+  updated: 2026-08-26
+  purpose: 保存 UML 图中的可测试信息，支持需求、设计、代码和测试追溯
+  authorities:
+    acceptance_scope: 新增文档/用例清单.md
+    overview_design: 设计说明书/软件概要设计说明书.md
+    diagram_sources: 设计说明书/uml/*.tex
+    implementation: web/src 与 backend/src/main
+    schema: database/database.sql
+  conflict_policy: 验收目标以用例清单为准；当前行为以代码和数据库脚本为准；两者不一致时必须形成缺陷或变更记录。
+
+use_cases:
+  - id: UC01
+    name: 用户注册与登录
+    actors: [访客, 登录用户]
+    frontend: [LoginView, RegisterView, ProfileView, user.js, auth.js]
+    backend: [SecurityConfig, JwtAuthenticationTokenFilter, UserAccountController, UserController, UserAccountService, UserService, UserMapper]
+    data: [users, uploads/avatars]
+    rules:
+      - 用户名唯一，密码使用 BCrypt 哈希保存。
+      - 登录成功签发 JWT，受保护接口校验令牌。
+      - 前端在浏览器本地保存多账号状态。
+    test_oracles:
+      - 注册成功后 users 新增记录，password 不等于明文。
+      - 重复用户名、错误密码、无令牌和过期令牌均返回明确失败结果。
+      - 资料、头像和密码更新后重新查询结果一致。
+    consistency: mostly_aligned
+    discrepancies:
+      - 用例清单把普通注册用户描述为 role=0，但注册代码固定写入 role=1；角色基线需要统一。
+
+  - id: UC02
+    name: 视频上传与审核发布
+    actors: [作者, 管理员]
+    frontend: [StudioUploadView, StudioEditView, AdminPendingView, AdminVideoPreviewView, video.js, admin.js]
+    backend: [SecurityConfig, JwtAuthenticationTokenFilter, VideoController, AdminVideoController, VideoService, AdminVideoService, NotificationService, VideoMapper, NotificationMapper]
+    data: [videos, notifications, uploads/videos, uploads/covers]
+    rules:
+      - 公开投稿进入待审核 status=0；通过后 status=1；驳回或设为私密后 status=3。
+      - 管理员接口要求 role=2。
+    test_oracles:
+      - 上传文件和元数据成功后记录与文件同时存在。
+      - 审核通过后公开列表可见，并产生作者通知。
+      - 驳回后仅作者或管理员可见。
+      - 文件过大、格式错误、越权上传和越权审核均被拒绝。
+    consistency: partial
+    discrepancies:
+      - 图和用例清单使用“审核结果通知”的宽泛表述；代码只在审核通过时通知，驳回和删除不通知。
+      - 组件图未列出 AdminVideoService 实际用于组装作者信息的 UserMapper。
+
+  - id: UC03
+    name: 视频浏览与播放
+    actors: [访客, 登录用户]
+    frontend: [HomeView, VideoDetailView, ProfileView, video.js, request.js]
+    backend: [SecurityConfig, JwtAuthenticationTokenFilter, VideoController, VideoService, VideoMapper, PlayHistoryMapper]
+    data: [videos, play_history, uploads]
+    rules:
+      - 匿名用户只能读取已发布视频。
+      - 登录用户保存播放进度，再次进入时从最后进度续播。
+    test_oracles:
+      - 公开列表不包含待审、复审或私密视频。
+      - 播放进度重复提交执行新增或更新，而不是产生重复历史。
+      - 作者和管理员对非公开视频的可见性符合权限规则。
+    consistency: aligned
+
+  - id: UC04
+    name: 评论与赞踩
+    actors: [登录用户, 内容作者]
+    frontend: [VideoDetailView, CommentItem, comment.js, reaction.js]
+    backend: [SecurityConfig, JwtAuthenticationTokenFilter, CommentController, ReactionController, CommentService, ReactionService, NotificationService]
+    data: [comments, video_reactions, comment_reactions, notifications]
+    rules:
+      - 同一用户对同一目标只保留一种赞踩状态。
+      - 重复点击取消，相反操作切换。
+      - 空评论和不存在的目标被拒绝。
+    test_oracles:
+      - 新增、取消和切换赞踩后，用户状态及赞踩计数一致。
+      - 点赞通知只在代码定义的触发条件下产生，不能重复污染通知表。
+      - 视频评论和直播评论按 target_type 正确隔离。
+    consistency: mostly_aligned
+    discrepancies:
+      - 组件图的 Mapper 层未展示 CommentService 实际依赖的 UserMapper、VideoMapper、LiveRoomMapper。
+      - 评论新增本身不会产生通知；只有 ReactionService 的点赞事件会通知，文档中的“互动通知”需要按此口径理解。
+
+  - id: UC05
+    name: 关注与订阅动态
+    actors: [登录用户, 被关注作者]
+    frontend: [UserShowcaseView, SubscribeView, subscription.js]
+    backend: [SecurityConfig, JwtAuthenticationTokenFilter, SubscriptionController, SubscriptionService, SubscriptionMapper, UserMapper, VideoMapper, LiveRoomMapper]
+    data: [subscriptions, users, videos, live_rooms]
+    rules:
+      - follower_id 与 target_id 组合唯一。
+      - 动态聚合已关注作者的公开视频和正在直播的房间，并分页返回。
+    test_oracles:
+      - 重复关注不产生重复关系，取消后关系消失。
+      - 未发布视频和未开播房间不进入动态。
+      - 分页边界和动态排序稳定。
+    consistency: mostly_aligned
+    discrepancies:
+      - 组件图的 Mapper 层遗漏实际参与目标校验和 DTO 组装的 UserMapper。
+
+  - id: UC06
+    name: 私信与通知
+    actors: [发送方, 接收方]
+    frontend: [UserShowcaseView, MessageRoomView, TopNavigation, message.js, notification.js]
+    backend: [SecurityConfig, JwtAuthenticationTokenFilter, MessageController, NotificationController, MessageService, NotificationService, DmRoomMapper, DmMessageMapper, NotificationMapper, UserMapper]
+    data: [dm_rooms, dm_messages, notifications, users]
+    rules:
+      - 同一对用户按固定顺序复用唯一会话。
+      - 用户只能访问自己参与的会话。
+      - 消息不能为空，通知按接收人隔离未读状态。
+    test_oracles:
+      - A→B 与 B→A 打开会话得到同一个 room_id。
+      - 非会话成员查询或发送消息被拒绝。
+      - 发送消息后产生接收方通知，已读后未读数减少。
+    consistency: mostly_aligned
+    discrepancies:
+      - 组件图的 Mapper 层遗漏 MessageService 实际依赖的 UserMapper。
+
+  - id: UC07
+    name: 关键词搜索
+    actors: [访客, 登录用户]
+    frontend: [TopNavigation, SearchView, search.js]
+    backend: [SecurityConfig, SearchController, SearchService, VideoMapper, LiveRoomMapper, UserMapper, LiveStreamHelper]
+    data: [videos, live_rooms, users]
+    rules:
+      - 搜索接口允许匿名访问。
+      - 视频结果只返回 status=1，三类结果分别限制数量。
+    test_oracles:
+      - 无令牌可以搜索视频、直播间和用户。
+      - 视频搜索不泄露非公开视频。
+      - limit 小于 1 或大于 50 时按代码边界修正。
+      - 空白关键词的前端行为和服务端返回结果需要固定为验收口径。
+    consistency: partial
+    discrepancies:
+      - 图的核心规则写“关键词不能为空”，但 SearchService 对空白关键词返回三类空列表而非错误。
+      - 用例清单要求已登录且只描述视频与用户；代码和概要设计允许匿名并额外搜索直播间。
+      - 组件图未展示 SearchService 实际依赖的 LiveStreamHelper。
+
+  - id: UC08
+    name: 直播间管理
+    actors: [作者或主播, 观众, OBS或浏览器推流端]
+    frontend: [StudioLiveView, LiveListView, LiveRoomView, live.js, livePlayer.js, srsScreenPublish.js]
+    backend: [SecurityConfig, JwtAuthenticationTokenFilter, LiveRoomController, LiveRoomService, LiveStreamHelper, CommentController, CommentService, LiveMaintenanceTask]
+    infrastructure: [SRS, RTMP, FLV, HLS]
+    data: [live_rooms, comments]
+    rules:
+      - Spring Boot 管理房间、开停播状态和推流密钥；SRS 负责媒体传输。
+      - 直播评论通过通用评论接口以 target_type=2 保存。
+      - 定时任务清理直播评论和过期房间。
+    test_oracles:
+      - 创建、重复开播、停播、越权开停播和过期房间均覆盖。
+      - 直播评论必须调用 /comment/add 与 /comment/list，并验证 target_type=2。
+      - 非主播响应不得泄露 stream_key。
+      - 推流与播放协议失败时应有明确降级或错误提示。
+    consistency: needs_correction
+    discrepancies:
+      - 当前组件图把“直播评论”归入 LiveRoomController/LiveRoomService；实际由 CommentController/CommentService 处理。
+      - 当前组件图缺少 LiveStreamHelper，以及代码已经支持的浏览器推流组件 srsScreenPublish.js。
+      - 用例清单称直播画面仅为演示占位且不验收，但实现和组件图已经包含 SRS 实际播放链路；验收范围需要统一。
+
+  - id: UC09
+    name: 举报与管理员复审
+    actors: [举报人, 管理员]
+    frontend: [VideoDetailView, AdminReportView, AdminVideoPreviewView, request.js]
+    backend: [SecurityConfig, JwtAuthenticationTokenFilter, VideoController, AdminVideoController, VideoService, AdminVideoService, NotificationService, VideoReportMapper, VideoMapper]
+    data: [video_reports, videos, notifications, uploads]
+    rules:
+      - 只能举报已发布且非本人视频，同一用户对同一视频只能举报一次。
+      - 举报数达到 3 后 status 从 1 变为 2。
+      - 管理员可恢复公开、转为私密或删除。
+    test_oracles:
+      - 前两次有效举报保持 status=1，第三次变为 status=2。
+      - 重复举报、自举报、举报非公开视频和非管理员复审均被拒绝。
+      - 恢复公开后 report_count、历史举报记录和再次举报策略必须符合明确口径。
+      - 删除已有举报、播放历史或互动记录的视频必须验证数据库外键和媒体文件的一致性。
+    consistency: partial_high_risk
+    discrepancies:
+      - 图中“生成处置结果通知”过宽；代码只有恢复公开/审核通过时通知，转私密和删除不通知。
+      - database.sql 的关联外键没有 ON DELETE CASCADE，AdminVideoService 先删媒体文件再删 videos；存在数据库删除失败但文件已丢失的风险。
+      - 恢复公开只把 report_count 设为 0，不清理 video_reports；后续计数仍基于历史记录，可能再次举报时立即进入复审。
+      - 用例清单描述“驳回举报后维持现状并留存处置记录”，当前代码的 reject 实际把视频转为私密，且没有独立处置记录表。
+
+er_model:
+  entities: [users, videos, live_rooms, subscriptions, comments, play_history, video_reactions, comment_reactions, notifications, dm_rooms, dm_messages, video_reports]
+  logical_relations:
+    - users 1:N videos
+    - users 1:N live_rooms
+    - users N:N users through subscriptions
+    - users N:N videos through play_history
+    - users N:N videos through video_reactions
+    - users N:N comments through comment_reactions
+    - users N:N videos through video_reports
+    - dm_rooms 1:N dm_messages
+    - comments target_id 逻辑指向 videos 或 live_rooms，由 target_type 区分
+  acceptance_risks:
+    - 多个子表引用 videos，但数据库脚本未定义级联删除；所有视频删除场景必须做真实数据库集成测试。
+    - comments.target_id 没有数据库外键，目标存在性完全依赖 CommentService；需测试非法 target_type 和悬空目标。
+    - notifications.ref_id 是多态引用，没有数据库外键；需测试关联对象删除后的展示策略。
+
+evaluation:
+  strengths:
+    - 九张组件图使用真实前端、控制器、服务、Mapper 和基础设施名称，可直接定位代码。
+    - 每张图保存核心业务规则，ER 图与 database.sql 的 12 张核心表基本一致。
+    - 前后端、认证、持久化、文件存储和流媒体边界清晰，工程落地性强。
+  gaps_against_reference:
+    - 缺少逐用例的组件顺序图，无法直接表达调用顺序、返回值、分支和失败路径。
+    - 缺少“用例描述→概念模型→组件接口→详细类操作→类顺序图”的连续追踪链。
+    - 当前图主要是静态依赖图，接口契约、前后置条件、状态迁移和可观察断言仍需由本基线文件补足。
+    - 实现采用 Controller/Service/Mapper 的贫血模型；相较参考中的充血领域模型，业务规则更集中在 Service，领域对象本身缺少行为。
+
+verification:
+  backend_test_command: mvn test
+  result: 252 passed, 0 failed, 1 skipped
+  verified_at: 2026-08-26
+  limitation:
+    - 现有大量 API 测试和 Service 测试使用 Mock，测试通过只能证明已编码行为稳定，不能证明它与验收模型完全一致。
+    - 仍需补充连接真实数据库的删除外键、举报复审历史、并发唯一约束和文件/数据库原子性测试。

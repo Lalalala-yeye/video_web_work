@@ -1,0 +1,50 @@
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage[UTF8]{ctex}
+\input{component-style.tex}
+\begin{document}
+\begin{tikzpicture}
+  \diagramtitle{UC08 直播间管理——UML 组件图}
+    {展示直播间创建与状态维护、OBS 推流、SRS 分发、观众播放和直播评论所依赖的组件}
+
+  \node[actor] (anchor) at (0,5.7) {作者／主播};
+  \node[actor] (viewer) at (0,1.8) {观众};
+  \node[component] (studio) at (4,5.7) {\textbf{StudioLiveView}\\\footnotesize 创建、开播与停播};
+  \node[component] (liveView) at (4,1.8) {\textbf{LiveListView / LiveRoomView}\\\footnotesize 列表、播放与评论};
+  \node[component] (client) at (8.5,3.75) {\textbf{live.js + livePlayer.js}\\\footnotesize 房间 API 与 FLV/HLS 播放};
+
+  \node[component] (security) at (13,3.75) {\textbf{SecurityConfig + JWT Filter}\\\footnotesize 公开观看／主播操作校验};
+  \node[component] (controller) at (17.5,5.2) {\textbf{LiveRoomController}\\\footnotesize 房间、状态与直播评论};
+  \node[component] (service) at (22,5.2) {\textbf{LiveRoomService}\\\footnotesize 推流密钥与状态规则};
+  \node[component] (task) at (19.75,1.5) {\textbf{LiveMaintenanceTask}\\\footnotesize 弹幕与过期房间清理};
+
+  \node[component] (mapper) at (26.5,5.2) {\textbf{Mapper 层}\\\footnotesize LiveRoomMapper · CommentMapper};
+  \node[datastore] (mysql) at (31,5.2) {\textbf{MySQL 8}\\\footnotesize live\_rooms / comments};
+  \node[component] (obs) at (26.5,1.2) {\textbf{OBS}\\\footnotesize RTMP 推流客户端};
+  \node[component] (srs) at (31,1.2) {\textbf{SRS 媒体服务器}\\\footnotesize RTMP 输入 · FLV/HLS 输出};
+
+  \draw[request] (anchor) -- node[labeltext,above]{管理房间} (studio);
+  \draw[request] (viewer) -- node[labeltext,above]{观看／评论} (liveView);
+  \draw[request] (studio) -- (client);
+  \draw[request] (liveView) -- (client);
+  \draw[request] (client) -- node[labeltext,above]{HTTP + JWT} (security);
+  \draw[request] (security) -- (controller);
+  \draw[dependency] (controller) -- (service);
+  \draw[dependency] (service) -- (mapper);
+  \draw[dependency] (task) to[out=15,in=-135] (mapper);
+  \draw[dependency] (mapper) -- (mysql);
+  \draw[request] (anchor.south) |- node[labeltext,pos=.72,below]{采集音视频} (obs.south);
+  \draw[request] (obs) -- node[labeltext,above]{RTMP} (srs);
+  \draw[request] (srs.west) to[out=160,in=-20] node[labeltext,below]{FLV / HLS} (liveView.east);
+
+  \foreach \n in {studio,liveView,client,security,controller,service,task,mapper,obs,srs}{\componentglyph{\n}}
+  \begin{scope}[on background layer]
+    \node[group, fill=frontendfill, fit=(studio)(liveView)(client)] (fg) {};
+    \node[group, fill=backendfill, fit=(security)(controller)(service)(task)] (bg) {};
+    \node[group, fill=datafill, fit=(mapper)(mysql)(obs)(srs)] (dg) {};
+  \end{scope}
+  \groupcaption{fg}{Vue 3 前端}
+  \groupcaption{bg}{Spring Boot 后端}
+  \groupcaption{dg}{数据与直播媒体基础设施}
+  \node[note, anchor=north west] at (-1.4,-0.8) {\textbf{职责边界：}\quad Spring Boot 只维护房间、开播状态和评论；OBS 负责采集并通过 RTMP 推流；SRS 负责媒体接收与 FLV/HLS 分发。};
+\end{tikzpicture}
+\end{document}

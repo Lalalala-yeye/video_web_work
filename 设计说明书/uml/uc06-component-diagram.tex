@@ -1,0 +1,51 @@
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage[UTF8]{ctex}
+\input{component-style.tex}
+\begin{document}
+\begin{tikzpicture}
+  \diagramtitle{UC06 私信与通知——UML 组件图}
+    {展示双人会话复用、消息收发、未读通知查询及标记已读所依赖的组件}
+
+  \node[actor] (sender) at (0,5.7) {发送方};
+  \node[actor] (receiver) at (0,1.8) {接收方};
+  \node[component] (showcase) at (4,5.7) {\textbf{UserShowcaseView}\\\footnotesize 发起私信入口};
+  \node[component] (room) at (4,3.1) {\textbf{MessageRoomView}\\\footnotesize 会话与消息列表};
+  \node[component] (nav) at (4,0.5) {\textbf{TopNavigation}\\\footnotesize 通知面板与未读数};
+  \node[component] (client) at (8.5,3.1) {\textbf{message.js + notification.js}\\\footnotesize 消息与通知请求};
+
+  \node[component] (security) at (13,3.1) {\textbf{SecurityConfig + JWT Filter}\\\footnotesize 会话成员身份校验};
+  \node[component] (messageCtl) at (17.5,5.1) {\textbf{MessageController}\\\footnotesize 会话创建、查询与发送};
+  \node[component] (notifyCtl) at (17.5,1.1) {\textbf{NotificationController}\\\footnotesize 列表、未读数与已读};
+  \node[component] (messageSvc) at (22,5.1) {\textbf{MessageService}\\\footnotesize 双人房间复用与消息持久化};
+  \node[component] (notifySvc) at (22,1.1) {\textbf{NotificationService}\\\footnotesize 创建、查询与已读处理};
+
+  \node[component] (mapper) at (26.5,3.1) {\textbf{Mapper 层}\\\footnotesize DmRoom · DmMessage\\Notification};
+  \node[datastore] (mysql) at (31,3.1) {\textbf{MySQL 8}\\\footnotesize dm\_rooms / dm\_messages\\notifications};
+
+  \draw[request] (sender) -- (showcase);
+  \draw[request] (receiver) to[out=20,in=180] (room);
+  \draw[request] (receiver) -- (nav);
+  \draw[request] (showcase) -- (client);
+  \draw[request] (room) -- (client);
+  \draw[request] (nav) -- (client);
+  \draw[request] (client) -- node[labeltext,above]{HTTP + JWT} (security);
+  \draw[request] (security) to[out=30,in=180] (messageCtl);
+  \draw[request] (security) to[out=-30,in=180] (notifyCtl);
+  \draw[dependency] (messageCtl) -- (messageSvc);
+  \draw[dependency] (notifyCtl) -- (notifySvc);
+  \draw[dependency] (messageSvc) to[out=0,in=150] (mapper);
+  \draw[dependency] (notifySvc) to[out=0,in=-150] (mapper);
+  \draw[dependency] (mapper) -- (mysql);
+
+  \foreach \n in {showcase,room,nav,client,security,messageCtl,notifyCtl,messageSvc,notifySvc,mapper}{\componentglyph{\n}}
+  \begin{scope}[on background layer]
+    \node[group, fill=frontendfill, fit=(showcase)(room)(nav)(client)] (fg) {};
+    \node[group, fill=backendfill, fit=(security)(messageCtl)(notifyCtl)(messageSvc)(notifySvc)] (bg) {};
+    \node[group, fill=datafill, fit=(mapper)(mysql)] (dg) {};
+  \end{scope}
+  \groupcaption{fg}{Vue 3 前端}
+  \groupcaption{bg}{Spring Boot 后端}
+  \groupcaption{dg}{数据基础设施}
+  \node[note, anchor=north west] at (-1.4,-1.0) {\textbf{核心规则：}\quad 同一对用户按固定顺序只保留一个 dm\_rooms 会话；消息内容不能为空；用户只能访问自己参与的会话，通知未读状态按接收人隔离。};
+\end{tikzpicture}
+\end{document}

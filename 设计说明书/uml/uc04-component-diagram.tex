@@ -1,0 +1,51 @@
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage[UTF8]{ctex}
+\input{component-style.tex}
+\begin{document}
+\begin{tikzpicture}
+  \diagramtitle{UC04 评论与赞踩——UML 组件图}
+    {展示评论发布、视频／评论赞踩、状态切换及互动通知所依赖的组件}
+
+  \node[actor] (user) at (0,5.7) {登录用户};
+  \node[actor] (author) at (0,1.8) {内容作者\\（被通知方）};
+  \node[component] (detail) at (4,5.7) {\textbf{VideoDetailView}\\\footnotesize 视频互动入口};
+  \node[component] (commentItem) at (4,1.8) {\textbf{CommentItem}\\\footnotesize 评论列表与互动状态};
+  \node[component] (client) at (8.5,3.75) {\textbf{comment.js + reaction.js}\\\footnotesize 评论与赞踩请求};
+
+  \node[component] (security) at (13,3.75) {\textbf{SecurityConfig + JWT Filter}\\\footnotesize 登录身份校验};
+  \node[component] (commentCtl) at (17.5,5.7) {\textbf{CommentController}\\\footnotesize 评论新增与查询};
+  \node[component] (reactionCtl) at (17.5,1.8) {\textbf{ReactionController}\\\footnotesize 视频／评论赞踩};
+  \node[component] (commentSvc) at (22,5.7) {\textbf{CommentService}\\\footnotesize 内容校验与评论持久化};
+  \node[component] (reactionSvc) at (22,1.8) {\textbf{ReactionService}\\\footnotesize 切换、取消与计数};
+
+  \node[component] (mapper) at (26.5,4.6) {\textbf{Mapper 层}\\\footnotesize CommentMapper\\Reaction Mappers};
+  \node[component] (notify) at (22,-0.6) {\textbf{NotificationService}\\\footnotesize 互动事件通知};
+  \node[datastore] (mysql) at (31,3.75) {\textbf{MySQL 8}\\\footnotesize comments / reactions\\notifications};
+
+  \draw[request] (user) -- node[labeltext,above]{评论／赞踩} (detail);
+  \draw[request] (author) -- node[labeltext,above]{查看结果} (commentItem);
+  \draw[request] (detail) -- (client);
+  \draw[request] (commentItem) -- (client);
+  \draw[request] (client) -- node[labeltext,above]{HTTP + JWT} (security);
+  \draw[request] (security) to[out=30,in=180] (commentCtl);
+  \draw[request] (security) to[out=-30,in=180] (reactionCtl);
+  \draw[dependency] (commentCtl) -- (commentSvc);
+  \draw[dependency] (reactionCtl) -- (reactionSvc);
+  \draw[dependency] (commentSvc) to[out=0,in=150] (mapper);
+  \draw[dependency] (reactionSvc) to[out=0,in=-150] (mapper);
+  \draw[dependency] (reactionSvc) -- (notify);
+  \draw[dependency] (mapper) -- (mysql);
+  \draw[dependency] (notify.east) to[out=20,in=-90] (mapper.south);
+
+  \foreach \n in {detail,commentItem,client,security,commentCtl,reactionCtl,commentSvc,reactionSvc,mapper,notify}{\componentglyph{\n}}
+  \begin{scope}[on background layer]
+    \node[group, fill=frontendfill, fit=(detail)(commentItem)(client)] (fg) {};
+    \node[group, fill=backendfill, fit=(security)(commentCtl)(reactionCtl)(commentSvc)(reactionSvc)(notify)] (bg) {};
+    \node[group, fill=datafill, fit=(mapper)(mysql)] (dg) {};
+  \end{scope}
+  \groupcaption{fg}{Vue 3 前端}
+  \groupcaption{bg}{Spring Boot 后端}
+  \groupcaption{dg}{数据与通知基础设施}
+  \node[note, anchor=north west] at (-1.4,-2.0) {\textbf{核心规则：}\quad 同一用户对同一视频或评论只保留一种反应；重复点击可取消，点击相反反应则切换；空评论和不存在的目标必须拒绝。};
+\end{tikzpicture}
+\end{document}
