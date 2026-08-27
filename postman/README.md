@@ -24,9 +24,9 @@ npx --yes newman@6 run postman/doinb.postman_collection.json -e postman/doinb.ci
 
 1. 后端单测 + MockMvc（不启 MySQL）
 2. 起 MySQL → 建表 → 启动后端 → Newman
-3. 再起一套栈 + 无头 Chrome，跑 `web` 里 Selenium E2E（`npm run e2e:ci`）
+3. Newman 通过后并行：Selenium E2E（失败不挡门禁）；`docker build` 推送 `ghcr.io/<owner>/doinb-backend:<sha>` 与 `doinb-web:<sha>`（无 `latest`）
 
-任一层失败则整条流水线红，后面不打镜像。
+单测或 Newman 失败则整条流水线红，后面不打镜像。E2E 失败仍会出截图 artifact，不阻止打镜像。
 
 
 后端镜像 / compose / K8s 与 CI **同一套变量名**，不要再用 `SPRING_DATASOURCE_*`。完整表见 `backend/src/main/resources/application-ci.yml` 文件头注释。

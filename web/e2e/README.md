@@ -86,7 +86,8 @@ npm run e2e:msg-admin
 
 ## CI（GitHub Actions）
 
-门禁顺序：后端单测 + MockMvc → Postman/Newman → **本目录 Selenium**。
+门禁顺序：后端单测 + MockMvc → Postman/Newman（这两层失败则流水线失败）。  
+**本目录 Selenium 仍会在 CI 里跑，但 `continue-on-error`：失败不挡住 GHCR 打镜像。**
 
 E2E job 会自己起 MySQL（建表 + `seed.sql`）、后端 8081、Vite 8787、无头 Chrome，然后：
 
@@ -94,7 +95,7 @@ E2E job 会自己起 MySQL（建表 + `seed.sql`）、后端 8081、Vite 8787、
 npm run e2e:ci
 ```
 
-即依次跑 01 / 03 / 04 / 05。失败时把 `e2e/artifacts/` 截图上传为 artifact。
+即依次跑 01 / 02 / 03 / 04 / 05。失败时把 `e2e/artifacts/` 截图上传为 artifact。
 
 本机对齐 CI（三个服务都已开）：
 
