@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { By, until } from 'selenium-webdriver'
+import { By, Key, until } from 'selenium-webdriver'
 import {
   BASE_URL,
   createDriver,
@@ -87,6 +87,32 @@ async function clickXpath(driver, xpath, timeoutMs = 12000) {
   return el
 }
 
+async function clickSearchTab(driver, label) {
+  const tab = await driver.wait(
+    until.elementLocated(By.xpath(`//div[@role='tab'][contains(., '${label}')]`)),
+    12000
+  )
+  await driver.executeScript('arguments[0].click()', tab)
+}
+
+async function waitDisplayed(driver, locator, timeoutMs = 12000) {
+  await driver.wait(
+    async () => {
+      const els = await driver.findElements(locator)
+      for (const el of els) {
+        try {
+          if (await el.isDisplayed()) return true
+        } catch {
+          /* stale */
+        }
+      }
+      return false
+    },
+    timeoutMs,
+    `可见元素未出现: ${locator}`
+  )
+}
+
 /** 创作中心上传"他人可见"视频（进入待审），返回视频 id */
 async function uploadPublicVideo(driver, title) {
   await driver.get(`${BASE_URL}/studio/upload`)
@@ -107,12 +133,26 @@ async function uploadPublicVideo(driver, title) {
   return match ? match[1] : null
 }
 
-/** 在搜索页输入关键词并点「搜索」，等待跳转到结果页 */
+/** 在搜索页输入关键词并点「搜索」，等待跳转到结果页（不要用顶栏同 placeholder 的输入框） */
 async function doSearch(driver, keyword) {
   await driver.get(`${BASE_URL}/search`)
-  await fillByPlaceholder(driver, '搜索视频、直播、用户', keyword)
-  await clickXpath(driver, "//div[contains(@class,'search-bar')]//button[contains(., '搜索')]")
-  await driver.wait(until.urlContains('/search?'), 12000)
+  const input = await driver.wait(until.elementLocated(By.css('.search-bar input')), 12000)
+  await input.click()
+  await input.sendKeys(Key.CONTROL, 'a', Key.BACK_SPACE)
+  await input.sendKeys(keyword)
+  const btn = await driver.wait(
+    until.elementLocated(By.css('.search-bar button, .search-bar .el-button')),
+    12000
+  )
+  await driver.executeScript('arguments[0].click()', btn)
+  await driver.wait(
+    async () => {
+      const url = await driver.getCurrentUrl()
+      return url.includes('/search?') && url.includes('keyword=')
+    },
+    12000,
+    '搜索后 URL 应带 keyword 查询参数'
+  )
 }
 
 async function run() {
@@ -134,9 +174,9 @@ async function run() {
     /* ---------- 2. 未登录：搜索不存在关键词 → 三个 Tab 均为空 ---------- */
     await doSearch(driver, garbage)
     await waitToast(driver, '没有找到相关视频')
-    await clickXpath(driver, "//div[contains(@role,'tab')][contains(., '直播')]")
+    await clickSearchTab(driver, '直播')
     await waitToast(driver, '没有找到相关直播')
-    await clickXpath(driver, "//div[contains(@role,'tab')][contains(., '用户')]")
+    await clickSearchTab(driver, '用户')
     await waitToast(driver, '没有找到相关用户')
     console.log('OK  未登录搜索空结果：视频/直播/用户均为空')
     await shot(driver, '02-0-search-empty-anonymous')
@@ -214,10 +254,10 @@ async function run() {
 
     /* ---------- 8. 搜索直播间标题 → 直播结果 ---------- */
     await doSearch(driver, liveTitle)
-    await clickXpath(driver, "//div[contains(@role,'tab')][contains(., '直播')]")
-    await driver.wait(
-      until.elementLocated(By.xpath(`//a[contains(@class,'live-card')][contains(., '${liveTitle}')]`)),
-      12000
+    await clickSearchTab(driver, '直播')
+    await waitDisplayed(
+      driver,
+      By.xpath(`//a[contains(@class,'live-card')][contains(., '${liveTitle}')]`)
     )
     console.log('OK  按标题搜索到直播间')
     await shot(driver, '02-4-search-live')
@@ -225,12 +265,14 @@ async function run() {
     /* ---------- 9. 搜索作者昵称 → 用户结果 ---------- */
     const nickname = `用户_${authorName}`
     await doSearch(driver, nickname)
-    await clickXpath(driver, "//div[contains(@role,'tab')][contains(., '用户')]")
-    const userItem = await driver.wait(
-      until.elementLocated(By.xpath(`//div[contains(@class,'user-item')][contains(., '${nickname}')]`)),
-      12000
+    await clickSearchTab(driver, '用户')
+    await waitDisplayed(
+      driver,
+      By.xpath(`//div[contains(@class,'user-item')][contains(., '${nickname}')]`)
     )
-    await driver.wait(until.elementIsVisible(userItem), 12000)
+    const userItem = await driver.findElement(
+      By.xpath(`//div[contains(@class,'user-item')][contains(., '${nickname}')]`)
+    )
     assert.ok((await userItem.getText()).includes(nickname), '用户结果应显示昵称')
     console.log('OK  按昵称搜索到用户')
     await shot(driver, '02-5-search-user')
@@ -238,9 +280,9 @@ async function run() {
     /* ---------- 10. 登录态搜索不存在关键词 → 三个 Tab 均为空 ---------- */
     await doSearch(driver, garbage)
     await waitToast(driver, '没有找到相关视频')
-    await clickXpath(driver, "//div[contains(@role,'tab')][contains(., '直播')]")
+    await clickSearchTab(driver, '直播')
     await waitToast(driver, '没有找到相关直播')
-    await clickXpath(driver, "//div[contains(@role,'tab')][contains(., '用户')]")
+    await clickSearchTab(driver, '用户')
     await waitToast(driver, '没有找到相关用户')
     console.log('OK  登录态搜索空结果：视频/直播/用户均为空')
     await shot(driver, '02-6-search-empty')

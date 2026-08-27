@@ -119,15 +119,35 @@ docker compose down -v       # 停容器并清空数据库（会丢演示数据�
 
 ## CI 测试门禁
 
-`.github/workflows/ci.yml`（workflow 名 **Test gate**）三层，一层不过后面不跑：
+`.github/workflows/ci.yml`（workflow 名 **Test gate**）：
 
-| 顺序 | Job | 测什么 |
-|------|-----|--------|
-| 1 | Backend unit + API tests | JUnit 单测 + MockMvc，不启 MySQL |
-| 2 | Postman Newman | 真库 API 冒烟（15 条） |
-| 3 | Selenium E2E | 无头 Chrome 点页面：账号 / 互动 / 创作中心+直播 / 通知私信后台 |
+| 顺序 | Job | 测什么 | 是否挡住后续 |
+|------|-----|--------|----------------|
+| 1 | Backend unit + API tests | JUnit 单测 + MockMvc，不启 MySQL | 是 |
+| 2 | Postman Newman | 真库 API 冒烟（15 条） | 是（不过不打镜像） |
+| 3a | Selenium E2E | 无头 Chrome：账号、浏览搜索、互动、创作中心+直播、通知私信后台 | 否（与打镜像并行） |
+| 3b | Build versioned images | Newman 通过后构建并推送到 GHCR | 是（该 job 失败则流水线红） |
 
 E2E 需要管理员种子账号 `demo_admin` / `123456`（`database/seed.sql`）。OBS 真推流不进 CI。
+
+### CI 打出的版本镜像（GHCR）
+
+Newman 通过后会推送（**没有 `latest`**），tag 为本次提交的 **7 位 git SHA**：
+
+```text
+ghcr.io/<GitHub用户名>/doinb-backend:<sha>
+ghcr.io/<GitHub用户名>/doinb-web:<sha>
+```
+
+本仓库示例（把 tag 换成 Actions 摘要或 `git rev-parse --short=7 HEAD`）：
+
+```powershell
+docker pull ghcr.io/lalalala-yeye/doinb-backend:6fd3943
+docker pull ghcr.io/lalalala-yeye/doinb-web:6fd3943
+```
+
+私有包需先登录：`echo $env:GITHUB_TOKEN | docker login ghcr.io -u 你的用户名 --password-stdin`。  
+仓库 → **Packages** 里若包是 private，把 Visibility 改成 Public 后别人才能免登录 pull。镜像名必须全小写。
 
 
 ---

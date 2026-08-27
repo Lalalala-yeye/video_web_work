@@ -13,7 +13,7 @@
     "e2e:interaction": "node e2e/03-interaction.js",
     "e2e:studio": "node e2e/04-studio-live.js",
     "e2e:msg-admin": "node e2e/05-msg-admin.js",
-    "e2e:ci": "node e2e/01-auth.js && node e2e/03-interaction.js && node e2e/04-studio-live.js && node e2e/05-msg-admin.js"
+    "e2e:ci": "node e2e/01-auth.js && node e2e/02-browse.js && node e2e/03-interaction.js && node e2e/04-studio-live.js && node e2e/05-msg-admin.js"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
