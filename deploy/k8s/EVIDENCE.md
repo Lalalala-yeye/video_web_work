@@ -20,7 +20,7 @@ Namespace：`doinb`
 
 最终 Deployment 均使用明确版本 tag，没有使用 `latest`；5 个业务 Pod 全部为 `1/1 Running`、重启次数为 0。backend 和 web 的 rollout history 均记录了 revision 2、3。
 
-![最终镜像、Pod 状态及发布历史](../截图证据/最终镜像证据.png)
+![最终镜像、Pod 状态及发布历史](evidence/04-final-workloads.png)
 
 ## 2. 健康检查与页面访问
 
@@ -30,26 +30,26 @@ Namespace：`doinb`
 - 通过 web Nginx 反向代理访问：`http://127.0.0.1:8080/api/health` 返回 HTTP 200。
 - 浏览器访问 `http://127.0.0.1:8080`，前端页面正常显示。
 
-![backend 与 Nginx 代理健康检查均返回 HTTP 200](../截图证据/health返回.png)
+![backend 与 Nginx 代理健康检查均返回 HTTP 200](evidence/05-health-checks.png)
 
-![Kubernetes 中部署的前端页面](../截图证据/前端界面.png)
+![Kubernetes 中部署的前端页面](evidence/06-frontend.png)
 
 ## 3. 滚动更新验证
 
 先将 backend、web 部署为旧版本 `fade254`，确认 Deployment 就绪以及集群内部健康检查通过：
 
-![旧版本 fade254 部署成功](../截图证据/成功部署旧版本.png)
+![旧版本 fade254 部署成功](evidence/01-old-version.png)
 
 随后将两个 Deployment 更新到 `cde7310`。输出显示新副本逐步更新、旧副本等待终止，最终 backend 和 web 均 `successfully rolled out`；脚本随后再次验证 backend `/health` 与 web `/` 可访问。
 
-![从 fade254 滚动更新到 cde7310](<../截图证据/旧版本更新到 cde7310.png>)
+![从 fade254 滚动更新到 cde7310](evidence/02-rollout-to-cde7310.png)
 
 Pod 监听记录中，新 Pod 依次经历 `Pending`、`ContainerCreating/Init`、`Running`，达到 `1/1` 后旧 Pod 才进入 `Terminating`。其中：
 
 - backend：旧 ReplicaSet `85497996d7` → 新 ReplicaSet `85dfdcdcbc`
 - web：旧 ReplicaSet `74785676f4` → 新 ReplicaSet `79647c57b6`
 
-![滚动更新期间的新旧 Pod 交替过程](../截图证据/滚动更新过程证据.png)
+![滚动更新期间的新旧 Pod 交替过程](evidence/03-pod-rollout-watch.png)
 
 监听中旧 backend Pod 在退出阶段短暂显示 `Error`，属于已被替换副本的终止状态；最终状态截图证明旧 Pod 已清理，所有当前 Pod 均为 `1/1 Running`。
 
