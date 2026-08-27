@@ -256,10 +256,10 @@ jobs:
       - name: Write image names to summary
         run: |
           {
-            echo "### 已推送镜像（无 latest）"
+            echo "### 已推送镜像"
             echo ""
             echo "- \`${{ steps.meta.outputs.backend }}\`"
             echo "- \`${{ steps.meta.outputs.web }}\`"
             echo ""
-            echo "tag = git 短 SHA \`${{ steps.meta.outputs.sha }}\`"
+            echo "tag =  \`${{ steps.meta.outputs.sha }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
