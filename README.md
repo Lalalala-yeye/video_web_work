@@ -39,7 +39,7 @@
 
 ```
 video_web/
-├── backend/                 # Spring Boot（端口 8080）
+├── backend/                 # Spring Boot（端口 8081；8080 留给 SRS 流媒体）
 │   └── src/main/
 │       ├── java/com/doinb/backend/
 │       └── resources/
@@ -217,7 +217,7 @@ cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-健康检查：http://localhost:8080/health  
+健康检查：http://localhost:8081/health  
 
 期望返回：
 
@@ -239,7 +239,7 @@ npm run dev
 
 浏览器访问：http://localhost:8787  
 
-Vite 代理：`/api/*` → `http://localhost:8080/*`（见 `web/vite.config.js`）。
+Vite 代理：`/api/*` → `http://localhost:8081/*`（见 `web/vite.config.js`）。
 
 ---
 
@@ -247,8 +247,10 @@ Vite 代理：`/api/*` → `http://localhost:8080/*`（见 `web/vite.config.js`�
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| 后端 HTTP | 8080 | REST API |
+| 后端 HTTP | 8081 | REST API |
 | 前端开发服务器 | 8787 | `npm run dev` |
+| MySQL（compose） | 3307 | 映射容器 3306，避开本机 MySQL |
+| SRS 流媒体 | 8080 | 仅直播演示用（HLS 拉流），与后端无关 |
 
 修改后端端口时，请同步修改 `web/vite.config.js` 的 `proxy.target`。
 
@@ -369,7 +371,7 @@ git status
 
 ### 3. 前端「网络错误」
 
-先启后端（8080），再启前端；确认 Vite 代理指向正确。
+先启后端（8081），再启前端；确认 Vite 代理指向正确。
 
 ### 4. `npm` 报 `ENOENT ... video_web\package.json`
 
@@ -387,9 +389,9 @@ git status
 
 演示视频建议 **50MB 以内、1080p 以下**；过大文件经开发代理播放可能占用大量内存。
 
-### 8. 8080 端口被占用
+### 8. 8081 端口被占用
 
-旧的后端进程未退出。Windows 可先查占用：`netstat -ano | findstr :8080`，再结束对应 `java.exe` 进程，或直接使用已在运行的实例。
+旧的后端进程未退出。Windows 可先查占用：`netstat -ano | findstr :8081`，再结束对应 `java.exe` 进程，或直接使用已在运行的实例。
 
 ### 9. 登录报 500 / JWT 相关错误
 
