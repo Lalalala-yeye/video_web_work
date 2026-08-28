@@ -11,6 +11,7 @@ import {
   register,
   login,
   waitLoggedIn,
+  openProfile,
   logout,
   waitMessageContains,
 } from './helpers.js'
@@ -46,8 +47,7 @@ async function run() {
     assert.ok(name.length > 0, '登录后顶栏应显示昵称')
     console.log('OK  登录成功')
 
-    await driver.get(`${BASE_URL}/profile`)
-    await driver.wait(until.elementLocated(By.xpath("//button[contains(., '保存资料')]")), 12000)
+    await openProfile(driver)
     console.log('OK  个人中心')
 
     await logout(driver)

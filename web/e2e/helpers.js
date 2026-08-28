@@ -20,7 +20,10 @@ export async function createDriver() {
   if (process.env.CHROME_BIN) {
     options.setChromeBinaryPath(process.env.CHROME_BIN)
   }
-  return new Builder().forBrowser('chrome').setChromeOptions(options).build()
+  options.setPageLoadStrategy('eager')
+  const driver = await new Builder().forBrowser('chrome').setChromeOptions(options).build()
+  await driver.manage().setTimeouts({ implicit: 0, pageLoad: 20000, script: 15000 })
+  return driver
 }
 
 export async function fillByPlaceholder(driver, placeholder, text) {
@@ -65,6 +68,24 @@ export async function waitLoggedIn(driver) {
     return !url.includes('/login')
   }, WAIT_MS)
   await driver.wait(until.elementLocated(By.css('.user-name')), WAIT_MS)
+}
+
+/** 登录后走顶栏进个人中心，避免 driver.get 整页刷新在 CI 里丢掉 sessionStorage。 */
+export async function openProfile(driver) {
+  const trigger = await driver.wait(until.elementLocated(By.css('.user-trigger')), WAIT_MS)
+  await trigger.click()
+  const link = await driver.wait(
+    until.elementLocated(By.css('a.menu-item[href="/profile"]')),
+    WAIT_MS
+  )
+  await link.click()
+  try {
+    await driver.wait(until.urlContains('/profile'), WAIT_MS)
+    await driver.wait(until.elementLocated(By.css('.edit-form')), WAIT_MS)
+  } catch (err) {
+    const url = await driver.getCurrentUrl()
+    throw new Error(`未能打开个人中心（当前 ${url}）: ${err.message}`)
+  }
 }
 
 export async function logout(driver) {

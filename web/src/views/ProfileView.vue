@@ -3,7 +3,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AppAvatar from '@/components/AppAvatar.vue'
 import VideoCard from '@/components/VideoCard.vue'
-import { getUser, isLoggedIn, setUser } from '@/utils/auth'
+import { getUser, isLoggedIn, setUser, restoreActiveAccountIfNeeded } from '@/utils/auth'
 import { fetchPersonalInfo, uploadAvatar } from '@/api/user'
 import { fetchHistoryList, fetchMyVideos } from '@/api/video'
 import { resolveMediaUrl } from '@/utils/media'
@@ -30,6 +30,9 @@ const loggedIn = computed(() => isLoggedIn())
 const avatarSrc = computed(() => user.value?.avatar || '')
 
 async function loadProfile() {
+  if (!isLoggedIn()) {
+    restoreActiveAccountIfNeeded()
+  }
   if (!isLoggedIn()) {
     router.push('/login')
     return
