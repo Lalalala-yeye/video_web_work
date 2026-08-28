@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1360" viewBox="0 0 2200 1360">
+<defs><marker id="arrow" markerWidth="12" markerHeight="9" refX="11" refY="4.5" orient="auto"><path d="M0,0 L12,4.5 L0,9 Z" fill="#172033"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="1100" y="38" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="31" font-weight="700" fill="#172033"><tspan x="1100" dy="0">UC02 用户登录/登出—组件级顺序图</tspan></text>
+<text x="2148" y="39" text-anchor="end" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#526078"><tspan x="2148" dy="0">追溯测试：U010、U011、U020、U031、U040</tspan></text>
+<circle cx="112" cy="103" r="22" fill="white" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="125" x2="112" y2="168" stroke="#172033" stroke-width="3"/>
+<line x1="81" y1="141" x2="143" y2="141" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="85" y2="202" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="139" y2="202" stroke="#172033" stroke-width="3"/>
+<text x="112" y="228" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="25" font-weight="600" fill="#172033"><tspan x="112" dy="0">用户/管理员</tspan></text>
+<rect x="185" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="347" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="347" dy="0">LoginView</tspan><tspan x="347" dy="25">登录页面</tspan></text>
+<rect x="500" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="492" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="492" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="600" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="762" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="762" dy="0">UserAccountController</tspan><tspan x="762" dy="25">账号接口</tspan></text>
+<rect x="915" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="907" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="907" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1015" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1177" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1177" dy="0">UserAccountService</tspan><tspan x="1177" dy="25">账号服务</tspan></text>
+<rect x="1330" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1322" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1322" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1430" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1592" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1592" dy="0">认证与 JWT 组件</tspan><tspan x="1592" dy="25">Provider/JwtUtil</tspan></text>
+<rect x="1745" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1737" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1737" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1845" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="2007" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="2007" dy="0">UserMapper</tspan><tspan x="2007" dy="25">用户存储</tspan></text>
+<rect x="2160" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<line x1="112" y1="242" x2="112" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="360" y1="181" x2="360" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="775" y1="181" x2="775" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1190" y1="181" x2="1190" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1605" y1="181" x2="1605" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="2020" y1="181" x2="2020" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<rect x="105" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="353" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="768" y="341" width="14" height="634" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1183" y="407" width="14" height="502" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1598" y="473" width="14" height="370" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="2013" y="539" width="14" height="106" fill="white" stroke="#172033" stroke-width="2"/>
+<line x1="120" y1="292" x2="350" y2="292" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="236" y="259" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">1: 提交用户名、密码和登录类</tspan><tspan x="236" dy="20">型</tspan></text>
+<line x1="368" y1="358" x2="765" y2="358" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="567.5" y="346" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">1.1: POST /user|admin/account/login</tspan></text>
+<line x1="783" y1="424" x2="1180" y2="424" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="982.5" y="412" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">1.2: login / adminLogin</tspan></text>
+<line x1="1198" y1="490" x2="1595" y2="490" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="478" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.3: authenticate(username, password)</tspan></text>
+<line x1="1613" y1="556" x2="2010" y2="556" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1812.5" y="544" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1812.5" dy="0">1.4: 查询用户并校验 BCrypt</tspan></text>
+<line x1="2012" y1="622" x2="1615" y2="622" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1812.5" y="610" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1812.5" dy="0">1.5: User / 认证失败</tspan></text>
+<line x1="1597" y1="688" x2="1200" y2="688" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1397.5" y="676" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.6: Authentication</tspan></text>
+<line x1="1198" y1="754" x2="1595" y2="754" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="742" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.7: 校验角色并 createToken</tspan></text>
+<line x1="1597" y1="820" x2="1200" y2="820" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1397.5" y="808" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.8: JWT</tspan></text>
+<line x1="1182" y1="886" x2="785" y2="886" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="982.5" y="874" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">1.9: token + user / 错误</tspan></text>
+<line x1="767" y1="952" x2="370" y2="952" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="567.5" y="940" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">1.10: 登录结果</tspan></text>
+<line x1="352" y1="1018" x2="122" y2="1018" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="236" y="1006" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">1.11: 保存 JWT 并进入系统</tspan></text>
+<rect x="315" y="1120" width="1815" height="170" rx="8" fill="#fffbea" stroke="#6b7280" stroke-width="2"/>
+<text x="340" y="1154" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#172033"><tspan x="340" dy="0">分支结果：</tspan></text>
+<text x="340" y="1195" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">普通登录签发 user 令牌；管理员登录还必须满足 role=2。</tspan></text>
+<text x="340" y="1247" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">失败返回 403；登出时前端清除令牌，后端清空 SecurityContext。</tspan></text>
+</svg>

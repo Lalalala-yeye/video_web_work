@@ -1,0 +1,739 @@
+\documentclass[a4paper,landscape]{ctexart}
+\usepackage[margin=5mm]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\pagestyle{empty}
+\definecolor{umlblue}{HTML}{2563EB}
+\definecolor{umldark}{HTML}{172033}
+\definecolor{umlpale}{HTML}{F5F8FF}
+\definecolor{umlnote}{HTML}{FFFBEA}
+\tikzset{
+  component/.style={draw=umlblue,fill=umlpale,line width=0.8pt,minimum width=3.50cm,minimum height=1.08cm,align=center,font=\bfseries},
+  lifeline/.style={draw=umldark,dashed,line width=0.55pt},
+  activation/.style={draw=umldark,fill=white,line width=0.55pt},
+  call/.style={draw=umldark,-{Stealth[length=2.5mm]},line width=0.65pt},
+  return/.style={draw=umldark,dashed,-{Stealth[length=2.5mm]},line width=0.65pt},
+  note/.style={draw=gray,fill=umlnote,rounded corners=2pt,text width=17.7cm,inner sep=7pt,align=left}
+}
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC01 用户注册—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：U000、U001、U002};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {访客};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small RegisterView\\注册页面};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small UserAccountController\\账号接口};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small UserAccountService\\账号服务};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small UserMapper\\用户存储};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.56) rectangle (9.60,9.60);
+\draw[activation] (14.80,4.36) rectangle (14.94,8.80);
+\draw[activation] (20.13,5.17) rectangle (20.27,7.99);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 填写并提交注册信息} (4.20,2.92);
+\draw[call] (4.20,3.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /user/account/register} (9.53,3.73);
+\draw[call] (9.53,4.53)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: register(username, password, confirmed)} (14.87,4.53);
+\draw[call] (14.87,5.34)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 查询用户名是否存在} (20.20,5.34);
+\draw[return] (20.20,6.15)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 用户记录 / 空} (14.87,6.15);
+\draw[call] (14.87,6.95)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: BCrypt 加密并新增 users} (20.20,6.95);
+\draw[return] (20.20,7.76)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 新用户 ID} (14.87,7.76);
+\draw[return] (14.87,8.57)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: 注册结果} (9.53,8.57);
+\draw[return] (9.53,9.37)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.8: CustomResponse} (4.20,9.37);
+\draw[return] (4.20,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.9: 显示成功或校验错误} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]成功：账号唯一、两次密码一致，保存 BCrypt 密文并创建用户。\\[2pt]失败：空字段、超长、密码不一致或账号已存在，不写入 users。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC02 用户登录/登出—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：U010、U011、U020、U031、U040};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {用户/管理员};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (3.60,1.27) {\small LoginView\\登录页面};
+\draw[lifeline] (3.60,1.81)--(3.60,10.82);
+\draw[blue,line width=0.55pt] (4.88,0.95) rectangle (5.07,1.18);
+\draw[blue,line width=0.55pt] (4.80,1.00) rectangle (4.90,1.08) (4.80,1.10) rectangle (4.90,1.18);
+\node[component] (head2) at (7.75,1.27) {\small UserAccountController\\账号接口};
+\draw[lifeline] (7.75,1.81)--(7.75,10.82);
+\draw[blue,line width=0.55pt] (9.03,0.95) rectangle (9.22,1.18);
+\draw[blue,line width=0.55pt] (8.95,1.00) rectangle (9.05,1.08) (8.95,1.10) rectangle (9.05,1.18);
+\node[component] (head3) at (11.90,1.27) {\small UserAccountService\\账号服务};
+\draw[lifeline] (11.90,1.81)--(11.90,10.82);
+\draw[blue,line width=0.55pt] (13.18,0.95) rectangle (13.37,1.18);
+\draw[blue,line width=0.55pt] (13.10,1.00) rectangle (13.20,1.08) (13.10,1.10) rectangle (13.20,1.18);
+\node[component] (head4) at (16.05,1.27) {\small 认证与 JWT 组件\\Provider/JwtUtil};
+\draw[lifeline] (16.05,1.81)--(16.05,10.82);
+\draw[blue,line width=0.55pt] (17.33,0.95) rectangle (17.52,1.18);
+\draw[blue,line width=0.55pt] (17.25,1.00) rectangle (17.35,1.08) (17.25,1.10) rectangle (17.35,1.18);
+\node[component] (head5) at (20.20,1.27) {\small UserMapper\\用户存储};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (3.53,2.75) rectangle (3.67,10.41);
+\draw[activation] (7.68,3.41) rectangle (7.82,9.75);
+\draw[activation] (11.83,4.07) rectangle (11.97,9.09);
+\draw[activation] (15.98,4.73) rectangle (16.12,8.43);
+\draw[activation] (20.13,5.39) rectangle (20.27,6.45);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 提交用户名、密码和登录类\\型} (3.60,2.92);
+\draw[call] (3.60,3.58)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /user|admin/account/login} (7.75,3.58);
+\draw[call] (7.75,4.24)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: login / adminLogin} (11.90,4.24);
+\draw[call] (11.90,4.90)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: authenticate(username, password)} (16.05,4.90);
+\draw[call] (16.05,5.56)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 查询用户并校验 BCrypt} (20.20,5.56);
+\draw[return] (20.20,6.22)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: User / 认证失败} (16.05,6.22);
+\draw[return] (16.05,6.88)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: Authentication} (11.90,6.88);
+\draw[call] (11.90,7.54)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: 校验角色并 createToken} (16.05,7.54);
+\draw[return] (16.05,8.20)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.8: JWT} (11.90,8.20);
+\draw[return] (11.90,8.86)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.9: token + user / 错误} (7.75,8.86);
+\draw[return] (7.75,9.52)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.10: 登录结果} (3.60,9.52);
+\draw[return] (3.60,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.11: 保存 JWT 并进入系统} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]普通登录签发 user 令牌；管理员登录还必须满足 role=2。\\[2pt]失败返回 403；登出时前端清除令牌，后端清空 SecurityContext。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC03 个人信息维护—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：U030、U060、U061、U080、U081};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {登录用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small ProfileView\\资料页面};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small UserAccountController +\\UserController};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small 账号/资料服务组件\\AccountService + UserService};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small UserMapper/文件存储\\users + uploads/avatars};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,7.06);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.31) rectangle (9.60,10.41);
+\draw[activation] (14.80,3.87) rectangle (14.94,9.85);
+\draw[activation] (20.13,4.43) rectangle (20.27,9.29);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 打开个人资料} (4.20,2.92);
+\draw[call] (4.20,3.48)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: GET /user/personal/info} (9.53,3.48);
+\draw[call] (9.53,4.04)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: getUserById(currentUser)} (14.87,4.04);
+\draw[call] (14.87,4.60)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 查询 users} (20.20,4.60);
+\draw[return] (20.20,5.15)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 用户资料} (14.87,5.15);
+\draw[return] (14.87,5.71)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: UserDTO} (9.53,5.71);
+\draw[return] (9.53,6.27)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 当前资料} (4.20,6.27);
+\draw[call] (1.12,6.83)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 修改昵称/简介或上传头像} (4.20,6.83);
+\draw[call] (4.20,7.39)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: POST /user/info/update | avatar/upload} (9.53,7.39);
+\draw[call] (9.53,7.95)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: 校验当前用户并保存} (14.87,7.95);
+\draw[call] (14.87,8.50)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 更新 users / 写入头像文件} (20.20,8.50);
+\draw[return] (20.20,9.06)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: 更新后的资料与头像 URL} (14.87,9.06);
+\draw[return] (14.87,9.62)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: 保存结果} (9.53,9.62);
+\draw[return] (9.53,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.6: CustomResponse} (4.20,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]成功：重新查询所得昵称、简介和头像地址与提交内容一致。\\[2pt]失败：未登录、用户不存在、昵称非法或头像写入失败时不产生脏数据。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC04 浏览与播放视频—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：V000、V010、V011、V020};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {访客/用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small Home/VideoDetailView\\浏览播放页面};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small VideoController\\视频接口};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small VideoService\\视频服务};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small VideoMapper/静态映射\\videos + uploads};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.27) rectangle (9.60,9.89);
+\draw[activation] (14.80,3.79) rectangle (14.94,9.37);
+\draw[activation] (20.13,4.31) rectangle (20.27,8.85);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 浏览公开视频列表} (4.20,2.92);
+\draw[call] (4.20,3.44)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: GET /video/list?page\&size} (9.53,3.44);
+\draw[call] (9.53,3.96)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: listPublished(page, size)} (14.87,3.96);
+\draw[call] (14.87,4.48)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 分页查询 status=1 的 videos} (20.20,4.48);
+\draw[return] (20.20,4.99)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 视频与作者数据} (14.87,4.99);
+\draw[return] (14.87,5.51)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: PageResult<VideoDTO>} (9.53,5.51);
+\draw[return] (9.53,6.03)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 公共视频列表} (4.20,6.03);
+\draw[call] (1.12,6.55)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 选择视频播放} (4.20,6.55);
+\draw[call] (4.20,7.07)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: GET /video/getone?id} (9.53,7.07);
+\draw[call] (9.53,7.59)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: getOne(id, viewerId, role)} (14.87,7.59);
+\draw[call] (14.87,8.11)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 校验可见性并取得媒体 URL} (20.20,8.11);
+\draw[return] (20.20,8.62)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: 视频与媒体路径} (14.87,8.62);
+\draw[return] (14.87,9.14)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: VideoDTO} (9.53,9.14);
+\draw[return] (9.53,9.66)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.6: 视频详情} (4.20,9.66);
+\draw[return] (4.20,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.7: 浏览器加载并播放媒体} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]公开访问仅返回 status=1；作者或管理员可按权限查看非公开视频。\\[2pt]视频不存在或无查看权限时返回 404，不暴露私密媒体信息。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC05 播放历史—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：V050、V051};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {登录用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small VideoDetail/ProfileView\\播放与历史页面};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small VideoController\\视频接口};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small VideoService\\视频服务};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small 历史与视频存储\\PlayHistory/VideoMapper};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.31) rectangle (9.60,9.85);
+\draw[activation] (14.80,3.87) rectangle (14.94,9.29);
+\draw[activation] (20.13,4.43) rectangle (20.27,8.73);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 播放中上报进度} (4.20,2.92);
+\draw[call] (4.20,3.48)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /video/history/progress} (9.53,3.48);
+\draw[call] (9.53,4.04)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: saveProgress(userId, videoId, progress)} (14.87,4.04);
+\draw[call] (14.87,4.60)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 查询用户-视频历史记录} (20.20,4.60);
+\draw[return] (20.20,5.15)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 已有记录 / 空} (14.87,5.15);
+\draw[call] (14.87,5.71)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 更新或新增 play\_history} (20.20,5.71);
+\draw[call] (1.12,6.27)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 查看播放历史} (4.20,6.27);
+\draw[call] (4.20,6.83)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: GET /video/history/list} (9.53,6.83);
+\draw[call] (9.53,7.39)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: listHistory(userId, page, size)} (14.87,7.39);
+\draw[call] (14.87,7.95)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 查询历史并补充视频信息} (20.20,7.95);
+\draw[return] (20.20,8.50)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: 历史与视频数据} (14.87,8.50);
+\draw[return] (14.87,9.06)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: PageResult<PlayHistoryDTO>} (9.53,9.06);
+\draw[return] (9.53,9.62)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.6: 历史列表与续播进度} (4.20,9.62);
+\draw[return] (4.20,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.7: 展示最近观看记录} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]同一 user\_id + video\_id 只保留一条记录，重复上报执行更新。\\[2pt]无效视频、负进度或未登录请求被拒绝。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC06 上传与编辑视频—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：V030、V031、V040、V060、V061};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {发布者};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small StudioUpload/EditView\\创作中心};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small VideoController\\视频接口};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small VideoService\\视频服务};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small VideoMapper/文件存储\\videos + uploads};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,7.51);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.23) rectangle (9.60,10.41);
+\draw[activation] (14.80,3.72) rectangle (14.94,9.93);
+\draw[activation] (20.13,4.69) rectangle (20.27,9.44);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 提交视频、封面和元数据} (4.20,2.92);
+\draw[call] (4.20,3.40)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /video/upload (multipart)} (9.53,3.40);
+\draw[call] (9.53,3.89)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: upload(userId, role, visibility, files)} (14.87,3.89);
+\draw[call] (14.87,4.37)--++(0.92,0)--++(0,0.34)--++(-0.84,0) node[midway,above=2pt,align=center] {1.3: 校验标题、格式、大小和\\发布权限};
+\draw[call] (14.87,4.86)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 写入 uploads/videos 与 covers} (20.20,4.86);
+\draw[call] (14.87,5.34)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 新增 videos(status=待审核/私密)} (20.20,5.34);
+\draw[return] (20.20,5.82)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: Video} (14.87,5.82);
+\draw[return] (14.87,6.31)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: 投稿信息与状态} (9.53,6.31);
+\draw[return] (9.53,6.79)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.8: 上传结果} (4.20,6.79);
+\draw[call] (1.12,7.28)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 编辑元数据或修改可见性} (4.20,7.28);
+\draw[call] (4.20,7.76)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: POST /video/update | visibility} (9.53,7.76);
+\draw[call] (9.53,8.24)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: 校验作者并更新} (14.87,8.24);
+\draw[call] (14.87,8.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 更新文件/字段，公开内容重回待审核} (20.20,8.73);
+\draw[return] (20.20,9.21)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: 更新后的 Video} (14.87,9.21);
+\draw[return] (14.87,9.70)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: 编辑结果} (9.53,9.70);
+\draw[return] (9.53,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.6: CustomResponse} (4.20,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]public 投稿或重新公开进入待审核；private 内容仅作者可见。\\[2pt]非作者、标题非法、格式不支持或文件写入失败时返回错误。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC07 举报视频—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：V063、A020};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {用户/管理员};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (3.60,1.27) {\small VideoDetailView\\视频详情页};
+\draw[lifeline] (3.60,1.81)--(3.60,10.82);
+\draw[blue,line width=0.55pt] (4.88,0.95) rectangle (5.07,1.18);
+\draw[blue,line width=0.55pt] (4.80,1.00) rectangle (4.90,1.08) (4.80,1.10) rectangle (4.90,1.18);
+\node[component] (head2) at (7.75,1.27) {\small VideoController\\视频接口};
+\draw[lifeline] (7.75,1.81)--(7.75,10.82);
+\draw[blue,line width=0.55pt] (9.03,0.95) rectangle (9.22,1.18);
+\draw[blue,line width=0.55pt] (8.95,1.00) rectangle (9.05,1.08) (8.95,1.10) rectangle (9.05,1.18);
+\node[component] (head3) at (11.90,1.27) {\small VideoService\\视频服务};
+\draw[lifeline] (11.90,1.81)--(11.90,10.82);
+\draw[blue,line width=0.55pt] (13.18,0.95) rectangle (13.37,1.18);
+\draw[blue,line width=0.55pt] (13.10,1.00) rectangle (13.20,1.08) (13.10,1.10) rectangle (13.20,1.18);
+\node[component] (head4) at (16.05,1.27) {\small 举报与视频存储\\Report/VideoMapper};
+\draw[lifeline] (16.05,1.81)--(16.05,10.82);
+\draw[blue,line width=0.55pt] (17.33,0.95) rectangle (17.52,1.18);
+\draw[blue,line width=0.55pt] (17.25,1.00) rectangle (17.35,1.08) (17.25,1.10) rectangle (17.35,1.18);
+\node[component] (head5) at (20.20,1.27) {\small AdminVideo 组件\\Controller + Service};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (3.53,2.75) rectangle (3.67,8.60);
+\draw[activation] (7.68,3.20) rectangle (7.82,8.14);
+\draw[activation] (11.83,3.66) rectangle (11.97,7.69);
+\draw[activation] (15.98,4.11) rectangle (16.12,9.96);
+\draw[activation] (20.13,8.65) rectangle (20.27,10.41);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 填写原因并举报视频} (3.60,2.92);
+\draw[call] (3.60,3.37)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /video/report?id\&reason} (7.75,3.37);
+\draw[call] (7.75,3.83)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: reportVideo(userId, videoId, rea\\son)} (11.90,3.83);
+\draw[call] (11.90,4.28)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 查询视频状态和作者} (16.05,4.28);
+\draw[return] (16.05,4.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: Video} (11.90,4.73);
+\draw[call] (11.90,5.19)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 查询是否重复举报} (16.05,5.19);
+\draw[return] (16.05,5.64)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 已有数量} (11.90,5.64);
+\draw[call] (11.90,6.10)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: 新增 video\_reports 并重新计数} (16.05,6.10);
+\draw[call] (11.90,6.55)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.8: 更新 report\_count / 复审状态} (16.05,6.55);
+\draw[return] (16.05,7.00)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.9: 持久化完成} (11.90,7.00);
+\draw[return] (11.90,7.46)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.10: 举报结果} (7.75,7.46);
+\draw[return] (7.75,7.91)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.11: CustomResponse} (3.60,7.91);
+\draw[return] (3.60,8.37)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.12: 显示已提交或失败原因} (1.12,8.37);
+\draw[call] (1.12,8.82)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 管理员 GET /admin/video/report-review} (20.20,8.82);
+\draw[call] (20.20,9.27)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: 校验 role=2 并查询 REPORT\_REVIEW} (16.05,9.27);
+\draw[return] (16.05,9.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: 复审视频分页数据} (20.20,9.73);
+\draw[return] (20.20,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: A020 复审列表} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]达到 REPORT\_THRESHOLD 后，视频状态转为 REPORT\_REVIEW；仅管理员可查询复审列表。\\[2pt]禁止举报非公开视频、自有视频以及同一用户重复举报。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC08 直播管理—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：L000、L010、L020、L021、L022};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {主播};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (3.60,1.27) {\small StudioLiveView\\直播工作台};
+\draw[lifeline] (3.60,1.81)--(3.60,10.82);
+\draw[blue,line width=0.55pt] (4.88,0.95) rectangle (5.07,1.18);
+\draw[blue,line width=0.55pt] (4.80,1.00) rectangle (4.90,1.08) (4.80,1.10) rectangle (4.90,1.18);
+\node[component] (head2) at (7.75,1.27) {\small LiveRoomController\\直播接口};
+\draw[lifeline] (7.75,1.81)--(7.75,10.82);
+\draw[blue,line width=0.55pt] (9.03,0.95) rectangle (9.22,1.18);
+\draw[blue,line width=0.55pt] (8.95,1.00) rectangle (9.05,1.08) (8.95,1.10) rectangle (9.05,1.18);
+\node[component] (head3) at (11.90,1.27) {\small LiveRoomService\\直播服务};
+\draw[lifeline] (11.90,1.81)--(11.90,10.82);
+\draw[blue,line width=0.55pt] (13.18,0.95) rectangle (13.37,1.18);
+\draw[blue,line width=0.55pt] (13.10,1.00) rectangle (13.20,1.08) (13.10,1.10) rectangle (13.20,1.18);
+\node[component] (head4) at (16.05,1.27) {\small 直播数据组件\\LiveRoomMapper/Helper};
+\draw[lifeline] (16.05,1.81)--(16.05,10.82);
+\draw[blue,line width=0.55pt] (17.33,0.95) rectangle (17.52,1.18);
+\draw[blue,line width=0.55pt] (17.25,1.00) rectangle (17.35,1.08) (17.25,1.10) rectangle (17.35,1.18);
+\node[component] (head5) at (20.20,1.27) {\small SRS 媒体服务\\RTMP + FLV/HLS};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (3.53,2.75) rectangle (3.67,10.41);
+\draw[activation] (7.68,3.41) rectangle (7.82,7.77);
+\draw[activation] (11.83,4.07) rectangle (11.97,7.11);
+\draw[activation] (15.98,4.73) rectangle (16.12,6.45);
+\draw[activation] (20.13,8.03) rectangle (20.27,9.75);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 创建直播间并点击开播} (3.60,2.92);
+\draw[call] (3.60,3.58)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /live/create | /live/start} (7.75,3.58);
+\draw[call] (7.75,4.24)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: create / startLive(userId, role,\\ roomId)} (11.90,4.24);
+\draw[call] (11.90,4.90)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 新增房间或校验主播权限} (16.05,4.90);
+\draw[return] (16.05,5.56)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: LiveRoom + streamKey} (11.90,5.56);
+\draw[call] (11.90,6.22)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 更新 is\_live 与 session\_start} (16.05,6.22);
+\draw[return] (11.90,6.88)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 开播结果和推流密钥} (7.75,6.88);
+\draw[return] (7.75,7.54)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: LiveRoomDTO} (3.60,7.54);
+\draw[call] (1.12,8.20)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: OBS 推送 RTMP(streamKey)} (20.20,8.20);
+\draw[call] (20.20,8.86)--++(0.92,0)--++(0,0.34)--++(-0.84,0) node[midway,above=2pt,align=center] {2.1: 接收并转封装媒体流};
+\draw[return] (20.20,9.52)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: 提供 FLV/HLS 播放流} (3.60,9.52);
+\draw[return] (3.60,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 展示直播状态和播放地址} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]Spring Boot 只管理直播间业务状态；SRS 独立承载媒体输入和分发。\\[2pt]停播调用 /live/stop，将 is\_live=false 并记录 ended\_at；非主播无权操作。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC09 关注与订阅动态—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：F000、F001、F010、F030};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {登录用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small UserShowcase/SubscribeView\\关注与动态页面};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small SubscriptionController\\订阅接口};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small SubscriptionService\\订阅服务};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small 订阅与内容存储\\Subscription/内容Mapper};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.23) rectangle (9.60,9.93);
+\draw[activation] (14.80,3.72) rectangle (14.94,9.44);
+\draw[activation] (20.13,4.20) rectangle (20.27,8.96);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 关注目标用户} (4.20,2.92);
+\draw[call] (4.20,3.40)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /subscription/follow} (9.53,3.40);
+\draw[call] (9.53,3.89)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: follow(followerId, targetId)} (14.87,3.89);
+\draw[call] (14.87,4.37)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 校验目标并查询重复关系} (20.20,4.37);
+\draw[return] (20.20,4.86)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 用户与关注状态} (14.87,4.86);
+\draw[call] (14.87,5.34)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 新增 subscriptions} (20.20,5.34);
+\draw[return] (14.87,5.82)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 关注结果} (9.53,5.82);
+\draw[return] (9.53,6.31)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: CustomResponse} (4.20,6.31);
+\draw[call] (1.12,6.79)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 查看订阅动态} (4.20,6.79);
+\draw[call] (4.20,7.28)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: GET /subscription/feed} (9.53,7.28);
+\draw[call] (9.53,7.76)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: feed(userId, page, size)} (14.87,7.76);
+\draw[call] (14.87,8.24)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 聚合关注者的公开视频与直播} (20.20,8.24);
+\draw[return] (20.20,8.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: 视频、直播和作者数据} (14.87,8.73);
+\draw[return] (14.87,9.21)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: PageResult<FeedItemDTO>} (9.53,9.21);
+\draw[return] (9.53,9.70)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.6: 订阅动态列表} (4.20,9.70);
+\draw[return] (4.20,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.7: 展示关注内容} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt](follower\_id, target\_id) 唯一，不能关注自己；取消关注删除对应关系。\\[2pt]订阅动态只包含 status=1 的视频和 is\_live=true 的直播间。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC10 发表评论—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：C000、C001、C002、C010、L040、L041};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {登录用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small VideoDetail/LiveRoomView\\评论界面};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small CommentController\\评论接口};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small CommentService\\评论服务};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small 评论与目标存储\\Comment/Video/LiveMapper};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,3.15);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.23) rectangle (9.60,10.41);
+\draw[activation] (14.80,3.72) rectangle (14.94,9.93);
+\draw[activation] (20.13,4.69) rectangle (20.27,9.44);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 输入并提交评论} (4.20,2.92);
+\draw[call] (4.20,3.40)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /comment/add} (9.53,3.40);
+\draw[call] (9.53,3.89)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: add(userId, targetId, targetType, content)} (14.87,3.89);
+\draw[call] (14.87,4.37)--++(0.92,0)--++(0,0.34)--++(-0.84,0) node[midway,above=2pt,align=center] {1.3: 校验内容和 targetTyp\\e};
+\draw[call] (14.87,4.86)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 查询视频/直播目标} (20.20,4.86);
+\draw[return] (20.20,5.34)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 目标存在且可评论} (14.87,5.34);
+\draw[call] (14.87,5.82)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 新增 comments 并查询评论者} (20.20,5.82);
+\draw[return] (20.20,6.31)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: CommentDTO 数据} (14.87,6.31);
+\draw[return] (14.87,6.79)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.8: 新评论} (9.53,6.79);
+\draw[return] (9.53,7.28)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.9: 添加成功} (4.20,7.28);
+\draw[call] (4.20,7.76)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: GET /comment/list 刷新列表} (9.53,7.76);
+\draw[call] (9.53,8.24)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: listByTarget(..., viewerId)} (14.87,8.24);
+\draw[call] (14.87,8.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: 分页查询评论与用户} (20.20,8.73);
+\draw[return] (20.20,9.21)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: comments + users} (14.87,9.21);
+\draw[return] (14.87,9.70)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: PageResult<CommentDTO>} (9.53,9.70);
+\draw[return] (9.53,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: 分页评论列表} (4.20,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]targetType=1 表示视频，2 表示直播；直播评论要求直播间存在。\\[2pt]空内容、非法目标类型或目标不存在时拒绝写入 comments。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC11 赞踩互动—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：R000、R001、R010、V020};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {登录用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (3.60,1.27) {\small VideoDetail/CommentItem\\互动组件};
+\draw[lifeline] (3.60,1.81)--(3.60,10.82);
+\draw[blue,line width=0.55pt] (4.88,0.95) rectangle (5.07,1.18);
+\draw[blue,line width=0.55pt] (4.80,1.00) rectangle (4.90,1.08) (4.80,1.10) rectangle (4.90,1.18);
+\node[component] (head2) at (7.75,1.27) {\small ReactionController\\互动接口};
+\draw[lifeline] (7.75,1.81)--(7.75,10.82);
+\draw[blue,line width=0.55pt] (9.03,0.95) rectangle (9.22,1.18);
+\draw[blue,line width=0.55pt] (8.95,1.00) rectangle (9.05,1.08) (8.95,1.10) rectangle (9.05,1.18);
+\node[component] (head3) at (11.90,1.27) {\small ReactionService\\互动服务};
+\draw[lifeline] (11.90,1.81)--(11.90,10.82);
+\draw[blue,line width=0.55pt] (13.18,0.95) rectangle (13.37,1.18);
+\draw[blue,line width=0.55pt] (13.10,1.00) rectangle (13.20,1.08) (13.10,1.10) rectangle (13.20,1.18);
+\node[component] (head4) at (16.05,1.27) {\small 互动存储组件\\Video/CommentReactionMapper};
+\draw[lifeline] (16.05,1.81)--(16.05,10.82);
+\draw[blue,line width=0.55pt] (17.33,0.95) rectangle (17.52,1.18);
+\draw[blue,line width=0.55pt] (17.25,1.00) rectangle (17.35,1.08) (17.25,1.10) rectangle (17.35,1.18);
+\node[component] (head5) at (20.20,1.27) {\small NotificationService\\通知服务};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (3.53,2.75) rectangle (3.67,10.41);
+\draw[activation] (7.68,3.35) rectangle (7.82,9.80);
+\draw[activation] (11.83,3.96) rectangle (11.97,9.20);
+\draw[activation] (15.98,4.56) rectangle (16.12,8.60);
+\draw[activation] (20.13,6.38) rectangle (20.27,7.38);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 点击点赞或点踩} (3.60,2.92);
+\draw[call] (3.60,3.52)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /video|comment/reaction} (7.75,3.52);
+\draw[call] (7.75,4.13)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: setReaction(userId, targetId, re\\action)} (11.90,4.13);
+\draw[call] (11.90,4.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 查询目标与现有互动} (16.05,4.73);
+\draw[return] (16.05,5.34)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: existing / 空} (11.90,5.34);
+\draw[call] (11.90,5.95)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 插入、切换或删除互动记录} (16.05,5.95);
+\draw[call] (11.90,6.55)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 点赞时生成业务通知} (20.20,6.55);
+\draw[return] (20.20,7.15)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: 通知写入结果} (11.90,7.15);
+\draw[call] (11.90,7.76)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.8: 汇总点赞数、点踩数和本人状态} (16.05,7.76);
+\draw[return] (16.05,8.37)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.9: ReactionSummaryDTO} (11.90,8.37);
+\draw[return] (11.90,8.97)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.10: 最新互动汇总} (7.75,8.97);
+\draw[return] (7.75,9.57)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.11: CustomResponse} (3.60,9.57);
+\draw[return] (3.60,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.12: 刷新按钮状态与计数} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]同一用户同一目标只保留一种状态：重复点击取消，反向点击切换。\\[2pt]仅点赞触发通知；目标不存在或 reaction 非 1/-1 时拒绝操作。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC12 关键词搜索—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：S000、S001、S002};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {访客/用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small SearchView/TopNavigation\\搜索界面};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small SearchController\\搜索接口};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small SearchService\\搜索服务};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small 搜索数据组件\\Video/Live/User Mapper};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.48) rectangle (9.60,9.68);
+\draw[activation] (14.80,4.20) rectangle (14.94,8.96);
+\draw[activation] (20.13,5.65) rectangle (20.27,8.23);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 输入关键词并搜索} (4.20,2.92);
+\draw[call] (4.20,3.65)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: GET /search?keyword\&limits} (9.53,3.65);
+\draw[call] (9.53,4.37)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: search(keyword, video, live, user limits)} (14.87,4.37);
+\draw[call] (14.87,5.10)--++(0.92,0)--++(0,0.34)--++(-0.84,0) node[midway,above=2pt,align=center] {1.3: 规范化关键词与数量上限};
+\draw[call] (14.87,5.82)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 查询 status=1 的视频} (20.20,5.82);
+\draw[return] (20.20,6.55)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 视频结果} (14.87,6.55);
+\draw[call] (14.87,7.28)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 查询直播间与用户} (20.20,7.28);
+\draw[return] (20.20,8.00)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.7: 直播和用户结果} (14.87,8.00);
+\draw[return] (14.87,8.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.8: SearchResultDTO} (9.53,8.73);
+\draw[return] (9.53,9.45)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.9: 分类搜索结果} (4.20,9.45);
+\draw[return] (4.20,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.10: 展示视频/直播/用户分组} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]视频搜索始终限定 status=1；三类结果分别受 limit 参数约束。\\[2pt]空关键词返回空结果，避免无条件扫描全部业务数据。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC13 通知—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：N000、N010、N021};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {登录用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (4.20,1.27) {\small TopNavigation\\通知面板};
+\draw[lifeline] (4.20,1.81)--(4.20,10.82);
+\draw[blue,line width=0.55pt] (5.48,0.95) rectangle (5.67,1.18);
+\draw[blue,line width=0.55pt] (5.40,1.00) rectangle (5.50,1.08) (5.40,1.10) rectangle (5.50,1.18);
+\node[component] (head2) at (9.53,1.27) {\small NotificationController\\通知接口};
+\draw[lifeline] (9.53,1.81)--(9.53,10.82);
+\draw[blue,line width=0.55pt] (10.81,0.95) rectangle (11.00,1.18);
+\draw[blue,line width=0.55pt] (10.73,1.00) rectangle (10.83,1.08) (10.73,1.10) rectangle (10.83,1.18);
+\node[component] (head3) at (14.87,1.27) {\small NotificationService\\通知服务};
+\draw[lifeline] (14.87,1.81)--(14.87,10.82);
+\draw[blue,line width=0.55pt] (16.15,0.95) rectangle (16.34,1.18);
+\draw[blue,line width=0.55pt] (16.07,1.00) rectangle (16.17,1.08) (16.07,1.10) rectangle (16.17,1.18);
+\node[component] (head4) at (20.20,1.27) {\small NotificationMapper\\通知存储};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,7.06);
+\draw[activation] (4.13,2.75) rectangle (4.27,10.41);
+\draw[activation] (9.46,3.31) rectangle (9.60,10.41);
+\draw[activation] (14.80,3.87) rectangle (14.94,9.85);
+\draw[activation] (20.13,4.43) rectangle (20.27,9.29);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 打开通知面板} (4.20,2.92);
+\draw[call] (4.20,3.48)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: GET /notification/list 与 unread-count} (9.53,3.48);
+\draw[call] (9.53,4.04)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: list/countUnread(currentUser)} (14.87,4.04);
+\draw[call] (14.87,4.60)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 按 user\_id 查询通知和未读数} (20.20,4.60);
+\draw[return] (20.20,5.15)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: notifications + count} (14.87,5.15);
+\draw[return] (14.87,5.71)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 通知分页结果} (9.53,5.71);
+\draw[return] (9.53,6.27)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 通知列表与未读数} (4.20,6.27);
+\draw[call] (1.12,6.83)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 标记单条或全部已读} (4.20,6.83);
+\draw[call] (4.20,7.39)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: POST /notification/read?id?} (9.53,7.39);
+\draw[call] (9.53,7.95)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: markRead(userId, id)} (14.87,7.95);
+\draw[call] (14.87,8.50)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 更新本人通知 is\_read=true} (20.20,8.50);
+\draw[return] (20.20,9.06)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: 更新数量} (14.87,9.06);
+\draw[return] (14.87,9.62)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: 已读结果} (9.53,9.62);
+\draw[return] (9.53,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.6: 刷新未读数} (4.20,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]所有查询和更新均按当前 user\_id 隔离，不能读取或修改他人通知。\\[2pt]id 为空时标记本人全部通知；指定 id 时还需验证通知归属。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC14 私信—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：M000、M010、M020};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {登录用户};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (3.60,1.27) {\small MessageRoomView\\私信页面};
+\draw[lifeline] (3.60,1.81)--(3.60,10.82);
+\draw[blue,line width=0.55pt] (4.88,0.95) rectangle (5.07,1.18);
+\draw[blue,line width=0.55pt] (4.80,1.00) rectangle (4.90,1.08) (4.80,1.10) rectangle (4.90,1.18);
+\node[component] (head2) at (7.75,1.27) {\small MessageController\\私信接口};
+\draw[lifeline] (7.75,1.81)--(7.75,10.82);
+\draw[blue,line width=0.55pt] (9.03,0.95) rectangle (9.22,1.18);
+\draw[blue,line width=0.55pt] (8.95,1.00) rectangle (9.05,1.08) (8.95,1.10) rectangle (9.05,1.18);
+\node[component] (head3) at (11.90,1.27) {\small MessageService\\私信服务};
+\draw[lifeline] (11.90,1.81)--(11.90,10.82);
+\draw[blue,line width=0.55pt] (13.18,0.95) rectangle (13.37,1.18);
+\draw[blue,line width=0.55pt] (13.10,1.00) rectangle (13.20,1.08) (13.10,1.10) rectangle (13.20,1.18);
+\node[component] (head4) at (16.05,1.27) {\small 私信存储组件\\DmRoom/DmMessage Mapper};
+\draw[lifeline] (16.05,1.81)--(16.05,10.82);
+\draw[blue,line width=0.55pt] (17.33,0.95) rectangle (17.52,1.18);
+\draw[blue,line width=0.55pt] (17.25,1.00) rectangle (17.35,1.08) (17.25,1.10) rectangle (17.35,1.18);
+\node[component] (head5) at (20.20,1.27) {\small NotificationService\\通知服务};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (3.53,2.75) rectangle (3.67,10.41);
+\draw[activation] (7.68,3.23) rectangle (7.82,9.93);
+\draw[activation] (11.83,3.72) rectangle (11.97,9.44);
+\draw[activation] (15.98,4.20) rectangle (16.12,7.99);
+\draw[activation] (20.13,8.07) rectangle (20.27,8.96);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 打开与目标用户的会话} (3.60,2.92);
+\draw[call] (3.60,3.40)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: POST /message/room/open} (7.75,3.40);
+\draw[call] (7.75,3.89)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: openRoom(userId, peerId)} (11.90,3.89);
+\draw[call] (11.90,4.37)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 按固定用户顺序查询或创建 dm\_rooms} (16.05,4.37);
+\draw[return] (16.05,4.86)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 唯一 roomId 与历史消息} (11.90,4.86);
+\draw[return] (11.90,5.34)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: 会话 DTO} (7.75,5.34);
+\draw[return] (7.75,5.82)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 会话信息} (3.60,5.82);
+\draw[call] (1.12,6.31)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 输入并发送消息} (3.60,6.31);
+\draw[call] (3.60,6.79)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: POST /message/send} (7.75,6.79);
+\draw[call] (7.75,7.28)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: send(userId, roomId, content)} (11.90,7.28);
+\draw[call] (11.90,7.76)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 校验成员，新增消息并更新会话时间} (16.05,7.76);
+\draw[call] (11.90,8.24)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: notifyMessage(sender, peer, room, preview)} (20.20,8.24);
+\draw[return] (20.20,8.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: 通知已记录} (11.90,8.73);
+\draw[return] (11.90,9.21)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.6: DmMessageDTO} (7.75,9.21);
+\draw[return] (7.75,9.70)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.7: 发送结果} (3.60,9.70);
+\draw[return] (3.60,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.8: 显示新消息} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt](user\_a, user\_b) 按固定顺序唯一，重复打开复用同一会话。\\[2pt]空消息、目标用户不存在或非会话成员访问/发送时拒绝操作。};
+\end{tikzpicture}
+\newpage
+
+\begin{tikzpicture}[x=1cm,y=-1cm,>=Stealth,font=\small]
+\node[font=\bfseries\Large] at (11,0.38) {UC15 管理员审核—组件级顺序图};
+\node[anchor=east,text=gray] at (21.45,0.38) {追溯测试：A000、A001、A010、A011、A040};
+\draw[line width=0.8pt] (1.12,0.82) circle (0.22);
+\draw[line width=0.8pt] (1.12,1.04)--(1.12,1.68) (0.81,1.31)--(1.43,1.31) (1.12,1.68)--(0.85,2.02) (1.12,1.68)--(1.39,2.02);
+\node[font=\bfseries] at (1.12,2.28) {管理员};
+\draw[lifeline] (1.12,2.42)--(1.12,10.82);
+\node[component] (head1) at (3.60,1.27) {\small AdminPendingView /\\AdminVideoPreviewView};
+\draw[lifeline] (3.60,1.81)--(3.60,10.82);
+\draw[blue,line width=0.55pt] (4.88,0.95) rectangle (5.07,1.18);
+\draw[blue,line width=0.55pt] (4.80,1.00) rectangle (4.90,1.08) (4.80,1.10) rectangle (4.90,1.18);
+\node[component] (head2) at (7.75,1.27) {\small AdminVideoController\\管理接口};
+\draw[lifeline] (7.75,1.81)--(7.75,10.82);
+\draw[blue,line width=0.55pt] (9.03,0.95) rectangle (9.22,1.18);
+\draw[blue,line width=0.55pt] (8.95,1.00) rectangle (9.05,1.08) (8.95,1.10) rectangle (9.05,1.18);
+\node[component] (head3) at (11.90,1.27) {\small AdminVideoService\\审核服务};
+\draw[lifeline] (11.90,1.81)--(11.90,10.82);
+\draw[blue,line width=0.55pt] (13.18,0.95) rectangle (13.37,1.18);
+\draw[blue,line width=0.55pt] (13.10,1.00) rectangle (13.20,1.08) (13.10,1.10) rectangle (13.20,1.18);
+\node[component] (head4) at (16.05,1.27) {\small 视频与文件组件\\VideoMapper/uploads};
+\draw[lifeline] (16.05,1.81)--(16.05,10.82);
+\draw[blue,line width=0.55pt] (17.33,0.95) rectangle (17.52,1.18);
+\draw[blue,line width=0.55pt] (17.25,1.00) rectangle (17.35,1.08) (17.25,1.10) rectangle (17.35,1.18);
+\node[component] (head5) at (20.20,1.27) {\small NotificationService\\通知服务};
+\draw[lifeline] (20.20,1.81)--(20.20,10.82);
+\draw[blue,line width=0.55pt] (21.48,0.95) rectangle (21.67,1.18);
+\draw[blue,line width=0.55pt] (21.40,1.00) rectangle (21.50,1.08) (21.40,1.10) rectangle (21.50,1.18);
+\draw[activation] (1.05,2.75) rectangle (1.19,10.41);
+\draw[activation] (3.53,2.75) rectangle (3.67,10.41);
+\draw[activation] (7.68,3.23) rectangle (7.82,9.93);
+\draw[activation] (11.83,3.72) rectangle (11.97,9.44);
+\draw[activation] (15.98,4.20) rectangle (16.12,7.99);
+\draw[activation] (20.13,8.07) rectangle (20.27,8.96);
+\draw[call] (1.12,2.92)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1: 查看待审核列表并预览} (3.60,2.92);
+\draw[call] (3.60,3.40)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.1: GET /admin/video/pending|getone} (7.75,3.40);
+\draw[call] (7.75,3.89)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.2: 校验 role=2 并查询待审视频} (11.90,3.89);
+\draw[call] (11.90,4.37)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.3: 查询 status=PENDING 的 videos} (16.05,4.37);
+\draw[return] (16.05,4.86)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.4: 待审列表与媒体信息} (11.90,4.86);
+\draw[return] (11.90,5.34)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.5: PageResult<VideoDTO>} (7.75,5.34);
+\draw[return] (7.75,5.82)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {1.6: 待审列表} (3.60,5.82);
+\draw[call] (1.12,6.31)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2: 通过、驳回或删除} (3.60,6.31);
+\draw[call] (3.60,6.79)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.1: POST /admin/video/approve|reject\\|delete} (7.75,6.79);
+\draw[call] (7.75,7.28)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.2: approve / reject / delete} (11.90,7.28);
+\draw[call] (11.90,7.76)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.3: 更新状态或删除视频与文件} (16.05,7.76);
+\draw[call] (11.90,8.24)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.4: 通过时 notifyVideoApproved} (20.20,8.24);
+\draw[return] (20.20,8.73)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.5: 作者通知已保存} (11.90,8.73);
+\draw[return] (11.90,9.21)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.6: 审核处理结果} (7.75,9.21);
+\draw[return] (7.75,9.70)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.7: CustomResponse} (3.60,9.70);
+\draw[return] (3.60,10.18)--node[midway,above=2pt,fill=white,inner sep=1pt,align=center] {2.8: 刷新列表并提示结果} (1.12,10.18);
+\node[note,anchor=north west] at (3.15,11.20) {\textbf{分支结果：}\\[2pt]通过：status=PUBLISHED 并通知作者；驳回：status=PRIVATE。\\[2pt]删除：清理记录与媒体文件；非 role=2 请求返回 403。};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1360" viewBox="0 0 2200 1360">
+<defs><marker id="arrow" markerWidth="12" markerHeight="9" refX="11" refY="4.5" orient="auto"><path d="M0,0 L12,4.5 L0,9 Z" fill="#172033"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="1100" y="38" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="31" font-weight="700" fill="#172033"><tspan x="1100" dy="0">UC08 直播管理—组件级顺序图</tspan></text>
+<text x="2148" y="39" text-anchor="end" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#526078"><tspan x="2148" dy="0">追溯测试：L000、L010、L020、L021、L022</tspan></text>
+<circle cx="112" cy="103" r="22" fill="white" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="125" x2="112" y2="168" stroke="#172033" stroke-width="3"/>
+<line x1="81" y1="141" x2="143" y2="141" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="85" y2="202" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="139" y2="202" stroke="#172033" stroke-width="3"/>
+<text x="112" y="228" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="25" font-weight="600" fill="#172033"><tspan x="112" dy="0">主播</tspan></text>
+<rect x="185" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="347" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="347" dy="0">StudioLiveView</tspan><tspan x="347" dy="25">直播工作台</tspan></text>
+<rect x="500" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="492" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="492" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="600" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="762" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="762" dy="0">LiveRoomController</tspan><tspan x="762" dy="25">直播接口</tspan></text>
+<rect x="915" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="907" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="907" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1015" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1177" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1177" dy="0">LiveRoomService</tspan><tspan x="1177" dy="25">直播服务</tspan></text>
+<rect x="1330" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1322" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1322" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1430" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1592" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1592" dy="0">直播数据组件</tspan><tspan x="1592" dy="25">LiveRoomMapper/Helper</tspan></text>
+<rect x="1745" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1737" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1737" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1845" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="2007" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="2007" dy="0">SRS 媒体服务</tspan><tspan x="2007" dy="25">RTMP + FLV/HLS</tspan></text>
+<rect x="2160" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<line x1="112" y1="242" x2="112" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="360" y1="181" x2="360" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="775" y1="181" x2="775" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1190" y1="181" x2="1190" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1605" y1="181" x2="1605" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="2020" y1="181" x2="2020" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<rect x="105" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="353" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="768" y="341" width="14" height="436" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1183" y="407" width="14" height="304" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1598" y="473" width="14" height="172" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="2013" y="803" width="14" height="172" fill="white" stroke="#172033" stroke-width="2"/>
+<line x1="120" y1="292" x2="350" y2="292" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="236" y="280" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">1: 创建直播间并点击开播</tspan></text>
+<line x1="368" y1="358" x2="765" y2="358" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="567.5" y="346" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">1.1: POST /live/create | /live/start</tspan></text>
+<line x1="783" y1="424" x2="1180" y2="424" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="982.5" y="391" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">1.2: create / startLive(userId, role, roo</tspan><tspan x="982.5" dy="20">mId)</tspan></text>
+<line x1="1198" y1="490" x2="1595" y2="490" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="478" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.3: 新增房间或校验主播权限</tspan></text>
+<line x1="1597" y1="556" x2="1200" y2="556" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1397.5" y="544" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.4: LiveRoom + streamKey</tspan></text>
+<line x1="1198" y1="622" x2="1595" y2="622" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="610" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.5: 更新 is_live 与 session_start</tspan></text>
+<line x1="1182" y1="688" x2="785" y2="688" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="982.5" y="676" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">1.6: 开播结果和推流密钥</tspan></text>
+<line x1="767" y1="754" x2="370" y2="754" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="567.5" y="742" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">1.7: LiveRoomDTO</tspan></text>
+<line x1="120" y1="820" x2="2010" y2="820" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1066" y="808" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1066" dy="0">2: OBS 推送 RTMP(streamKey)</tspan></text>
+<path d="M 2027 886 H 2112 V 920 H 2028" fill="none" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="2086" y="873" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="2086" dy="0">2.1: 接收并转封装媒体流</tspan></text>
+<line x1="2012" y1="952" x2="370" y2="952" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1190" y="940" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1190" dy="0">2.2: 提供 FLV/HLS 播放流</tspan></text>
+<line x1="352" y1="1018" x2="122" y2="1018" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="236" y="1006" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">2.3: 展示直播状态和播放地址</tspan></text>
+<rect x="315" y="1120" width="1815" height="170" rx="8" fill="#fffbea" stroke="#6b7280" stroke-width="2"/>
+<text x="340" y="1154" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#172033"><tspan x="340" dy="0">分支结果：</tspan></text>
+<text x="340" y="1195" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">Spring Boot 只管理直播间业务状态；SRS 独立承载媒体输入和分发。</tspan></text>
+<text x="340" y="1247" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">停播调用 /live/stop，将 is_live=false 并记录 ended_at；非主播无权操作。</tspan></text>
+</svg>

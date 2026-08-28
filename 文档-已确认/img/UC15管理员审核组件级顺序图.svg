@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1360" viewBox="0 0 2200 1360">
+<defs><marker id="arrow" markerWidth="12" markerHeight="9" refX="11" refY="4.5" orient="auto"><path d="M0,0 L12,4.5 L0,9 Z" fill="#172033"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="1100" y="38" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="31" font-weight="700" fill="#172033"><tspan x="1100" dy="0">UC15 管理员审核—组件级顺序图</tspan></text>
+<text x="2148" y="39" text-anchor="end" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#526078"><tspan x="2148" dy="0">追溯测试：A000、A001、A010、A011、A040</tspan></text>
+<circle cx="112" cy="103" r="22" fill="white" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="125" x2="112" y2="168" stroke="#172033" stroke-width="3"/>
+<line x1="81" y1="141" x2="143" y2="141" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="85" y2="202" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="139" y2="202" stroke="#172033" stroke-width="3"/>
+<text x="112" y="228" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="25" font-weight="600" fill="#172033"><tspan x="112" dy="0">管理员</tspan></text>
+<rect x="185" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="347" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="347" dy="0">AdminPendingView /</tspan><tspan x="347" dy="25">AdminVideoPreviewView</tspan></text>
+<rect x="500" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="492" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="492" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="600" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="762" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="762" dy="0">AdminVideoController</tspan><tspan x="762" dy="25">管理接口</tspan></text>
+<rect x="915" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="907" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="907" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1015" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1177" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1177" dy="0">AdminVideoService</tspan><tspan x="1177" dy="25">审核服务</tspan></text>
+<rect x="1330" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1322" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1322" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1430" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1592" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1592" dy="0">视频与文件组件</tspan><tspan x="1592" dy="25">VideoMapper/uploads</tspan></text>
+<rect x="1745" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1737" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1737" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1845" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="2007" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="2007" dy="0">NotificationService</tspan><tspan x="2007" dy="25">通知服务</tspan></text>
+<rect x="2160" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<line x1="112" y1="242" x2="112" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="360" y1="181" x2="360" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="775" y1="181" x2="775" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1190" y1="181" x2="1190" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1605" y1="181" x2="1605" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="2020" y1="181" x2="2020" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<rect x="105" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="353" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="768" y="323.4" width="14" height="669.2" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1183" y="371.8" width="14" height="572.3999999999999" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1598" y="420.2" width="14" height="378.8" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="2013" y="807.4" width="14" height="88.39999999999998" fill="white" stroke="#172033" stroke-width="2"/>
+<line x1="120" y1="292" x2="350" y2="292" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="236" y="280" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">1: 查看待审核列表并预览</tspan></text>
+<line x1="368" y1="340.4" x2="765" y2="340.4" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="567.5" y="328.4" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">1.1: GET /admin/video/pending|getone</tspan></text>
+<line x1="783" y1="388.8" x2="1180" y2="388.8" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="982.5" y="376.8" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">1.2: 校验 role=2 并查询待审视频</tspan></text>
+<line x1="1198" y1="437.2" x2="1595" y2="437.2" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="425.2" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.3: 查询 status=PENDING 的 videos</tspan></text>
+<line x1="1597" y1="485.6" x2="1200" y2="485.6" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1397.5" y="473.6" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.4: 待审列表与媒体信息</tspan></text>
+<line x1="1182" y1="534" x2="785" y2="534" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="982.5" y="522" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">1.5: PageResult&lt;VideoDTO&gt;</tspan></text>
+<line x1="767" y1="582.4" x2="370" y2="582.4" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="567.5" y="570.4" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">1.6: 待审列表</tspan></text>
+<line x1="120" y1="630.8" x2="350" y2="630.8" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="236" y="618.8" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">2: 通过、驳回或删除</tspan></text>
+<line x1="368" y1="679.2" x2="765" y2="679.2" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="567.5" y="667.2" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">2.1: POST /admin/video/approve|reject|delete</tspan></text>
+<line x1="783" y1="727.5999999999999" x2="1180" y2="727.5999999999999" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="982.5" y="715.5999999999999" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">2.2: approve / reject / delete</tspan></text>
+<line x1="1198" y1="776" x2="1595" y2="776" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="764" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">2.3: 更新状态或删除视频与文件</tspan></text>
+<line x1="1198" y1="824.4" x2="2010" y2="824.4" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1605" y="812.4" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1605" dy="0">2.4: 通过时 notifyVideoApproved</tspan></text>
+<line x1="2012" y1="872.8" x2="1200" y2="872.8" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1605" y="860.8" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1605" dy="0">2.5: 作者通知已保存</tspan></text>
+<line x1="1182" y1="921.1999999999999" x2="785" y2="921.1999999999999" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="982.5" y="909.1999999999999" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">2.6: 审核处理结果</tspan></text>
+<line x1="767" y1="969.6" x2="370" y2="969.6" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="567.5" y="957.6" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">2.7: CustomResponse</tspan></text>
+<line x1="352" y1="1018" x2="122" y2="1018" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="236" y="1006" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">2.8: 刷新列表并提示结果</tspan></text>
+<rect x="315" y="1120" width="1815" height="170" rx="8" fill="#fffbea" stroke="#6b7280" stroke-width="2"/>
+<text x="340" y="1154" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#172033"><tspan x="340" dy="0">分支结果：</tspan></text>
+<text x="340" y="1195" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">通过：status=PUBLISHED 并通知作者；驳回：status=PRIVATE。</tspan></text>
+<text x="340" y="1247" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">删除：清理记录与媒体文件；非 role=2 请求返回 403。</tspan></text>
+</svg>
