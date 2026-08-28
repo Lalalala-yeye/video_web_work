@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1360" viewBox="0 0 2200 1360">
+<defs><marker id="arrow" markerWidth="12" markerHeight="9" refX="11" refY="4.5" orient="auto"><path d="M0,0 L12,4.5 L0,9 Z" fill="#172033"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="1100" y="38" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="31" font-weight="700" fill="#172033"><tspan x="1100" dy="0">UC11 赞踩互动—组件级顺序图</tspan></text>
+<text x="2148" y="39" text-anchor="end" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#526078"><tspan x="2148" dy="0">追溯测试：R000、R001、R010、V020</tspan></text>
+<circle cx="112" cy="103" r="22" fill="white" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="125" x2="112" y2="168" stroke="#172033" stroke-width="3"/>
+<line x1="81" y1="141" x2="143" y2="141" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="85" y2="202" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="139" y2="202" stroke="#172033" stroke-width="3"/>
+<text x="112" y="228" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="25" font-weight="600" fill="#172033"><tspan x="112" dy="0">登录用户</tspan></text>
+<rect x="185" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="347" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="347" dy="0">VideoDetail/CommentItem</tspan><tspan x="347" dy="25">互动组件</tspan></text>
+<rect x="500" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="492" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="492" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="600" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="762" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="762" dy="0">ReactionController</tspan><tspan x="762" dy="25">互动接口</tspan></text>
+<rect x="915" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="907" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="907" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1015" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1177" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1177" dy="0">ReactionService</tspan><tspan x="1177" dy="25">互动服务</tspan></text>
+<rect x="1330" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1322" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1322" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1430" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1592" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1592" dy="0">互动存储组件</tspan><tspan x="1592" dy="25">Video/CommentReactionMapper</tspan></text>
+<rect x="1745" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1737" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1737" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1845" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="2007" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="2007" dy="0">NotificationService</tspan><tspan x="2007" dy="25">通知服务</tspan></text>
+<rect x="2160" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<line x1="112" y1="242" x2="112" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="360" y1="181" x2="360" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="775" y1="181" x2="775" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1190" y1="181" x2="1190" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1605" y1="181" x2="1605" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="2020" y1="181" x2="2020" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<rect x="105" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="353" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="768" y="335.5" width="14" height="645" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1183" y="396" width="14" height="524" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1598" y="456.5" width="14" height="403" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="2013" y="638" width="14" height="100.5" fill="white" stroke="#172033" stroke-width="2"/>
+<line x1="120" y1="292" x2="350" y2="292" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="236" y="280" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">1: 点击点赞或点踩</tspan></text>
+<line x1="368" y1="352.5" x2="765" y2="352.5" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="567.5" y="340.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">1.1: POST /video|comment/reaction</tspan></text>
+<line x1="783" y1="413" x2="1180" y2="413" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="982.5" y="380" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">1.2: setReaction(userId, targetId, reacti</tspan><tspan x="982.5" dy="20">on)</tspan></text>
+<line x1="1198" y1="473.5" x2="1595" y2="473.5" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="461.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.3: 查询目标与现有互动</tspan></text>
+<line x1="1597" y1="534" x2="1200" y2="534" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1397.5" y="522" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.4: existing / 空</tspan></text>
+<line x1="1198" y1="594.5" x2="1595" y2="594.5" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="582.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.5: 插入、切换或删除互动记录</tspan></text>
+<line x1="1198" y1="655" x2="2010" y2="655" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1605" y="643" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1605" dy="0">1.6: 点赞时生成业务通知</tspan></text>
+<line x1="2012" y1="715.5" x2="1200" y2="715.5" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1605" y="703.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1605" dy="0">1.7: 通知写入结果</tspan></text>
+<line x1="1198" y1="776" x2="1595" y2="776" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1397.5" y="764" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.8: 汇总点赞数、点踩数和本人状态</tspan></text>
+<line x1="1597" y1="836.5" x2="1200" y2="836.5" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1397.5" y="824.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1397.5" dy="0">1.9: ReactionSummaryDTO</tspan></text>
+<line x1="1182" y1="897" x2="785" y2="897" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="982.5" y="885" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="982.5" dy="0">1.10: 最新互动汇总</tspan></text>
+<line x1="767" y1="957.5" x2="370" y2="957.5" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="567.5" y="945.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="567.5" dy="0">1.11: CustomResponse</tspan></text>
+<line x1="352" y1="1018" x2="122" y2="1018" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="236" y="1006" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="236" dy="0">1.12: 刷新按钮状态与计数</tspan></text>
+<rect x="315" y="1120" width="1815" height="170" rx="8" fill="#fffbea" stroke="#6b7280" stroke-width="2"/>
+<text x="340" y="1154" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#172033"><tspan x="340" dy="0">分支结果：</tspan></text>
+<text x="340" y="1195" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">同一用户同一目标只保留一种状态：重复点击取消，反向点击切换。</tspan></text>
+<text x="340" y="1247" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">仅点赞触发通知；目标不存在或 reaction 非 1/-1 时拒绝操作。</tspan></text>
+</svg>
