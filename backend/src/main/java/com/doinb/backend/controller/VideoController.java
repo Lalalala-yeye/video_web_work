@@ -59,7 +59,7 @@ public class VideoController {
                                  @RequestParam(value = "description", required = false) String description,
                                  @RequestParam(value = "visibility", defaultValue = "public") String visibility,
                                  @RequestParam(value = "cover", required = false) MultipartFile cover,
-                                 @RequestParam("file") MultipartFile file) {
+                                 @RequestParam(value = "file", required = false) MultipartFile file) {
         UserDetailsImpl loginUser = currentLoginUser();
         return videoService.upload(loginUser.getUser().getId(), loginUser.getUser().getRole(),
                 title, description, visibility, cover, file);

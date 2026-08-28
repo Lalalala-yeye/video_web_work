@@ -21,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -33,7 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** 对应测试报告 V011（公开详情 404）/ V031（已登录但缺 file → HTTP 500） */
+/** 对应测试报告 V011（公开详情 404）/ V031（已登录但缺 file → 业务 400） */
 @WebMvcTest(controllers = VideoController.class)
 @ImportApiSecurity
 class VideoApiTest {
@@ -66,19 +65,22 @@ class VideoApiTest {
     }
 
     @Test
-    void upload_withoutFile_returnsHttp500() throws Exception {
-        User user = new User();
-        user.setId(10);
-        user.setRole(1);
-        when(userMapper.selectById(10)).thenReturn(user);
+    void upload_withoutFile_returns400() throws Exception {
+        CustomResponse body = new CustomResponse();
+        body.setCode(400);
+        body.setMessage("请上传视频文件");
+        when(videoService.upload(eq(10), eq(1), eq("测试视频标题"), nullable(String.class), eq("public"),
+                nullable(MultipartFile.class), nullable(MultipartFile.class))).thenReturn(body);
 
-        String token = jwtUtil.createToken(10, "user");
         mockMvc.perform(multipart("/video/upload")
                         .param("title", "测试视频标题")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value(containsString("file")));
+                        .header("Authorization", userToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value("请上传视频文件"));
+
+        verify(videoService).upload(eq(10), eq(1), eq("测试视频标题"), nullable(String.class), eq("public"),
+                nullable(MultipartFile.class), nullable(MultipartFile.class));
     }
 
     @Test
