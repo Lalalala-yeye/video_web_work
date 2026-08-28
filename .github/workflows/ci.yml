@@ -1,6 +1,6 @@
-# 测试门禁：单测+MockMvc → Postman/Newman 失败则整条流水线失败（后面不打镜像）。
-# Newman 通过后打带 git 短 SHA 的镜像推到 GHCR（禁止 latest）。
-# Selenium E2E 仍会跑，但 continue-on-error：失败不挡住打镜像。
+# 测试门禁：单测+MockMvc → Postman/Newman 失败则整条流水线失败（后面不打镜像、不部署）。
+# Newman 通过后打带 git 短 SHA 的镜像推到 GHCR（禁止 latest），再在 kind 上部署并探活。
+# Selenium E2E 仍会跑，但 continue-on-error：失败不挡住打镜像和 K8s 部署。
 name: Test gate
 
 on:
@@ -23,7 +23,34 @@ jobs:
       - name: Run tests (no MySQL)
         run: |
           chmod +x mvnw
-          ./mvnw -B test
+          set -o pipefail
+          ./mvnw -B test 2>&1 | tee /tmp/backend-test.log
+      - name: Write test result to summary
+        if: always()
+        run: |
+          {
+            echo "### Backend unit + API tests"
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "- 结果: 通过"
+            else
+              echo "- 结果: 失败"
+              echo ""
+              echo "#### 出错原因"
+              echo ""
+              echo '```'
+              if ls target/surefire-reports/*.txt >/dev/null 2>&1; then
+                grep -E 'Tests run:|FAILURE|ERROR|<<< FAILURE|<<< ERROR' target/surefire-reports/*.txt | head -50 || true
+              fi
+              if [ -f /tmp/backend-test.log ]; then
+                echo "----- Maven 错误 -----"
+                grep -E '\[ERROR\]' /tmp/backend-test.log | tail -40 || true
+                echo "----- 日志末尾 -----"
+                tail -25 /tmp/backend-test.log
+              fi
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   postman:
     name: Postman Newman (MySQL)
@@ -80,6 +107,7 @@ jobs:
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:8081/health >/dev/null; then
               echo "backend is up"
+              touch /tmp/backend-up
               exit 0
             fi
             sleep 2
@@ -89,10 +117,42 @@ jobs:
           exit 1
       - name: Newman
         run: |
+          set -o pipefail
           npx --yes newman@6 run postman/doinb.postman_collection.json \
             -e postman/doinb.ci.postman_environment.json \
             --bail \
-            --color off
+            --color off \
+            2>&1 | tee /tmp/newman.log
+      - name: Write Newman result to summary
+        if: always()
+        run: |
+          {
+            echo "### Postman Newman（集成测试）"
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "- 结果: 通过"
+            else
+              echo "- 结果: 失败"
+              echo ""
+              echo "#### 出错原因"
+              echo ""
+              echo '```'
+              if [ ! -f /tmp/backend-up ]; then
+                echo "后端未能在 8081 启动，Newman 未执行。"
+                echo "----- backend 日志末尾 -----"
+                tail -80 /tmp/doinb-backend.log || true
+              else
+                if [ -f /tmp/newman.log ]; then
+                  grep -E 'failed|AssertionError|Error|FAIL' /tmp/newman.log | tail -40 || true
+                  echo "----- Newman 日志末尾 -----"
+                  tail -40 /tmp/newman.log
+                fi
+                echo "----- backend 日志末尾 -----"
+                tail -40 /tmp/doinb-backend.log || true
+              fi
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   e2e:
     name: Selenium E2E (Chrome)
@@ -162,6 +222,7 @@ jobs:
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:8081/health >/dev/null; then
               echo "backend is up"
+              touch /tmp/e2e-backend-up
               exit 0
             fi
             sleep 2
@@ -179,6 +240,7 @@ jobs:
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:8787 >/dev/null; then
               echo "frontend is up"
+              touch /tmp/e2e-web-up
               exit 0
             fi
             sleep 2
@@ -187,11 +249,14 @@ jobs:
           cat /tmp/doinb-web.log
           exit 1
       - name: Run Selenium E2E
+        id: e2e
         working-directory: web
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
         # 01 账号 → 02 浏览搜索 → 03 互动 → 04 创作中心/直播 → 05 通知私信后台
-        run: npm run e2e:ci
+        run: |
+          set -o pipefail
+          npm run e2e:ci 2>&1 | tee /tmp/e2e.log
       - name: Upload E2E screenshots
         if: failure()
         uses: actions/upload-artifact@v4
@@ -202,12 +267,50 @@ jobs:
       - name: Dump backend log
         if: failure()
         run: cat /tmp/doinb-backend.log || true
+      - name: Write E2E result to summary
+        if: always()
+        run: |
+          {
+            echo "### Selenium E2E"
+            echo ""
+            if [ "${{ steps.e2e.outcome }}" = "success" ]; then
+              echo "- 结果: 通过"
+            else
+              echo "- 结果: 失败（本 job continue-on-error，不挡住打镜像）"
+              echo ""
+              echo "#### 出错原因"
+              echo ""
+              echo '```'
+              if [ ! -f /tmp/e2e-backend-up ]; then
+                echo "后端未能在 8081 启动，E2E 未执行。"
+                tail -80 /tmp/doinb-backend.log || true
+              elif [ ! -f /tmp/e2e-web-up ]; then
+                echo "前端未能在 8787 启动，E2E 未执行。"
+                tail -80 /tmp/doinb-web.log || true
+              else
+                if [ -f /tmp/e2e.log ]; then
+                  grep -E '失败|Error|TimeoutError|AssertionError|FAIL' /tmp/e2e.log | tail -40 || true
+                  echo "----- E2E 日志末尾 -----"
+                  tail -40 /tmp/e2e.log
+                fi
+                echo "----- backend 日志末尾 -----"
+                tail -30 /tmp/doinb-backend.log || true
+              fi
+              echo '```'
+              echo ""
+              echo "失败截图见 artifact \`e2e-screenshots\`。"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   build-images:
     name: Build versioned images (GHCR)
     needs: postman
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      backend: ${{ steps.meta.outputs.backend }}
+      web: ${{ steps.meta.outputs.web }}
+      sha: ${{ steps.meta.outputs.sha }}
     permissions:
       contents: read
       packages: write
@@ -254,12 +357,138 @@ jobs:
           cache-from: type=gha,scope=doinb-web
           cache-to: type=gha,mode=max,scope=doinb-web
       - name: Write image names to summary
+        if: always()
         run: |
           {
-            echo "### 已推送镜像"
+            echo "### CD-01 构建镜像"
             echo ""
-            echo "- \`${{ steps.meta.outputs.backend }}\`"
-            echo "- \`${{ steps.meta.outputs.web }}\`"
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "- 结果: 已推送"
+              echo "- \`${{ steps.meta.outputs.backend }}\`"
+              echo "- \`${{ steps.meta.outputs.web }}\`"
+              echo "- tag = \`${{ steps.meta.outputs.sha }}\`"
+            else
+              echo "- 结果: 失败"
+              echo ""
+              echo "#### 出错原因"
+              echo ""
+              echo "- 镜像构建或推送 GHCR 未成功（状态: ${{ job.status }}）。"
+              echo "- 常见原因: 仓库 Actions 权限未开 \`packages: write\`、GHCR 403、Dockerfile 构建错误。"
+              echo "- 请查看 \`Build and push backend\` / \`Build and push web\` 步骤日志。"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-k8s:
+    name: Deploy kind + health (CD-02)
+    needs: build-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: read
+    env:
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_PASSWORD: test
+      JWT_SECRET: ci-test-secret-at-least-32-characters!!
+      BACKEND_IMAGE: ${{ needs.build-images.outputs.backend }}
+      WEB_IMAGE: ${{ needs.build-images.outputs.web }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull this SHA's images
+        run: |
+          docker pull "$BACKEND_IMAGE"
+          docker pull "$WEB_IMAGE"
+          docker pull mysql:8.0
+          docker pull busybox:1.36.1
+          docker pull curlimages/curl:8.12.1
+      - uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: doinb-ci
+          wait: 120s
+      - name: Load images into kind
+        run: |
+          for img in "$BACKEND_IMAGE" "$WEB_IMAGE" mysql:8.0 busybox:1.36.1 curlimages/curl:8.12.1; do
+            kind load docker-image "$img" --name doinb-ci
+          done
+      - name: Apply manifests (this SHA, 1 replica)
+        run: |
+          sed -i "s|image: ghcr.io/.*/doinb-backend:.*|image: ${BACKEND_IMAGE}|" deploy/k8s/backend.yaml
+          sed -i "s|image: ghcr.io/.*/doinb-web:.*|image: ${WEB_IMAGE}|" deploy/k8s/web.yaml
+          sed -i '0,/replicas: 2/s//replicas: 1/' deploy/k8s/backend.yaml
+          sed -i '0,/replicas: 2/s//replicas: 1/' deploy/k8s/web.yaml
+          kubectl apply -f deploy/k8s/namespace.yaml
+          kubectl create secret generic doinb-secrets -n doinb \
+            --from-literal=MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
+            --from-literal=MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+            --from-literal=JWT_SECRET="$JWT_SECRET"
+          kubectl create configmap doinb-db-init -n doinb \
+            --from-file=database.sql=database/database.sql
+          kubectl apply -k deploy/k8s
+      - name: Wait for rollouts
+        run: |
+          kubectl rollout status deployment/mysql -n doinb --timeout=180s
+          kubectl rollout status deployment/backend -n doinb --timeout=300s
+          kubectl rollout status deployment/web -n doinb --timeout=180s
+          kubectl get pods,services,deployments -n doinb -o wide
+      - name: Health checks from inside the cluster
+        run: |
+          kubectl run doinb-healthcheck -n doinb --restart=Never \
+            --image=curlimages/curl:8.12.1 \
+            --command -- sh -c \
+            'curl -fsS http://backend:8081/health && echo && curl -fsS http://web/ >/dev/null && curl -fsS http://web/api/health && echo'
+          for i in $(seq 1 36); do
+            phase=$(kubectl get pod doinb-healthcheck -n doinb -o jsonpath='{.status.phase}')
+            echo "healthcheck phase=${phase}"
+            if [ "$phase" = "Succeeded" ]; then
+              kubectl logs doinb-healthcheck -n doinb
+              exit 0
+            fi
+            if [ "$phase" = "Failed" ]; then
+              kubectl logs doinb-healthcheck -n doinb || true
+              kubectl describe pod doinb-healthcheck -n doinb
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "healthcheck timed out"
+          kubectl describe pod doinb-healthcheck -n doinb || true
+          exit 1
+      - name: Dump cluster on failure
+        if: failure()
+        run: |
+          kubectl get pods,svc,deploy -n doinb -o wide || true
+          kubectl describe pods -n doinb || true
+          kubectl logs -n doinb -l app=backend --tail=120 || true
+          kubectl logs -n doinb -l app=web --tail=80 || true
+          kubectl logs -n doinb -l app=mysql --tail=80 || true
+      - name: Write deploy result to summary
+        if: always()
+        run: |
+          {
+            echo "### CD-02 kind 部署"
             echo ""
-            echo "tag =  \`${{ steps.meta.outputs.sha }}\`"
+            echo "- backend: \`$BACKEND_IMAGE\`"
+            echo "- web: \`$WEB_IMAGE\`"
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "- 部署成功，健康检查通过: \`/health\`、\`/\`、\`/api/health\` 均通过健康检查"
+            else
+              echo "- 部署或健康检查未通过（状态: ${{ job.status }}）"
+              echo ""
+              echo "#### 出错原因"
+              echo ""
+              echo '```'
+              kubectl get pods,svc,deploy -n doinb -o wide 2>/dev/null || echo "集群信息不可用"
+              echo "----- 最近事件 -----"
+              kubectl get events -n doinb --sort-by='.lastTimestamp' 2>/dev/null | tail -20 || true
+              echo "----- backend 日志 -----"
+              kubectl logs -n doinb -l app=backend --tail=40 2>/dev/null || true
+              echo '```'
+              echo ""
+              echo "更完整日志见步骤 Dump cluster on failure。"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
