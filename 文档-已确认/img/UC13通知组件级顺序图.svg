@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1360" viewBox="0 0 2200 1360">
+<defs><marker id="arrow" markerWidth="12" markerHeight="9" refX="11" refY="4.5" orient="auto"><path d="M0,0 L12,4.5 L0,9 Z" fill="#172033"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="1100" y="38" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="31" font-weight="700" fill="#172033"><tspan x="1100" dy="0">UC13 通知—组件级顺序图</tspan></text>
+<text x="2148" y="39" text-anchor="end" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#526078"><tspan x="2148" dy="0">追溯测试：N000、N010、N021</tspan></text>
+<circle cx="112" cy="103" r="22" fill="white" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="125" x2="112" y2="168" stroke="#172033" stroke-width="3"/>
+<line x1="81" y1="141" x2="143" y2="141" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="85" y2="202" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="139" y2="202" stroke="#172033" stroke-width="3"/>
+<text x="112" y="228" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="25" font-weight="600" fill="#172033"><tspan x="112" dy="0">登录用户</tspan></text>
+<rect x="245" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="407" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="407" dy="0">TopNavigation</tspan><tspan x="407" dy="25">通知面板</tspan></text>
+<rect x="560" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="552" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="552" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="778.3333333333334" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="940.3333333333334" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="940.3333333333334" dy="0">NotificationController</tspan><tspan x="940.3333333333334" dy="25">通知接口</tspan></text>
+<rect x="1093.3333333333335" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1085.3333333333335" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1085.3333333333335" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1311.6666666666667" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1473.6666666666667" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1473.6666666666667" dy="0">NotificationService</tspan><tspan x="1473.6666666666667" dy="25">通知服务</tspan></text>
+<rect x="1626.6666666666667" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1618.6666666666667" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1618.6666666666667" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1845" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="2007" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="2007" dy="0">NotificationMapper</tspan><tspan x="2007" dy="25">通知存储</tspan></text>
+<rect x="2160" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<line x1="112" y1="242" x2="112" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="420" y1="181" x2="420" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="953.3333333333334" y1="181" x2="953.3333333333334" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1486.6666666666667" y1="181" x2="1486.6666666666667" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="2020" y1="181" x2="2020" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<rect x="105" y="275" width="14" height="430.9230769230769" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="413" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="946.3333333333334" y="330.84615384615387" width="14" height="710.1538461538462" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1479.6666666666667" y="386.6923076923077" width="14" height="598.4615384615386" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="2013" y="442.53846153846155" width="14" height="486.7692307692307" fill="white" stroke="#172033" stroke-width="2"/>
+<line x1="120" y1="292" x2="410" y2="292" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="266" y="280" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="266" dy="0">1: 打开通知面板</tspan></text>
+<line x1="428" y1="347.84615384615387" x2="943.3333333333334" y2="347.84615384615387" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="686.6666666666667" y="335.84615384615387" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="686.6666666666667" dy="0">1.1: GET /notification/list 与 unread-count</tspan></text>
+<line x1="961.3333333333334" y1="403.6923076923077" x2="1476.6666666666667" y2="403.6923076923077" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1220" y="391.6923076923077" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1220" dy="0">1.2: list/countUnread(currentUser)</tspan></text>
+<line x1="1494.6666666666667" y1="459.53846153846155" x2="2010" y2="459.53846153846155" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1753.3333333333335" y="447.53846153846155" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1753.3333333333335" dy="0">1.3: 按 user_id 查询通知和未读数</tspan></text>
+<line x1="2012" y1="515.3846153846154" x2="1496.6666666666667" y2="515.3846153846154" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1753.3333333333335" y="503.38461538461536" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1753.3333333333335" dy="0">1.4: notifications + count</tspan></text>
+<line x1="1478.6666666666667" y1="571.2307692307693" x2="963.3333333333334" y2="571.2307692307693" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1220" y="559.2307692307693" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1220" dy="0">1.5: 通知分页结果</tspan></text>
+<line x1="945.3333333333334" y1="627.0769230769231" x2="430" y2="627.0769230769231" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="686.6666666666667" y="615.0769230769231" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="686.6666666666667" dy="0">1.6: 通知列表与未读数</tspan></text>
+<line x1="120" y1="682.9230769230769" x2="410" y2="682.9230769230769" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="266" y="670.9230769230769" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="266" dy="0">2: 标记单条或全部已读</tspan></text>
+<line x1="428" y1="738.7692307692307" x2="943.3333333333334" y2="738.7692307692307" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="686.6666666666667" y="726.7692307692307" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="686.6666666666667" dy="0">2.1: POST /notification/read?id?</tspan></text>
+<line x1="961.3333333333334" y1="794.6153846153846" x2="1476.6666666666667" y2="794.6153846153846" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1220" y="782.6153846153846" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1220" dy="0">2.2: markRead(userId, id)</tspan></text>
+<line x1="1494.6666666666667" y1="850.4615384615385" x2="2010" y2="850.4615384615385" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1753.3333333333335" y="838.4615384615385" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1753.3333333333335" dy="0">2.3: 更新本人通知 is_read=true</tspan></text>
+<line x1="2012" y1="906.3076923076923" x2="1496.6666666666667" y2="906.3076923076923" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1753.3333333333335" y="894.3076923076923" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1753.3333333333335" dy="0">2.4: 更新数量</tspan></text>
+<line x1="1478.6666666666667" y1="962.1538461538462" x2="963.3333333333334" y2="962.1538461538462" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1220" y="950.1538461538462" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1220" dy="0">2.5: 已读结果</tspan></text>
+<line x1="945.3333333333334" y1="1018" x2="430" y2="1018" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="686.6666666666667" y="1006" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="686.6666666666667" dy="0">2.6: 刷新未读数</tspan></text>
+<rect x="315" y="1120" width="1815" height="170" rx="8" fill="#fffbea" stroke="#6b7280" stroke-width="2"/>
+<text x="340" y="1154" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#172033"><tspan x="340" dy="0">分支结果：</tspan></text>
+<text x="340" y="1195" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">所有查询和更新均按当前 user_id 隔离，不能读取或修改他人通知。</tspan></text>
+<text x="340" y="1247" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">id 为空时标记本人全部通知；指定 id 时还需验证通知归属。</tspan></text>
+</svg>

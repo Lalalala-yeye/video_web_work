@@ -1,0 +1,101 @@
+meta:
+  system: doinb 视频播放与内容服务平台
+  version: 2.0
+  authority: 文档-已确认/需求追溯矩阵.md
+  use_case_range: UC01-UC15
+  diagram_type: UML 组件级顺序图
+  diagram_source: 文档-已确认/uml/uc01-uc15-component-sequence-diagrams.tex
+  sequence_model: 文档-已确认/uml/uc01-uc15-component-sequence-model.json
+  purpose: 保存组件级顺序图中的参与组件、调用消息、分支结果和测试追溯信息，供代码分层核对、测试用例设计和验收使用
+
+use_cases:
+  - id: UC01
+    name: 用户注册
+    components: [RegisterView, user.js, UserAccountController, UserAccountService, UserMapper]
+    data: [users]
+    tests: [U000, U001, U002]
+    oracle: 用户名唯一，密码使用 BCrypt 保存，注册成功后 users 新增记录。
+  - id: UC02
+    name: 用户登录/登出
+    components: [LoginView, auth.js, UserAccountController, JwtAuthenticationTokenFilter, UserAccountService, UserMapper]
+    data: [users]
+    tests: [U010, U011, U020, U031, U040]
+    oracle: 正确凭据签发 JWT，错误凭据失败，登出后本地会话被清除。
+  - id: UC03
+    name: 个人信息维护
+    components: [ProfileView, AppAvatar, UserAccountController, UserController, UserAccountService, UserService, UserMapper, WebMvcConfig]
+    data: [users, uploads/avatars]
+    tests: [U030, U060, U061, U080, U081]
+    oracle: 用户只能维护本人资料，资料与头像保存后重新查询保持一致。
+  - id: UC04
+    name: 浏览与播放视频
+    components: [HomeView, VideoDetailView, video.js, VideoController, VideoService, VideoMapper, WebMvcConfig]
+    data: [videos, uploads/videos, uploads/covers]
+    tests: [V000, V010, V011, V020]
+    oracle: 公开列表只显示 status=1 的视频，无权用户不能读取非公开视频。
+  - id: UC05
+    name: 播放历史
+    components: [VideoDetailView, ProfileView, VideoController, VideoService, PlayHistoryMapper, VideoMapper]
+    data: [play_history, videos]
+    tests: [V050, V051]
+    oracle: 同一用户和视频只保留一条历史记录，重复上报更新播放进度。
+  - id: UC06
+    name: 上传与编辑视频
+    components: [StudioUploadView, StudioEditView, video.js, VideoController, VideoService, VideoMapper]
+    data: [videos, uploads/videos, uploads/covers]
+    tests: [V030, V031, V040, V060, V061]
+    oracle: 新投稿进入待审核状态，作者只能维护自己的投稿，上传请求不超过 500MB。
+  - id: UC07
+    name: 举报视频
+    components: [VideoDetailView, AdminReportView, VideoController, AdminVideoController, VideoService, VideoReportMapper, VideoMapper]
+    data: [video_reports, videos]
+    tests: [V063, A020]
+    oracle: 禁止重复举报和自举报，举报达到阈值后视频进入举报复审状态。
+  - id: UC08
+    name: 直播管理
+    components: [StudioLiveView, LiveListView, LiveRoomView, live.js, LiveRoomController, LiveRoomService, LiveStreamHelper, LiveRoomMapper, SRS]
+    data: [live_rooms]
+    tests: [L000, L010, L020, L021, L022]
+    oracle: 后端维护直播间和开停播状态，SRS 负责 RTMP 输入及 FLV/HLS 输出。
+  - id: UC09
+    name: 关注与订阅动态
+    components: [UserShowcaseView, SubscribeView, subscription.js, SubscriptionController, SubscriptionService, SubscriptionMapper, UserMapper, VideoMapper, LiveRoomMapper]
+    data: [subscriptions, users, videos, live_rooms]
+    tests: [F000, F001, F010, F030]
+    oracle: 关注关系组合唯一，订阅动态只聚合公开视频和正在直播的房间。
+  - id: UC10
+    name: 发表评论
+    components: [VideoDetailView, LiveRoomView, comment.js, CommentController, CommentService, CommentMapper, VideoMapper, LiveRoomMapper, UserMapper]
+    data: [comments, videos, live_rooms]
+    tests: [C000, C001, C002, C010, L040, L041]
+    oracle: targetType=1 表示视频、2 表示直播，空内容和无效目标被拒绝。
+  - id: UC11
+    name: 赞踩互动
+    components: [VideoDetailView, CommentItem, reaction.js, ReactionController, ReactionService, VideoReactionMapper, CommentReactionMapper, NotificationService]
+    data: [video_reactions, comment_reactions]
+    tests: [R000, R001, R010]
+    oracle: 同一用户对同一目标只保留一种状态，重复点击取消，反向点击切换。
+  - id: UC12
+    name: 关键词搜索
+    components: [SearchView, TopNavigation, search.js, SearchController, SearchService, VideoMapper, LiveRoomMapper, UserMapper]
+    data: [videos, live_rooms, users]
+    tests: [S000, S001, S002]
+    oracle: 视频结果仅包含已发布内容，并分别返回视频、直播和用户结果。
+  - id: UC13
+    name: 通知
+    components: [TopNavigation, notification.js, NotificationController, NotificationService, NotificationMapper, UserMapper, VideoMapper, CommentMapper]
+    data: [notifications]
+    tests: [N000, N010, N021]
+    oracle: 通知按接收人隔离，支持未读数以及逐条或全部标记已读。
+  - id: UC14
+    name: 私信
+    components: [MessageRoomView, message.js, MessageController, MessageService, DmRoomMapper, DmMessageMapper, UserMapper, NotificationService]
+    data: [dm_rooms, dm_messages]
+    tests: [M000, M010, M020]
+    oracle: 双方按固定顺序复用唯一会话，非会话成员不可读取或发送消息。
+  - id: UC15
+    name: 管理员审核
+    components: [AdminPendingView, AdminVideoPreviewView, admin.js, AdminVideoController, AdminVideoService, VideoMapper, UserMapper, NotificationService]
+    data: [videos, notifications, uploads]
+    tests: [A000, A001, A010, A011, A040]
+    oracle: 仅 role=2 可处置，审核通过后公开视频并通知作者，驳回后转为私密。

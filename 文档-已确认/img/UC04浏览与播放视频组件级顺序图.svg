@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1360" viewBox="0 0 2200 1360">
+<defs><marker id="arrow" markerWidth="12" markerHeight="9" refX="11" refY="4.5" orient="auto"><path d="M0,0 L12,4.5 L0,9 Z" fill="#172033"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="1100" y="38" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="31" font-weight="700" fill="#172033"><tspan x="1100" dy="0">UC04 浏览与播放视频—组件级顺序图</tspan></text>
+<text x="2148" y="39" text-anchor="end" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#526078"><tspan x="2148" dy="0">追溯测试：V000、V010、V011、V020</tspan></text>
+<circle cx="112" cy="103" r="22" fill="white" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="125" x2="112" y2="168" stroke="#172033" stroke-width="3"/>
+<line x1="81" y1="141" x2="143" y2="141" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="85" y2="202" stroke="#172033" stroke-width="3"/>
+<line x1="112" y1="168" x2="139" y2="202" stroke="#172033" stroke-width="3"/>
+<text x="112" y="228" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="25" font-weight="600" fill="#172033"><tspan x="112" dy="0">访客/用户</tspan></text>
+<rect x="245" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="407" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="407" dy="0">Home/VideoDetailView</tspan><tspan x="407" dy="25">浏览播放页面</tspan></text>
+<rect x="560" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="552" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="552" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="778.3333333333334" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="940.3333333333334" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="940.3333333333334" dy="0">VideoController</tspan><tspan x="940.3333333333334" dy="25">视频接口</tspan></text>
+<rect x="1093.3333333333335" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1085.3333333333335" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1085.3333333333335" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1311.6666666666667" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="1473.6666666666667" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="1473.6666666666667" dy="0">VideoService</tspan><tspan x="1473.6666666666667" dy="25">视频服务</tspan></text>
+<rect x="1626.6666666666667" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1618.6666666666667" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1618.6666666666667" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="1845" y="73" width="350" height="108" rx="2" fill="#f5f8ff" stroke="#2563eb" stroke-width="3"/>
+<text x="2007" y="116.5" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="600" fill="#172033"><tspan x="2007" dy="0">VideoMapper/静态映射</tspan><tspan x="2007" dy="25">videos + uploads</tspan></text>
+<rect x="2160" y="92" width="19" height="23" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="97" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<rect x="2152" y="107" width="10" height="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+<line x1="112" y1="242" x2="112" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="420" y1="181" x2="420" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="953.3333333333334" y1="181" x2="953.3333333333334" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="1486.6666666666667" y1="181" x2="1486.6666666666667" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<line x1="2020" y1="181" x2="2020" y2="1082" stroke="#172033" stroke-width="2" stroke-dasharray="9 9"/>
+<rect x="105" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="413" y="275" width="14" height="766" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="946.3333333333334" y="326.85714285714283" width="14" height="662.2857142857142" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="1479.6666666666667" y="378.7142857142857" width="14" height="558.5714285714284" fill="white" stroke="#172033" stroke-width="2"/>
+<rect x="2013" y="430.57142857142856" width="14" height="454.8571428571429" fill="white" stroke="#172033" stroke-width="2"/>
+<line x1="120" y1="292" x2="410" y2="292" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="266" y="280" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="266" dy="0">1: 浏览公开视频列表</tspan></text>
+<line x1="428" y1="343.85714285714283" x2="943.3333333333334" y2="343.85714285714283" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="686.6666666666667" y="331.85714285714283" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="686.6666666666667" dy="0">1.1: GET /video/list?page&amp;size</tspan></text>
+<line x1="961.3333333333334" y1="395.7142857142857" x2="1476.6666666666667" y2="395.7142857142857" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1220" y="383.7142857142857" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1220" dy="0">1.2: listPublished(page, size)</tspan></text>
+<line x1="1494.6666666666667" y1="447.57142857142856" x2="2010" y2="447.57142857142856" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1753.3333333333335" y="435.57142857142856" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1753.3333333333335" dy="0">1.3: 分页查询 status=1 的 videos</tspan></text>
+<line x1="2012" y1="499.42857142857144" x2="1496.6666666666667" y2="499.42857142857144" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1753.3333333333335" y="487.42857142857144" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1753.3333333333335" dy="0">1.4: 视频与作者数据</tspan></text>
+<line x1="1478.6666666666667" y1="551.2857142857142" x2="963.3333333333334" y2="551.2857142857142" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1220" y="539.2857142857142" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1220" dy="0">1.5: PageResult&lt;VideoDTO&gt;</tspan></text>
+<line x1="945.3333333333334" y1="603.1428571428571" x2="430" y2="603.1428571428571" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="686.6666666666667" y="591.1428571428571" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="686.6666666666667" dy="0">1.6: 公共视频列表</tspan></text>
+<line x1="120" y1="655" x2="410" y2="655" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="266" y="643" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="266" dy="0">2: 选择视频播放</tspan></text>
+<line x1="428" y1="706.8571428571429" x2="943.3333333333334" y2="706.8571428571429" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="686.6666666666667" y="694.8571428571429" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="686.6666666666667" dy="0">2.1: GET /video/getone?id</tspan></text>
+<line x1="961.3333333333334" y1="758.7142857142857" x2="1476.6666666666667" y2="758.7142857142857" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1220" y="746.7142857142857" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1220" dy="0">2.2: getOne(id, viewerId, role)</tspan></text>
+<line x1="1494.6666666666667" y1="810.5714285714286" x2="2010" y2="810.5714285714286" stroke="#172033" stroke-width="2.3" marker-end="url(#arrow)"/>
+<text x="1753.3333333333335" y="798.5714285714286" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1753.3333333333335" dy="0">2.3: 校验可见性并取得媒体 URL</tspan></text>
+<line x1="2012" y1="862.4285714285714" x2="1496.6666666666667" y2="862.4285714285714" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1753.3333333333335" y="850.4285714285714" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1753.3333333333335" dy="0">2.4: 视频与媒体路径</tspan></text>
+<line x1="1478.6666666666667" y1="914.2857142857142" x2="963.3333333333334" y2="914.2857142857142" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="1220" y="902.2857142857142" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="1220" dy="0">2.5: VideoDTO</tspan></text>
+<line x1="945.3333333333334" y1="966.1428571428571" x2="430" y2="966.1428571428571" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="686.6666666666667" y="954.1428571428571" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="686.6666666666667" dy="0">2.6: 视频详情</tspan></text>
+<line x1="412" y1="1018" x2="122" y2="1018" stroke="#172033" stroke-width="2.3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="266" y="1006" text-anchor="middle" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="17" font-weight="400" fill="#172033" stroke="#fff" stroke-width="7" paint-order="stroke"><tspan x="266" dy="0">2.7: 浏览器加载并播放媒体</tspan></text>
+<rect x="315" y="1120" width="1815" height="170" rx="8" fill="#fffbea" stroke="#6b7280" stroke-width="2"/>
+<text x="340" y="1154" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#172033"><tspan x="340" dy="0">分支结果：</tspan></text>
+<text x="340" y="1195" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">公开访问仅返回 status=1；作者或管理员可按权限查看非公开视频。</tspan></text>
+<text x="340" y="1247" text-anchor="start" font-family="Microsoft YaHei, SimHei, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#172033"><tspan x="340" dy="0">视频不存在或无查看权限时返回 404，不暴露私密媒体信息。</tspan></text>
+</svg>
