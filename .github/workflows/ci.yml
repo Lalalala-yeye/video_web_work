@@ -127,7 +127,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "### Postman Newman（集成测试）"
+            echo "### Postman Newman（系统测试，打后端容器）"
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
               echo "- 结果: 通过"
