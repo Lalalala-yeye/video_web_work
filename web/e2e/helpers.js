@@ -3,6 +3,7 @@ import chrome from 'selenium-webdriver/chrome.js'
 
 /** 前端地址。本机先 `npm run dev`（8787），后端 8081 也要开。 */
 export const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:8787'
+export const API_BASE = process.env.E2E_API || 'http://127.0.0.1:8081'
 
 const WAIT_MS = 12000
 
@@ -104,5 +105,47 @@ export async function waitMessageContains(driver, text) {
   const body = await driver.getPageSource()
   if (!body.includes(text)) {
     throw new Error(`页面未出现预期文案: ${text}`)
+  }
+}
+
+/**
+ * 测完后删掉该账号下的全部视频（库记录 + uploads 文件）。
+ * 失败不抛错，避免掩盖用例本身的错误。
+ */
+export async function cleanupUserVideos(username, password) {
+  if (!username || !password) return
+  try {
+    const loginRes = await fetch(`${API_BASE}/user/account/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+    const loginBody = await loginRes.json()
+    if (loginBody.code !== 200 || !loginBody.data?.token) {
+      return
+    }
+    const token = loginBody.data.token
+    const headers = { Authorization: token }
+    const listRes = await fetch(`${API_BASE}/video/my/list?page=1&size=50`, { headers })
+    const listBody = await listRes.json()
+    const records = listBody.data?.records || []
+    for (const video of records) {
+      const delRes = await fetch(`${API_BASE}/video/delete`, {
+        method: 'POST',
+        headers: {
+          Authorization: token,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ id: String(video.id) }).toString(),
+      })
+      const delBody = await delRes.json().catch(() => ({}))
+      if (delBody.code === 200) {
+        console.log('已删除测试视频', video.id, video.title)
+      } else {
+        console.warn('删除测试视频失败', video.id, delBody.message || delRes.status)
+      }
+    }
+  } catch (err) {
+    console.warn('清理测试视频时出错:', err?.message || err)
   }
 }
