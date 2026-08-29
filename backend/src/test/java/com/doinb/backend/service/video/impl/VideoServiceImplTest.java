@@ -1,9 +1,12 @@
 package com.doinb.backend.service.video.impl;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.doinb.backend.mapper.CommentMapper;
+import com.doinb.backend.mapper.CommentReactionMapper;
 import com.doinb.backend.mapper.PlayHistoryMapper;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.mapper.VideoMapper;
+import com.doinb.backend.mapper.VideoReactionMapper;
 import com.doinb.backend.mapper.VideoReportMapper;
 import com.doinb.backend.pojo.CustomResponse;
 import com.doinb.backend.pojo.VideoStatus;
@@ -37,6 +40,9 @@ class VideoServiceImplTest {
     private UserMapper userMapper;
     private PlayHistoryMapper playHistoryMapper;
     private VideoReportMapper videoReportMapper;
+    private VideoReactionMapper videoReactionMapper;
+    private CommentMapper commentMapper;
+    private CommentReactionMapper commentReactionMapper;
     private ReactionService reactionService;
     private VideoServiceImpl service;
 
@@ -46,12 +52,18 @@ class VideoServiceImplTest {
         userMapper = mock(UserMapper.class);
         playHistoryMapper = mock(PlayHistoryMapper.class);
         videoReportMapper = mock(VideoReportMapper.class);
+        videoReactionMapper = mock(VideoReactionMapper.class);
+        commentMapper = mock(CommentMapper.class);
+        commentReactionMapper = mock(CommentReactionMapper.class);
         reactionService = mock(ReactionService.class);
         service = new VideoServiceImpl(
                 videoMapper,
                 userMapper,
                 playHistoryMapper,
                 videoReportMapper,
+                videoReactionMapper,
+                commentMapper,
+                commentReactionMapper,
                 reactionService
         );
     }
