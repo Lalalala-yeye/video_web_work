@@ -18,6 +18,7 @@ import {
   login,
   waitLoggedIn,
   waitMessageContains,
+  cleanupUserVideos,
 } from './helpers.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -197,6 +198,7 @@ async function run() {
 
     console.log('\n全部通过 ✅  TASK-E2E-04 创作中心和直播')
   } finally {
+    await cleanupUserVideos(username, password)
     await driver.quit()
   }
 }

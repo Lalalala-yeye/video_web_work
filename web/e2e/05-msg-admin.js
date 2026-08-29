@@ -18,6 +18,7 @@ import {
   login,
   waitLoggedIn,
   logout,
+  cleanupUserVideos,
 } from './helpers.js'
 
 const API = process.env.E2E_API || 'http://127.0.0.1:8081'
@@ -261,6 +262,7 @@ async function run() {
 
     console.log('\n全部通过 ✅  TASK-E2E-05 通知+私信+后台')
   } finally {
+    await cleanupUserVideos(authorName, password)
     await driver.quit()
   }
 }
