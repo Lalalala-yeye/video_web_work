@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant UI as Web界面
+    participant Msg as Message
+    participant Noti as Notification
+    participant DB as 数据库
+
+    U->>UI: 在对方主页点击发私信
+    UI->>Msg: openRoom(peerId)
+    Msg->>DB: 查询或 INSERT dm_rooms
+    Msg-->>UI: roomId + 历史消息
+    U->>UI: 输入内容并发送
+    UI->>Msg: send(roomId, content)
+    alt 内容为空或非会话成员
+        Msg-->>UI: code=400/404
+    else 合法
+        Msg->>DB: INSERT dm_messages
+        Msg->>Noti: notifyMessage
+        Noti->>DB: INSERT notifications
+        Msg-->>UI: code=200
+        UI-->>U: 消息上屏
+    end

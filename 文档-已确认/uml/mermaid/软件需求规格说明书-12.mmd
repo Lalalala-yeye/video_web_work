@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant S as doinb系统
+
+    U->>S: 提交搜索关键词(keyword)
+    alt 关键词为空或非法
+        S-->>U: 提示并阻止搜索
+    else 执行查询
+        S-->>U: 返回视频、用户、直播结果（分页）
+        alt 无匹配
+            S-->>U: 展示空结果页
+        else 有结果
+            U->>S: 点击某条结果
+            S-->>U: 跳转视频详情、用户主页或直播间
+        end
+    end

@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor P as 发布者
+    participant S as doinb系统
+
+    P->>S: 提交视频、封面、标题、简介、可见性
+    alt 文件超限/格式不符/无权限
+        S-->>P: 拒绝上传并说明原因
+    else 校验通过
+        S-->>P: 上传成功，稿件进入待审核
+        P->>S: 请求我的稿件列表
+        S-->>P: 返回创作中心列表
+        P->>S: 更新元数据或可见性
+        S-->>P: 保存成功，公开列表按可见性过滤
+    end

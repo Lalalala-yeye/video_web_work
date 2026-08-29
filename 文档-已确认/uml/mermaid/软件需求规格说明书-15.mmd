@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor A as 管理员
+    actor P as 作者
+    participant S as doinb系统
+
+    A->>S: 打开待审列表并预览
+    alt 非管理员
+        S-->>A: 返回 403
+    else 有权限
+        S-->>A: 返回待审视频与播放信息
+        alt 审核通过
+            A->>S: 通过(videoId)
+            S-->>A: 状态更新为已发布
+            S-->>P: 推送审核通过通知
+        else 审核驳回
+            A->>S: 驳回(videoId)
+            S-->>A: 状态转为仅作者可见
+            S-->>P: 推送驳回通知
+        else 删除
+            A->>S: 删除(videoId)
+            S-->>A: 视频不可再公开访问
+        end
+    end

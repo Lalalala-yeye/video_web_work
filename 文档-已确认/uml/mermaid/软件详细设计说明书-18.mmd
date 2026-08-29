@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor A as 管理员
+    participant UI as Web界面
+    participant Admin as AdminVideo
+    participant Video as Video
+    participant Noti as Notification
+    participant DB as 数据库
+
+    A->>UI: 打开待审列表
+    UI->>Admin: listPending
+    Admin->>DB: SELECT videos status=待审
+    Admin-->>UI: 待审分页
+    A->>UI: 点击通过
+    UI->>Admin: approve(videoId)
+    alt 非管理员或状态不可审
+        Admin-->>UI: code=403/400
+    else 待审视频
+        Admin->>DB: UPDATE status=已发布
+        Admin->>Noti: notifyVideoApproved
+        Noti->>DB: INSERT notifications
+        Admin-->>UI: code=200
+        UI-->>A: 提示已通过审核
+    end

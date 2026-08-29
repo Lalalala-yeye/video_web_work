@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    actor U as 登录用户
+    actor P as 作者
+    participant S as doinb系统
+
+    U->>S: 查询视频赞踩汇总
+    S-->>U: 返回计数与本人状态
+    U->>S: 对视频或评论赞/踩
+    alt 未登录或目标不存在
+        S-->>U: 拒绝并提示
+    else 再次点击同一反应
+        S-->>U: 取消或切换反应，更新计数
+    else 首次反应
+        S-->>U: 记录状态并更新计数
+        S-->>P: 推送点赞通知
+    end

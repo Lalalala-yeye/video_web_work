@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant UI as Web界面
+    participant User as User
+    participant Rx as Reaction
+    participant Noti as Notification
+    participant DB as 数据库
+
+    U->>UI: 点击赞/踩/取消
+    UI->>User: 校验登录态（Token）
+    User-->>UI: 已登录 userId
+    UI->>Rx: setVideoReaction / setCommentReaction
+    Rx->>DB: 校验目标存在
+    alt 目标不存在或参数非法
+        Rx-->>UI: code=400/404
+        UI-->>U: 提示错误
+    else 合法
+        Rx->>DB: INSERT/UPDATE/DELETE 互动记录
+        alt 新点赞且对象非本人
+            Rx->>Noti: notifyVideoLike / notifyCommentLike
+            Noti->>DB: INSERT notifications
+        end
+        Rx-->>UI: code=200 + 赞踩计数
+        UI-->>U: 更新按钮状态与计数
+    end

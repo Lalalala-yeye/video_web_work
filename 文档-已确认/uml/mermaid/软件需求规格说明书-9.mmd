@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    actor U as 登录用户
+    participant S as doinb系统
+
+    U->>S: 查询关注状态(authorId)
+    S-->>U: 返回是否已关注
+    U->>S: 关注(authorId)
+    alt 目标不存在或未登录
+        S-->>U: 提示失败
+    else 写入成功
+        S-->>U: 按钮变为已关注
+        U->>S: 打开订阅动态页
+        S-->>U: 按关注列表聚合返回最新视频（分页）
+        U->>S: 取消关注(authorId)
+        S-->>U: 删除订阅关系，刷新按钮与动态
+    end

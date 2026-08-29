@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    actor U as 登录用户
+    actor A as 管理员
+    participant S as doinb系统
+
+    U->>S: 提交举报(videoId, 原因)
+    alt 视频已删除或信息不完整或未登录
+        S-->>U: 拒绝并提示
+    else 记录成功
+        S-->>U: 举报已受理
+        A->>S: 打开举报复审列表
+        S-->>A: 返回举报记录与视频信息
+        A->>S: 处置(维持/删除/下架)
+        S-->>A: 更新视频可见状态，记录留存
+    end

@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor U as 用户/管理员
+    participant S as doinb系统
+
+    U->>S: 提交登录(账号, 密码)
+    alt 凭据错误
+        S-->>U: 登录失败提示
+    else 校验成功
+        S-->>U: 返回 JWT 与用户信息
+        U->>S: 获取个人信息
+        S-->>U: 返回当前用户资料
+        U->>S: 退出登录
+        S-->>U: 令牌失效，回到未登录态
+    end

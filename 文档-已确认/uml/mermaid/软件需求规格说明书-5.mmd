@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    actor U as 登录用户
+    participant S as doinb系统
+
+    U->>S: 上报播放进度(videoId, progress)
+    alt 未登录或视频不存在
+        S-->>U: 401 或失败提示
+    else 写入成功
+        S-->>U: 更新 play_history
+        U->>S: 请求播放历史列表
+        S-->>U: 返回历史与进度，支持续播
+    end

@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    actor U as 登录用户
+    participant S as doinb系统
+
+    U->>S: 请求个人信息
+    S-->>U: 返回昵称、头像、简介
+    alt 修改资料
+        U->>S: 提交昵称与简介
+        alt 非法输入或未登录
+            S-->>U: 拒绝并提示
+        else 保存成功
+            S-->>U: 返回更新后的资料
+        end
+    else 上传头像
+        U->>S: 上传头像文件
+        alt 格式不符或失败
+            S-->>U: 提示上传失败
+        else 上传成功
+            S-->>U: 返回头像访问地址
+        end
+    end

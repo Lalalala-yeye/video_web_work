@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    actor A as 发送方
+    actor B as 接收方
+    participant S as doinb系统
+
+    A->>S: 打开与 B 的私信（无则创建房间）
+    alt 对方不存在或未登录
+        S-->>A: 401 或失败提示
+    else 房间就绪
+        S-->>A: 返回房间与历史消息
+        A->>S: 发送消息(content)
+        alt 内容为空
+            S-->>A: 拒绝发送
+        else 发送成功
+            S-->>A: 会话中展示新消息
+            B->>S: 获取房间消息并回复
+            S-->>B: 展示双方消息
+        end
+    end
