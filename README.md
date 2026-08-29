@@ -8,9 +8,10 @@ cd video_web
 git checkout main
 ```
 ## 第二步 启动容器
+```bash
 copy .env.example .env
 docker compose up --build -d
-
+```
 ## 进行检查
 浏览器打开：
 
