@@ -1,0 +1,55 @@
+\usetikzlibrary{arrows.meta,backgrounds,fit,positioning,shadows.blur,shapes.geometric}
+
+\definecolor{ink}{HTML}{1F2937}
+\definecolor{muted}{HTML}{5B6472}
+\definecolor{lineblue}{HTML}{2563EB}
+\definecolor{frontendfill}{HTML}{EFF6FF}
+\definecolor{backendfill}{HTML}{F0FDF4}
+\definecolor{datafill}{HTML}{FFF7ED}
+\definecolor{actorfill}{HTML}{F8FAFC}
+\definecolor{groupborder}{HTML}{CBD5E1}
+
+\tikzset{
+  font=\sffamily,
+  >={Latex[length=3mm,width=2mm]},
+  actor/.style={draw=ink, rounded corners=2pt, fill=actorfill,
+    minimum width=28mm, minimum height=13mm, align=center,
+    line width=.8pt, font=\bfseries\sffamily},
+  component/.style={draw=ink, rounded corners=2pt, fill=white,
+    minimum width=40mm, minimum height=18mm, text width=36mm,
+    align=center, inner sep=4pt, line width=.8pt,
+    font=\small\sffamily, blur shadow={shadow opacity=.10}},
+  datastore/.style={cylinder, shape border rotate=90, aspect=.27,
+    draw=ink, fill=white, minimum width=40mm, minimum height=19mm,
+    align=center, line width=.8pt, font=\small\sffamily},
+  dependency/.style={-Latex, draw=muted, line width=.8pt},
+  request/.style={-Latex, draw=lineblue, line width=1.1pt},
+  labeltext/.style={font=\scriptsize\sffamily, fill=white,
+    inner sep=1.5pt, text=muted},
+  group/.style={draw=groupborder, rounded corners=5pt,
+    line width=.8pt, inner sep=2mm},
+  grouptitle/.style={font=\bfseries\small\sffamily, text=ink,
+    fill=white, inner sep=2pt},
+  note/.style={draw=groupborder, rounded corners=2pt, fill=actorfill,
+    text width=325mm, align=left, inner sep=5pt,
+    font=\small\sffamily, text=ink}
+}
+
+\newcommand{\componentglyph}[1]{%
+  \begin{scope}[shift={(#1.north east)},xshift=-2.5mm,yshift=-1.5mm,
+      draw=ink,line width=.55pt]
+    \draw (-3mm,-1.7mm) rectangle (0,1.7mm);
+    \draw (-4.2mm,0.6mm) rectangle (-2.5mm,1.55mm);
+    \draw (-4.2mm,-1.55mm) rectangle (-2.5mm,-0.6mm);
+  \end{scope}%
+}
+
+\newcommand{\diagramtitle}[2]{%
+  \node[font=\bfseries\LARGE\sffamily, text=ink] (title) at (15.5,9.5) {#1};
+  \node[below=1.5mm of title, font=\small\sffamily, text=muted] {#2};
+}
+
+\newcommand{\groupcaption}[2]{%
+  \node[grouptitle, anchor=south west]
+    at ([xshift=2mm,yshift=1mm]#1.north west) {#2};
+}

@@ -1,0 +1,28 @@
+%%{init: {"theme":"base","sequence":{"showSequenceNumbers":true},"themeVariables":{"fontFamily":"Microsoft YaHei, sans-serif","background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#b8d4f0","primaryTextColor":"#000000","primaryBorderColor":"#333333","secondaryColor":"#d4e8f8","secondaryTextColor":"#000000","secondaryBorderColor":"#333333","tertiaryColor":"#e8f4fc","lineColor":"#333333","textColor":"#000000","actorBkg":"#b8d4f0","actorBorder":"#333333","actorTextColor":"#000000","actorLineColor":"#333333","signalColor":"#333333","signalTextColor":"#000000","labelBoxBkgColor":"#fff5eb","labelBoxBorderColor":"#e8a050","labelTextColor":"#000000","loopTextColor":"#000000","noteBkgColor":"#fffef0","noteBorderColor":"#333333","noteTextColor":"#000000","activationBkgColor":"#8ec5eb","activationBorderColor":"#333333","sequenceNumberColor":"#ffffff"}}}%%
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant UI as Web界面
+    participant User as User
+    participant Sub as Subscription
+    participant Pub as Publisher
+    participant DB as 数据库
+
+    U->>UI: 在发布者主页点击关注
+    UI->>User: subscribe(publisherId)（已登录）
+    User->>Sub: create(userId, publisherId)
+    Sub->>DB: checkStatus 是否已订阅
+    alt 已订阅
+        DB-->>Sub: 已存在
+        Sub-->>UI: 无需重复订阅
+    else 未订阅
+        Sub->>DB: INSERT subscriptions
+        Sub->>Pub: 更新 followerCount（可选）
+        Pub-->>Sub: 完成
+        DB-->>Sub: 成功
+        Sub-->>User: true
+        User-->>UI: 订阅成功
+        UI-->>U: 更新关注状态
+    end
+
+    Note over U,DB: 取消订阅：User 触发 Sub.cancel(userId, publisherId) 删除关系

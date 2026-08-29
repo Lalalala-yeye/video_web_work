@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant S as doinb系统
+
+    U->>S: 请求视频列表
+    S-->>U: 返回已发布视频列表
+    U->>S: 请求视频详情(videoId)
+    alt 视频不存在或已下架
+        S-->>U: 提示无法播放
+    else 允许播放
+        S-->>U: 返回元数据、播放地址与赞踩汇总
+    end

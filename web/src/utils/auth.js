@@ -123,6 +123,17 @@ export function isLoggedIn() {
   return !!getToken()
 }
 
+/** 本标签页没有活跃账号、但本地还存着账号时，恢复最近一次登录（避免整页跳转后被踢去登录页）。 */
+export function restoreActiveAccountIfNeeded() {
+  if (getToken()) return true
+  const list = readAccountsRaw()
+  if (list.length === 0) return false
+  const latest = [...list].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0]
+  if (!latest?.user?.id) return false
+  setActiveId(latest.user.id)
+  return !!getToken()
+}
+
 export function isAdmin() {
   const user = getUser()
   return Number(user?.role) === 2

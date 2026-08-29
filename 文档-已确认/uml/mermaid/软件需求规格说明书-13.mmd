@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber
+    actor A as 触发方
+    actor B as 接收方
+    participant S as doinb系统
+
+    A->>S: 点赞/私信/审核等事件
+    S-->>B: 生成通知，未读数增加
+    B->>S: 请求通知列表与未读数
+    S-->>B: 返回通知与未读数
+    B->>S: 标记已读
+    S-->>B: 未读数减少或清零

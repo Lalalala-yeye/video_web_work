@@ -1,0 +1,25 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Microsoft YaHei, SimHei, sans-serif",
+    "primaryColor": "#b8d4f0",
+    "primaryTextColor": "#000000",
+    "primaryBorderColor": "#333333",
+    "lineColor": "#333333",
+    "actorBkg": "#b8d4f0",
+    "actorBorder": "#333333",
+    "actorTextColor": "#000000",
+    "signalColor": "#333333",
+    "signalTextColor": "#000000",
+    "labelBoxBkgColor": "#fff5eb",
+    "labelBoxBorderColor": "#e8a050",
+    "noteBkgColor": "#fffef0",
+    "noteBorderColor": "#333333",
+    "activationBkgColor": "#8ec5eb",
+    "sequenceNumberColor": "#ffffff"
+  },
+  "sequence": {
+    "showSequenceNumbers": true,
+    "useMaxWidth": false
+  }
+}

@@ -1,0 +1,25 @@
+%%{init: {"theme":"base","sequence":{"showSequenceNumbers":true},"themeVariables":{"fontFamily":"Microsoft YaHei, sans-serif","background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#b8d4f0","primaryTextColor":"#000000","primaryBorderColor":"#333333","secondaryColor":"#d4e8f8","secondaryTextColor":"#000000","secondaryBorderColor":"#333333","tertiaryColor":"#e8f4fc","lineColor":"#333333","textColor":"#000000","actorBkg":"#b8d4f0","actorBorder":"#333333","actorTextColor":"#000000","actorLineColor":"#333333","signalColor":"#333333","signalTextColor":"#000000","labelBoxBkgColor":"#fff5eb","labelBoxBorderColor":"#e8a050","labelTextColor":"#000000","loopTextColor":"#000000","noteBkgColor":"#fffef0","noteBorderColor":"#333333","noteTextColor":"#000000","activationBkgColor":"#8ec5eb","activationBorderColor":"#333333","sequenceNumberColor":"#ffffff"}}}%%
+sequenceDiagram
+    autonumber
+    actor P as 发布者(Publisher)
+    participant UI as Web界面
+    participant Pub as Publisher
+    participant Video as Video
+    participant Noti as Notification
+    participant Store as 对象存储
+    participant DB as 数据库
+
+    P->>UI: 选择文件并填写标题、描述等
+    UI->>Pub: publishVideo(videoInfo)
+    Pub->>Store: 上传视频文件/封面
+    Store-->>Pub: 存储路径
+    Pub->>Video: 创建 Video 对象
+    Video->>DB: INSERT videos（待审核/已发布）
+    DB-->>Video: videoId
+    Video->>Video: publish()
+    Video->>Noti: 触发更新通知
+    Noti->>DB: 查询订阅该发布者的用户
+    Noti->>DB: INSERT notifications（新视频上架）
+    Noti-->>Video: 通知已发送
+    Video-->>UI: 发布成功 + videoId
+    UI-->>P: 展示上传结果

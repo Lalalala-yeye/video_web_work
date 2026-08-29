@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    actor P as 主播
+    actor V as 观众
+    participant S as doinb系统
+
+    P->>S: 创建直播间(标题等信息)
+    S-->>P: 写入房间，状态=未开播
+    P->>S: 开播(roomId)
+    S-->>P: 状态=直播中，公开列表可见
+    V->>S: 打开直播列表并进入房间
+    alt 房间不存在或已结束
+        S-->>V: 明确提示
+    else 可进入
+        S-->>V: 返回房间信息（画面为演示占位）
+    end
+    P->>S: 停播(roomId)
+    S-->>P: 状态更新，列表同步

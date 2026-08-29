@@ -1,0 +1,23 @@
+%%{init: {"theme":"base","sequence":{"showSequenceNumbers":true},"themeVariables":{"fontFamily":"Microsoft YaHei, sans-serif","background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#b8d4f0","primaryTextColor":"#000000","primaryBorderColor":"#333333","secondaryColor":"#d4e8f8","secondaryTextColor":"#000000","secondaryBorderColor":"#333333","tertiaryColor":"#e8f4fc","lineColor":"#333333","textColor":"#000000","actorBkg":"#b8d4f0","actorBorder":"#333333","actorTextColor":"#000000","actorLineColor":"#333333","signalColor":"#333333","signalTextColor":"#000000","labelBoxBkgColor":"#fff5eb","labelBoxBorderColor":"#e8a050","labelTextColor":"#000000","loopTextColor":"#000000","noteBkgColor":"#fffef0","noteBorderColor":"#333333","noteTextColor":"#000000","activationBkgColor":"#8ec5eb","activationBorderColor":"#333333","sequenceNumberColor":"#ffffff"}}}%%
+sequenceDiagram
+    autonumber
+    actor P as 发布者(Publisher)
+    participant UI as Web界面
+    participant Pub as Publisher
+    participant Video as Video
+    participant DB as 数据库
+
+    P->>UI: 在管理页编辑元数据或上下架
+    UI->>Pub: editVideo(videoId, info) / setStatus
+    Pub->>Video: edit(info) 或 setStatus(status)
+    Video->>DB: 校验 author_id 与权限
+    alt 无权限或视频不存在
+        DB-->>Video: 失败
+        Video-->>UI: false
+        UI-->>P: 提示无权操作
+    else 校验通过
+        Video->>DB: UPDATE videos
+        DB-->>Video: 成功
+        Video-->>UI: true
+        UI-->>P: 刷新管理列表
+    end

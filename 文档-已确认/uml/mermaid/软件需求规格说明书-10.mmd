@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    actor U as 登录用户
+    participant S as doinb系统
+
+    U->>S: 请求评论列表(videoId/roomId)
+    S-->>U: 返回已有评论
+    U->>S: 提交评论(content/表情)
+    alt 未登录或内容为空或目标不存在
+        S-->>U: 拒绝并提示原因
+    else 校验通过
+        S-->>U: 评论发布成功，刷新评论列表
+    end

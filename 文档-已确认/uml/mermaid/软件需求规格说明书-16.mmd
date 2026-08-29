@@ -1,0 +1,84 @@
+classDiagram
+    class User {
+        +int id
+        +String username
+        +String passwordHash
+        +String nickname
+        +String avatar
+        +String bio
+        +int role
+    }
+    class Video {
+        +int id
+        +String title
+        +String description
+        +String filePath
+        +String coverPath
+        +int status
+        +int visibility
+    }
+    class Comment {
+        +int id
+        +String content
+        +int targetType
+        +Date createTime
+    }
+    class LiveRoom {
+        +int id
+        +String title
+        +int status
+        +String streamKey
+    }
+    class Subscription {
+        +int followerId
+        +int authorId
+    }
+    class PlayHistory {
+        +int userId
+        +int videoId
+        +int progress
+    }
+    class Notification {
+        +int id
+        +int type
+        +boolean read
+    }
+    class DmRoom {
+        +int id
+    }
+    class DmMessage {
+        +int id
+        +String content
+    }
+    class VideoReport {
+        +int id
+        +String reason
+        +int status
+    }
+    class Reaction {
+        +int type
+    }
+    class Author {
+        <<role=1>>
+    }
+    class Administrator {
+        <<role=2>>
+    }
+
+    Author --|> User
+    Administrator --|> User
+    User "1" --> "*" Video : 发布
+    User "1" --> "*" Comment : 发表
+    User "1" --> "*" LiveRoom : 创建
+    User "1" --> "*" Subscription : 关注
+    Subscription --> User : 被关注作者
+    User "1" --> "*" PlayHistory : 拥有
+    User "1" --> "*" Notification : 接收
+    User "*" --> "*" DmRoom : 参与
+    DmRoom "1" --> "*" DmMessage : 包含
+    Video "1" --> "*" Comment : 拥有
+    Video "1" --> "*" PlayHistory : 被记录
+    Video "1" --> "*" VideoReport : 被举报
+    Video "1" --> "*" Reaction : 被赞踩
+    Comment "1" --> "*" Reaction : 被赞踩
+    LiveRoom "1" --> "*" Comment : 本场评论

@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    actor G as 访客
+    participant S as doinb系统
+
+    G->>S: 打开注册页
+    S-->>G: 展示注册界面
+    G->>S: 提交注册(用户名, 密码, 昵称)
+    alt 用户名已存在或格式不合法
+        S-->>G: 提示注册失败原因
+    else 校验通过
+        S-->>G: 注册成功，users 表新增记录
+    end

@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant UI as Web界面
+    participant Noti as Notification
+    participant DB as 数据库
+
+    U->>UI: 打开通知面板
+    UI->>Noti: list(userId) / unread-count
+    Noti->>DB: SELECT notifications
+    DB-->>Noti: 列表与未读数
+    Noti-->>UI: records + count
+    UI-->>U: 展示通知
+
+    U->>UI: 标记单条或全部已读
+    UI->>Noti: markRead(id 或全部)
+    Noti->>DB: UPDATE is_read
+    Noti-->>UI: code=200
+    UI-->>U: 未读数清零或减少
