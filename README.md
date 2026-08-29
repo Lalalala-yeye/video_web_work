@@ -407,6 +407,20 @@ UPDATE users SET nickname = CONCAT('用户_', username) WHERE nickname LIKE '??_
 
 并确认后端 `application.yml` 中 `spring.servlet.encoding` 为 UTF-8。
 
+### 11. 换个目录再次 `docker compose up` 报 `container name "/doinb-mysql" is already in use`
+
+compose 里容器名固定（doinb-mysql / doinb-backend / doinb-web），**一台机器同时只能跑一套**。先停掉旧的一套再起新的：
+
+```powershell
+# 到旧的项目目录执行（停容器；-v 会连演示数据卷一起删）
+docker compose down
+
+# 或者直接按名字删（在任何位置执行都行）
+docker rm -f doinb-web doinb-backend doinb-mysql
+```
+
+然后在新目录重新 `docker compose up -d` 即可。
+
 ---
 
 ## 开发分工参考
