@@ -4,7 +4,7 @@
 ## 第一步 克隆仓库
 ```bash
 git clone https://github.com/Lalalala-yeye/video_web_work
-cd video_web
+cd video_web_work
 git checkout main
 ```
 ## 第二步 启动容器
