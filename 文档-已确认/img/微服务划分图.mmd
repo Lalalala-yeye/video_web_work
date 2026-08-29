@@ -1,0 +1,39 @@
+%%{init: {"flowchart": {"curve": "linear", "defaultRenderer": "elk", "htmlLabels": true, "padding": 12}}}%%
+flowchart TB
+  browser[浏览器]
+  vue[Vue 前端 不拆]
+  gw[API 网关 校验 JWT 按路径转发]
+
+  userSvc[用户服务]
+  videoSvc[视频服务]
+  liveSvc[直播服务]
+  interactSvc[互动服务]
+  msgSvc[消息服务]
+
+  dbUser[(doinb_user)]
+  dbVideo[(doinb_video)]
+  dbLive[(doinb_live)]
+  dbInteract[(doinb_interact)]
+  dbMsg[(doinb_msg)]
+  srs[SRS 直播媒体]
+
+  browser --> vue
+  vue --> gw
+  gw --> userSvc
+  gw --> videoSvc
+  gw --> liveSvc
+  gw --> interactSvc
+  gw --> msgSvc
+
+  userSvc --> dbUser
+  videoSvc --> dbVideo
+  liveSvc --> dbLive
+  interactSvc --> dbInteract
+  msgSvc --> dbMsg
+  liveSvc -.-> srs
+  vue -.-> srs
+
+  interactSvc -.->|校验目标 / 拉动态| videoSvc
+  interactSvc -.->|校验直播是否在播 / 拉动态| liveSvc
+  interactSvc -.->|写点赞通知| msgSvc
+  videoSvc -.->|写审核通过通知| msgSvc

@@ -133,9 +133,9 @@ docker compose down -v       # 停容器并清空数据库（会丢演示数据�
 
 | 顺序 | Job | 测什么 | 是否挡住后续 |
 |------|-----|--------|----------------|
-| 1 | Backend unit + API tests | JUnit 单测 + MockMvc，不启 MySQL | 是 |
-| 2 | Postman Newman | 真库 API 冒烟（15 条） | 是（不过不打镜像） |
-| 3a | Selenium E2E | 无头 Chrome：账号、浏览搜索、互动、创作中心+直播、通知私信后台 | 否（与打镜像并行） |
+| 1 | Backend unit + API tests | V 模型**单元测试**：Service 对象级 + MockMvc 系统操作契约，不启 MySQL | 是 |
+| 2 | Postman Newman | V 模型**系统测试**：真库打后端（15 条冒烟，对应用例基本/扩展路径） | 是（不过不打镜像） |
+| 3a | Selenium E2E | V 模型**验收测试**（加分）：无头 Chrome 对着 GUI | 否（与打镜像并行） |
 | 3b | Build versioned images | Newman 通过后构建并推送到 GHCR | 是（该 job 失败则流水线红） |
 
 E2E 需要管理员种子账号 `demo_admin` / `123456`（`database/seed.sql`）。OBS 真推流不进 CI。

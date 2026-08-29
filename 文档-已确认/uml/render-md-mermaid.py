@@ -20,6 +20,7 @@ MERMAID_CFG = MMD_DIR / "mermaid.json"
 FILES = [
     DOC_DIR / "软件需求规格说明书.md",
     DOC_DIR / "软件详细设计说明书.md",
+    DOC_DIR / "微服务划分图.md",
 ]
 
 BLOCK_RE = re.compile(r"```mermaid\n(.*?)```", re.DOTALL)
@@ -111,6 +112,13 @@ def main() -> int:
                     "sequenceNumberColor": "#ffffff",
                 },
                 "sequence": {"showSequenceNumbers": True, "useMaxWidth": False},
+                "flowchart": {
+                    "curve": "linear",
+                    "defaultRenderer": "elk",
+                    "htmlLabels": True,
+                    "useMaxWidth": False,
+                    "padding": 12,
+                },
             },
             ensure_ascii=False,
             indent=2,

@@ -21,5 +21,12 @@
   "sequence": {
     "showSequenceNumbers": true,
     "useMaxWidth": false
+  },
+  "flowchart": {
+    "curve": "linear",
+    "defaultRenderer": "elk",
+    "htmlLabels": true,
+    "useMaxWidth": false,
+    "padding": 12
   }
 }
