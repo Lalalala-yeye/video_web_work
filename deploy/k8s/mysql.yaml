@@ -35,6 +35,8 @@ spec:
             - name: mysql
               containerPort: 3306
           env:
+            - name: TZ
+              value: Asia/Shanghai
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:

@@ -35,6 +35,8 @@ spec:
             - name: http
               containerPort: 8081
           env:
+            - name: TZ
+              value: Asia/Shanghai
             - name: SPRING_PROFILES_ACTIVE
               value: ci
             - name: MYSQL_HOST

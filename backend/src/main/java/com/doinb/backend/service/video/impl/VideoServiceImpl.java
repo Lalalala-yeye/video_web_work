@@ -3,9 +3,12 @@ package com.doinb.backend.service.video.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.doinb.backend.mapper.CommentMapper;
+import com.doinb.backend.mapper.CommentReactionMapper;
 import com.doinb.backend.mapper.PlayHistoryMapper;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.mapper.VideoMapper;
+import com.doinb.backend.mapper.VideoReactionMapper;
 import com.doinb.backend.mapper.VideoReportMapper;
 import com.doinb.backend.pojo.CustomResponse;
 import com.doinb.backend.pojo.VideoStatus;
@@ -16,10 +19,14 @@ import com.doinb.backend.pojo.entity.PlayHistory;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.pojo.entity.Video;
 import com.doinb.backend.pojo.entity.VideoReport;
+import com.doinb.backend.pojo.entity.Comment;
+import com.doinb.backend.pojo.entity.CommentReaction;
+import com.doinb.backend.pojo.entity.VideoReaction;
 import com.doinb.backend.service.reaction.ReactionService;
 import com.doinb.backend.service.video.VideoService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,6 +55,9 @@ public class VideoServiceImpl implements VideoService {
     private final UserMapper userMapper;
     private final PlayHistoryMapper playHistoryMapper;
     private final VideoReportMapper videoReportMapper;
+    private final VideoReactionMapper videoReactionMapper;
+    private final CommentMapper commentMapper;
+    private final CommentReactionMapper commentReactionMapper;
     private final ReactionService reactionService;
 
     @Value("${upload.path:uploads}")
@@ -57,11 +67,17 @@ public class VideoServiceImpl implements VideoService {
                             UserMapper userMapper,
                             PlayHistoryMapper playHistoryMapper,
                             VideoReportMapper videoReportMapper,
+                            VideoReactionMapper videoReactionMapper,
+                            CommentMapper commentMapper,
+                            CommentReactionMapper commentReactionMapper,
                             ReactionService reactionService) {
         this.videoMapper = videoMapper;
         this.userMapper = userMapper;
         this.playHistoryMapper = playHistoryMapper;
         this.videoReportMapper = videoReportMapper;
+        this.videoReactionMapper = videoReactionMapper;
+        this.commentMapper = commentMapper;
+        this.commentReactionMapper = commentReactionMapper;
         this.reactionService = reactionService;
     }
 
@@ -390,6 +406,7 @@ public class VideoServiceImpl implements VideoService {
     }
 
     @Override
+    @Transactional
     public CustomResponse deleteVideo(Integer userId, Integer role, Integer videoId) {
         Video video = videoMapper.selectById(videoId);
         if (video == null) {
@@ -398,9 +415,30 @@ public class VideoServiceImpl implements VideoService {
         if (!canManageVideo(userId, role, video)) {
             return fail(403, "无权删除该视频");
         }
-        deleteFiles(video);
+        deleteVideoRelations(videoId);
         videoMapper.deleteById(videoId);
+        deleteFiles(video);
         return ok("删除成功");
+    }
+
+    /**
+     * 删除 videos 行之前必须先清理引用它的子表数据（play_history / video_reactions /
+     * video_reports 外键指向 videos；comment_reactions 外键指向 comments），
+     * 否则删除会因外键约束失败。
+     */
+    private void deleteVideoRelations(Integer videoId) {
+        playHistoryMapper.delete(new LambdaQueryWrapper<PlayHistory>().eq(PlayHistory::getVideoId, videoId));
+        videoReactionMapper.delete(new LambdaQueryWrapper<VideoReaction>().eq(VideoReaction::getVideoId, videoId));
+        videoReportMapper.delete(new LambdaQueryWrapper<VideoReport>().eq(VideoReport::getVideoId, videoId));
+        List<Comment> videoComments = commentMapper.selectList(new LambdaQueryWrapper<Comment>()
+                .eq(Comment::getTargetType, 1)
+                .eq(Comment::getTargetId, videoId));
+        if (!videoComments.isEmpty()) {
+            List<Integer> commentIds = videoComments.stream().map(Comment::getId).toList();
+            commentReactionMapper.delete(new LambdaQueryWrapper<CommentReaction>()
+                    .in(CommentReaction::getCommentId, commentIds));
+            commentMapper.deleteBatchIds(commentIds);
+        }
     }
 
     private boolean canViewVideo(Video video, Integer viewerUserId, Integer viewerRole) {

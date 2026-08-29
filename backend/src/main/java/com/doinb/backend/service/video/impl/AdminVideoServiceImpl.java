@@ -2,8 +2,12 @@ package com.doinb.backend.service.video.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.doinb.backend.mapper.CommentMapper;
+import com.doinb.backend.mapper.CommentReactionMapper;
+import com.doinb.backend.mapper.PlayHistoryMapper;
 import com.doinb.backend.mapper.UserMapper;
 import com.doinb.backend.mapper.VideoMapper;
+import com.doinb.backend.mapper.VideoReactionMapper;
 import com.doinb.backend.mapper.VideoReportMapper;
 import com.doinb.backend.pojo.CustomResponse;
 import com.doinb.backend.pojo.VideoStatus;
@@ -13,10 +17,15 @@ import com.doinb.backend.pojo.dto.VideoReportDTO;
 import com.doinb.backend.pojo.entity.User;
 import com.doinb.backend.pojo.entity.Video;
 import com.doinb.backend.pojo.entity.VideoReport;
+import com.doinb.backend.pojo.entity.PlayHistory;
+import com.doinb.backend.pojo.entity.VideoReaction;
+import com.doinb.backend.pojo.entity.Comment;
+import com.doinb.backend.pojo.entity.CommentReaction;
 import com.doinb.backend.service.notification.NotificationService;
 import com.doinb.backend.service.video.AdminVideoService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +41,10 @@ public class AdminVideoServiceImpl implements AdminVideoService {
     private final VideoMapper videoMapper;
     private final UserMapper userMapper;
     private final VideoReportMapper videoReportMapper;
+    private final PlayHistoryMapper playHistoryMapper;
+    private final VideoReactionMapper videoReactionMapper;
+    private final CommentMapper commentMapper;
+    private final CommentReactionMapper commentReactionMapper;
     private final NotificationService notificationService;
 
     @Value("${upload.path:uploads}")
@@ -40,10 +53,18 @@ public class AdminVideoServiceImpl implements AdminVideoService {
     public AdminVideoServiceImpl(VideoMapper videoMapper,
                                  UserMapper userMapper,
                                  VideoReportMapper videoReportMapper,
+                                 PlayHistoryMapper playHistoryMapper,
+                                 VideoReactionMapper videoReactionMapper,
+                                 CommentMapper commentMapper,
+                                 CommentReactionMapper commentReactionMapper,
                                  NotificationService notificationService) {
         this.videoMapper = videoMapper;
         this.userMapper = userMapper;
         this.videoReportMapper = videoReportMapper;
+        this.playHistoryMapper = playHistoryMapper;
+        this.videoReactionMapper = videoReactionMapper;
+        this.commentMapper = commentMapper;
+        this.commentReactionMapper = commentReactionMapper;
         this.notificationService = notificationService;
     }
 
@@ -162,6 +183,7 @@ public class AdminVideoServiceImpl implements AdminVideoService {
     }
 
     @Override
+    @Transactional
     public CustomResponse deleteVideo(Integer adminRole, Integer videoId) {
         if (adminRole == null || adminRole != ROLE_ADMIN) {
             return fail(403, "需要管理员权限");
@@ -170,8 +192,21 @@ public class AdminVideoServiceImpl implements AdminVideoService {
         if (video == null) {
             return fail(404, "视频不存在");
         }
-        deleteFiles(video);
+        // 先清理引用该视频的子表数据，否则外键约束会让删除失败（play_history/video_reactions/video_reports 外键指向 videos）
+        playHistoryMapper.delete(new LambdaQueryWrapper<PlayHistory>().eq(PlayHistory::getVideoId, videoId));
+        videoReactionMapper.delete(new LambdaQueryWrapper<VideoReaction>().eq(VideoReaction::getVideoId, videoId));
+        videoReportMapper.delete(new LambdaQueryWrapper<VideoReport>().eq(VideoReport::getVideoId, videoId));
+        List<Comment> videoComments = commentMapper.selectList(new LambdaQueryWrapper<Comment>()
+                .eq(Comment::getTargetType, 1)
+                .eq(Comment::getTargetId, videoId));
+        if (!videoComments.isEmpty()) {
+            List<Integer> commentIds = videoComments.stream().map(Comment::getId).toList();
+            commentReactionMapper.delete(new LambdaQueryWrapper<CommentReaction>()
+                    .in(CommentReaction::getCommentId, commentIds));
+            commentMapper.deleteBatchIds(commentIds);
+        }
         videoMapper.deleteById(videoId);
+        deleteFiles(video);
         return ok("已删除");
     }
 

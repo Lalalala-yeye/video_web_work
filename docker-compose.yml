@@ -3,6 +3,7 @@ services:
     image: mysql:8.0
     container_name: doinb-mysql
     environment:
+      TZ: Asia/Shanghai   # 与浏览器时区一致，避免 NOW()/时间字段相差 8 小时
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-test}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-doinb}
     ports:
@@ -28,6 +29,7 @@ services:
       mysql:
         condition: service_healthy
     environment:
+      TZ: Asia/Shanghai   # JVM 默认取容器系统时区(UTC)，会导致评论/通知时间比东八区早 8 小时
       SPRING_PROFILES_ACTIVE: ci
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
