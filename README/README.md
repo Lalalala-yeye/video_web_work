@@ -98,7 +98,7 @@ docker compose up --build -d
 | backend | 8081 | Spring Boot |
 | mysql | 3307 | 映射到容器 3306，避免和本机 MySQL 抢端口 |
 
-建表脚本 `database/database.sql` 与测试数据 `database/seed.sql` 仅在 **空数据卷第一次启动** 时自动执行。演示账号（密码均为 `123456`）：
+建表脚本 `database/database.sql` 与测试数据 `database/seed.sql` 仅在 **空数据卷第一次启动** 时自动执行。样片文件在 `backend/demo-media/`，容器启动时拷到 `uploads/`。演示账号（密码均为 `123456`）：
 
 | 用户名 | 角色 |
 |--------|------|
@@ -115,6 +115,15 @@ docker compose down -v       # 停容器并清空数据库（会丢演示数据�
 ```
 
 变量名与 CI 相同，见 `.env.example`（`MYSQL_*`、`JWT_SECRET`）。不要把填好的 `.env` 提交进 Git。
+
+### 换机器带上已有视频
+
+视频**不要**放进 Git：元数据在 MySQL 卷 `doinb-mysql-data`，文件在 `backend/uploads/`。新电脑空启动只会加载 `database/seed.sql` 的两条默认片。
+
+- **同一局域网、要永远最新：** 旧电脑继续跑容器，新电脑打开 `http://旧电脑IP:8787`。
+- **必须在新电脑再部署一套：** 旧电脑执行 `.\scripts\export-data.ps1`，把 `doinb-data.zip` 拷过去，新电脑 compose 起来后执行 `.\scripts\import-data.ps1`。
+
+生产环境才把文件改存对象存储（OSS/COS）+ 云数据库，让多台机器连同一套存储。课设用本地磁盘即可，换机器靠上面的数据包。
 
 ---
 

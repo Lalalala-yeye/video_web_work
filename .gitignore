@@ -17,8 +17,15 @@ application-local.yml
 uploads/
 *.mp4
 *.mov
+doinb-data.zip
+doinb-data/
+doinb-backup.sql
+.doinb-data-export/
+.doinb-data-import/
 # 例外：E2E 测试用的固定小素材（200KB 假文件，仅用于上传接口测试）
 !web/e2e/fixtures/*.mp4
+# 例外：课设演示样片（体积较小，clone 后即可播放）
+!backend/demo-media/**/*.mp4
 
 # 系统
 .DS_Store
