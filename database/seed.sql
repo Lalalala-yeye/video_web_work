@@ -1,6 +1,7 @@
 -- 课设演示 / 换机器联调用测试数据。密码均为 123456（BCrypt）。
 -- 容器首次启动会自动执行；本机已有库可：mysql -uroot -p doinb < database/seed.sql
 -- 账号：demo_admin（管理员） / demo_author（作者） / demo_user（观众）
+-- 演示视频文件见 backend/demo-media/，后端启动时拷到 uploads/。
 SET NAMES utf8mb4;
 
 INSERT INTO users (id, username, password, nickname, bio, role) VALUES
@@ -13,11 +14,15 @@ ON DUPLICATE KEY UPDATE
   role = VALUES(role);
 
 INSERT INTO videos (id, title, description, author_id, cover_url, video_url, status, report_count) VALUES
-(1, '示例视频（已发布）', 'Big Buck Bunny，用于首页列表和播放页联调', 2, NULL, 'https://www.w3schools.com/html/mov_bbb.mp4', 1, 0),
-(2, '待审核稿件', '管理员可在后台待审列表看到本条', 2, NULL, 'https://www.w3schools.com/html/mov_bbb.mp4', 0, 0)
+(1, '1938 增兵徐州', '历史影像，用于首页列表和播放页演示', 2, '/uploads/covers/demo-1938.png', '/uploads/videos/demo-1938.mp4', 1, 0),
+(2, '待审核稿件', '管理员可在后台待审列表看到本条', 2, '/uploads/covers/demo-pixel.png', '/uploads/videos/demo-pixel.mp4', 0, 0),
+(3, '像素角色绘制', '像素画过程，用于封面与播放演示', 2, '/uploads/covers/demo-pixel.png', '/uploads/videos/demo-pixel.mp4', 1, 0),
+(4, '实时数据折线图', '数据可视化录屏，用于搜索和列表演示', 2, '/uploads/covers/demo-chart.png', '/uploads/videos/demo-chart.mp4', 1, 0)
 ON DUPLICATE KEY UPDATE
   title = VALUES(title),
   description = VALUES(description),
+  cover_url = VALUES(cover_url),
+  video_url = VALUES(video_url),
   status = VALUES(status);
 
 INSERT INTO live_rooms (id, title, anchor_id, stream_key, is_live) VALUES

@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /build/target/*.jar app.jar
+COPY demo-media /opt/demo-media
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
 # 与 CI / compose 同一套变量（见 application-ci.yml）。密码与 JWT 必须运行期覆盖。
 # compose 会把 MYSQL_HOST 设为 mysql；单独 docker run 时默认连宿主机 MySQL。
 ENV SPRING_PROFILES_ACTIVE=ci \
@@ -31,4 +34,4 @@ VOLUME ["/app/uploads"]
 EXPOSE 8081
 HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=5 \
   CMD curl -fs http://127.0.0.1:8081/health || exit 1
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
