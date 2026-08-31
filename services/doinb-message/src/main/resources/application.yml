@@ -1,0 +1,13 @@
+server:
+  port: 8086
+
+doinb:
+  role: service
+  service-name: doinb-message
+  internal-token: ${DOINB_INTERNAL_TOKEN:doinb-internal-dev-token}
+  public-path-prefixes:
+    - /health
+
+jwt:
+  secret: ${JWT_SECRET:change-me-in-local-config-at-least-32-chars!!}
+  expire: 86400000
