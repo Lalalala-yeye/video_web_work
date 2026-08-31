@@ -1,0 +1,20 @@
+server:
+  port: 8085
+
+doinb:
+  role: service
+  service-name: doinb-interact
+  internal-token: ${DOINB_INTERNAL_TOKEN:doinb-internal-dev-token}
+  services:
+    user: ${DOINB_USER_URL:http://127.0.0.1:8082}
+    video: ${DOINB_VIDEO_URL:http://127.0.0.1:8083}
+    live: ${DOINB_LIVE_URL:http://127.0.0.1:8084}
+    message: ${DOINB_MESSAGE_URL:http://127.0.0.1:8086}
+  public-path-prefixes:
+    - /health
+    - /comment/list
+    - /video/reaction/summary
+
+jwt:
+  secret: ${JWT_SECRET:change-me-in-local-config-at-least-32-chars!!}
+  expire: 86400000

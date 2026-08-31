@@ -1,0 +1,19 @@
+server:
+  port: 8083
+
+doinb:
+  role: service
+  service-name: doinb-video
+  internal-token: ${DOINB_INTERNAL_TOKEN:doinb-internal-dev-token}
+  services:
+    message: ${DOINB_MESSAGE_URL:http://127.0.0.1:8086}
+  public-path-prefixes:
+    - /health
+    - /video/list
+    - /video/getone
+    - /uploads/videos
+    - /uploads/covers
+
+jwt:
+  secret: ${JWT_SECRET:change-me-in-local-config-at-least-32-chars!!}
+  expire: 86400000

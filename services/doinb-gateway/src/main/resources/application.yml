@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+jwt:
+  secret: ${JWT_SECRET:change-me-in-local-config-at-least-32-chars!!}
+  expire: 86400000
+
+doinb:
+  role: gateway
+  service-name: doinb-gateway
+  internal-token: ${DOINB_INTERNAL_TOKEN:doinb-internal-dev-token}
+  services:
+    user: ${DOINB_USER_URL:http://127.0.0.1:8082}
+    video: ${DOINB_VIDEO_URL:http://127.0.0.1:8083}
+    live: ${DOINB_LIVE_URL:http://127.0.0.1:8084}
+    interact: ${DOINB_INTERACT_URL:http://127.0.0.1:8085}
+    message: ${DOINB_MESSAGE_URL:http://127.0.0.1:8086}
