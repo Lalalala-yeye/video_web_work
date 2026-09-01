@@ -33,7 +33,7 @@
             "pm.test('H000 HTTP 200', () => pm.response.to.have.status(200));",
             "const j = pm.response.json();",
             "pm.test('H000 code=200', () => pm.expect(j.code).to.eql(200));",
-            "pm.test('H000 data', () => pm.expect(j.data).to.eql('doinb-backend ok'));"
+            "pm.test('H000 data', () => pm.expect(j.data).to.eql('doinb-gateway ok'));"
           ]
         }
       }],

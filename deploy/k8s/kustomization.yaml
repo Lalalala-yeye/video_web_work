@@ -4,5 +4,5 @@ namespace: doinb
 resources:
   - namespace.yaml
   - mysql.yaml
-  - backend.yaml
+  - java-services.yaml
   - web.yaml

@@ -1,0 +1,5 @@
+jwt:
+  secret: ${JWT_SECRET:ci-test-secret-at-least-32-characters!!}
+
+server:
+  port: ${SERVER_PORT:8081}

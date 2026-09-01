@@ -30,6 +30,8 @@ doinb:
     user: ${DOINB_USER_URL:http://127.0.0.1:8082}
   public-path-prefixes:
     - /health
+    - /ready
+    - /version
 
 jwt:
   secret: ${JWT_SECRET:change-me-in-local-config-at-least-32-chars!!}

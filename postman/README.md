@@ -43,10 +43,11 @@ npx --yes newman@6 run postman/doinb.postman_collection.json -e postman/doinb.ci
 
 `.github/workflows/ci.yml` 测试门禁顺序：
 
-1. 后端单测 + MockMvc（不启 MySQL）
-2. 起 MySQL → 建表 → 启动后端 → Newman（15 条冒烟）
-3. Newman 通过后并行：Selenium E2E（失败不挡门禁）；`docker build` 推送 `ghcr.io/<owner>/doinb-backend:<sha>` 与 `doinb-web:<sha>`（无 `latest`）
+1. `services/` 五个业务服务 + 网关单测（不启 MySQL）
+2. 起 MySQL → 建表 → 起五服务 + 网关 8081 → Newman（15 条冒烟，打网关）
+3. Newman 通过后并行：Selenium E2E（失败不挡门禁）；打 `doinb-gateway` / `doinb-user` / `doinb-video` / `doinb-live` / `doinb-interact` / `doinb-message` / `doinb-web` 镜像（tag 为 7 位 SHA，无 `latest`）
+4. kind 部署本次 SHA，探活网关 `/health` `/ready` `/version`
 
 单测或 Newman 失败则整条流水线红，后面不打镜像。E2E 失败仍会出截图 artifact，不阻止打镜像。
 
-后端镜像 / compose / K8s 与 CI **同一套变量名**，不要再用 `SPRING_DATASOURCE_*`。完整表见 `backend/src/main/resources/application-ci.yml` 文件头注释。
+镜像 / compose / K8s 与 CI **同一套变量名**：`MYSQL_*`、`JWT_SECRET`、`DOINB_INTERNAL_TOKEN`、`DOINB_*_URL`。

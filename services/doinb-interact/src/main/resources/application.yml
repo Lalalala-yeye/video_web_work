@@ -33,6 +33,8 @@ doinb:
     message: ${DOINB_MESSAGE_URL:http://127.0.0.1:8086}
   public-path-prefixes:
     - /health
+    - /ready
+    - /version
     - /comment/list
     - /video/reaction/summary
 

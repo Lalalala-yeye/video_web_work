@@ -13,19 +13,20 @@ function Invoke-Kubectl {
     }
 }
 
-Write-Host "Waiting for MySQL, backend and web..."
-Invoke-Kubectl rollout status deployment/mysql -n $Namespace "--timeout=$Timeout"
-Invoke-Kubectl rollout status deployment/backend -n $Namespace "--timeout=$Timeout"
-Invoke-Kubectl rollout status deployment/web -n $Namespace "--timeout=$Timeout"
+$apps = @("mysql", "user", "video", "live", "interact", "message", "gateway", "web")
+Write-Host "Waiting for $($apps -join ', ')..."
+foreach ($app in $apps) {
+    Invoke-Kubectl rollout status "deployment/$app" -n $Namespace "--timeout=$Timeout"
+}
 
 Write-Host "`nCurrent workloads:"
 Invoke-Kubectl get "pods,services" -n $Namespace -o wide
 
 $checkPod = "doinb-healthcheck-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-$checkCommand = "curl -fsS http://backend:8081/health && echo && curl -fsS http://web/ > /dev/null"
+$checkCommand = 'curl -fsS http://gateway:8081/health && echo && curl -fsS http://gateway:8081/ready && echo && curl -fsS http://gateway:8081/version && echo && curl -fsS http://user:8082/health && echo && curl -fsS http://video:8083/health && echo && curl -fsS http://web/ >/dev/null && curl -fsS http://web/api/health && echo'
 
-Write-Host "`nChecking backend /health and the web Service from inside the cluster..."
+Write-Host "`nChecking gateway /health /ready /version, user, video, and web /api/health..."
 Invoke-Kubectl run $checkPod -n $Namespace --image=curlimages/curl:8.12.1 --restart=Never --rm -i --command "--" sh -c $checkCommand
 
-Write-Host "`nOK: backend /health returned successfully and web / was reachable."
+Write-Host "`nOK: probes passed."
 Write-Host "To access locally, run: kubectl port-forward service/web 8080:80 -n $Namespace"

@@ -1,6 +1,6 @@
 # CD-02：部署到 Kubernetes
 
-本目录把 CD-01 产生的版本镜像部署为 MySQL、backend、web 三个工作负载。默认使用固定 tag `cde7310`，不使用 `latest`。
+本目录把 CD-01 产生的版本镜像部署为 MySQL、五个业务服务、网关、web。默认使用固定 tag `cde7310`，不使用 `latest`。
 
 GitHub Actions 的 **Deploy kind + health (CD-02)** 会在打完镜像后，用本次 commit 的 SHA tag 在 runner 的 kind 集群里自动部署并探活。下面步骤用于本机集群验收。
 
@@ -12,11 +12,11 @@ GitHub Actions 的 **Deploy kind + health (CD-02)** 会在打完镜像后，用�
 
 - Namespace：`doinb`
 - MySQL：官方镜像 `mysql:8.0`，Deployment、Service、PVC
-- backend：`ghcr.io/lalalala-yeye/doinb-backend:cde7310`
+- 业务：`doinb-user` / `doinb-video` / `doinb-live` / `doinb-interact` / `doinb-message`
+- 网关：`ghcr.io/lalalala-yeye/doinb-gateway:cde7310`（对外 8081）
 - web：`ghcr.io/lalalala-yeye/doinb-web:cde7310`
-- backend 探活：`/health`
-- web 探活：Nginx `/`
-- web `/api`：反向代理到 `http://backend:8081/`
+- 存活 `/health`，就绪 `/ready`，版本 `/version`
+- web `/api`：反向代理到 `http://gateway:8081/`
 
 所有命令均在仓库根目录执行。开始前确认本地集群可用：
 
@@ -33,13 +33,14 @@ kubectl get nodes
 kubectl apply -f deploy/k8s/namespace.yaml
 ```
 
-创建运行时密钥。当前 backend 使用 MySQL root 用户，因此 `MYSQL_PASSWORD` 必须与 `MYSQL_ROOT_PASSWORD` 相同；不要把真实值写入仓库或截图：
+创建运行时密钥。各 Java 服务使用 MySQL root 用户，因此 `MYSQL_PASSWORD` 必须与 `MYSQL_ROOT_PASSWORD` 相同；不要把真实值写入仓库或截图：
 
 ```powershell
 kubectl create secret generic doinb-secrets -n doinb `
   --from-literal=MYSQL_ROOT_PASSWORD='你的MySQL密码' `
   --from-literal=MYSQL_PASSWORD='你的MySQL密码' `
-  --from-literal=JWT_SECRET='至少32个字符的随机字符串'
+  --from-literal=JWT_SECRET='至少32个字符的随机字符串' `
+  --from-literal=DOINB_INTERNAL_TOKEN='doinb-internal-dev-token'
 ```
 
 把现有建表 SQL 创建为 ConfigMap：
@@ -60,7 +61,7 @@ MySQL 官方镜像只会在数据卷为空时执行初始化 SQL，已有 PVC �
 kubectl apply -k deploy/k8s
 ```
 
-等待工作负载就绪，并从集群内部验证 backend 和 web：
+等待工作负载就绪，并从集群内部验证网关、业务服务和 web：
 
 ```powershell
 ./deploy/k8s/verify.ps1
@@ -75,7 +76,7 @@ kubectl get deployments -n doinb `
   -o custom-columns=NAME:.metadata.name,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[*].image
 ```
 
-预期结果：MySQL 1 个 Pod、backend 2 个 Pod、web 2 个 Pod，均为 `1/1 Running`；前后端镜像为明确 SHA tag。
+预期结果：MySQL 1 个 Pod；user / video / live / interact / message / gateway / web 各 2 个 Pod，均为 `1/1 Running`；镜像为明确 SHA tag。
 
 ## 4. 访问页面并验证反向代理
 
@@ -85,49 +86,51 @@ kubectl get deployments -n doinb `
 kubectl port-forward service/web 8080:80 -n doinb
 ```
 
-再新开一个终端转发 backend：
+再新开一个终端转发网关：
 
 ```powershell
-kubectl port-forward service/backend 8081:8081 -n doinb
+kubectl port-forward service/gateway 8081:8081 -n doinb
 ```
 
 在第三个终端验证：
 
 ```powershell
 curl.exe -i http://127.0.0.1:8081/health
+curl.exe -i http://127.0.0.1:8081/ready
+curl.exe -i http://127.0.0.1:8081/version
 curl.exe -i http://127.0.0.1:8080/api/health
 ```
 
-两次请求都应返回 HTTP 200。第二次请求经过 web 镜像内的 Nginx `/api` 代理访问 backend。浏览器打开 <http://127.0.0.1:8080>，确认前端页面可以显示。
+`/health` `/ready` `/version` 应返回 HTTP 200。最后一次请求经过 web 镜像内的 Nginx `/api` 代理访问网关。浏览器打开 <http://127.0.0.1:8080>，确认前端页面可以显示。
 
 ## 5. 正式部署证据
 
 完成第一部分后应保存三项基础证据：
 
-1. `kubectl get pods -n doinb -o wide` 显示 5 个 Pod 全部为 `1/1 Running`。
-2. backend `/health` 与 web `/api/health` 均返回 HTTP 200。
+1. `kubectl get pods -n doinb -o wide` 显示 MySQL、五个业务服务、网关、web 全部为 `1/1 Running`。
+2. 网关 `/health` `/ready` `/version` 与 web `/api/health` 均返回 HTTP 200。
 3. 浏览器能够正常打开前端页面。
 
 # 第二部分：滚动更新实验
 
 ## 1. 实验目的和成功判据
 
-本实验先把 backend、web 切换到仓库已有的旧版本 `fade254`，再滚动更新到当前版本 `cde7310`，验证更新期间由新 Pod 逐步替换旧 Pod，并在更新完成后保持服务健康。
+本实验把五个业务服务、网关、web 切到同一 SHA tag，验证更新期间由新 Pod 逐步替换旧 Pod，并在更新完成后保持服务健康。
 
 成功需要同时满足：
 
-- backend、web 最终都显示 `successfully rolled out`。
-- 最终镜像为 `cde7310`，不是 `latest`。
+- 各 Java Deployment 与 web 最终都显示 `successfully rolled out`。
+- 最终镜像为明确 SHA tag，不是 `latest`。
 - 新 Pod 达到 `1/1 Running` 后旧 Pod 才退出。
 - 更新完成后所有正式 Pod 均为 `1/1 Running`。
-- backend `/health` 和 web `/api/health` 仍返回 HTTP 200，前端页面仍可访问。
+- 网关 `/health` `/ready` `/version` 和 web `/api/health` 仍返回 HTTP 200，前端页面仍可访问。
 
 ## 2. 准备四个终端
 
 | 终端 | 命令或用途 |
 |---|---|
 | 终端 1 | `kubectl port-forward service/web 8080:80 -n doinb` |
-| 终端 2 | `kubectl port-forward service/backend 8081:8081 -n doinb` |
+| 终端 2 | `kubectl port-forward service/gateway 8081:8081 -n doinb` |
 | 终端 3 | `kubectl get pods -n doinb -w`，持续记录 Pod 状态变化 |
 | 终端 4 | 在仓库根目录执行版本切换、状态确认和 curl |
 
@@ -138,10 +141,10 @@ curl.exe -i http://127.0.0.1:8080/api/health
 在终端 4 执行：
 
 ```powershell
-./deploy/k8s/rollout.ps1 -BackendTag fade254 -WebTag fade254
+./deploy/k8s/rollout.ps1 -Tag fade254
 ```
 
-脚本会依次修改 backend、web 镜像，等待两个 Deployment 完成，并执行一次集群内部健康检查。完成后确认旧版本和 Pod 状态：
+脚本会依次修改六个 Java 服务和 web 镜像，等待全部 Deployment 完成，并执行一次集群内部健康检查。完成后确认旧版本和 Pod 状态：
 
 ```powershell
 kubectl get deployments -n doinb `
@@ -149,7 +152,7 @@ kubectl get deployments -n doinb `
 kubectl get pods -n doinb -o wide
 ```
 
-预期 backend、web 镜像都以 `:fade254` 结尾，副本数分别为 2，当前 Pod 均为 `1/1 Running`。保存“旧版本部署成功和镜像 tag”的截图，作为更新前基线。
+预期各服务镜像都以 `:fade254` 结尾，Java 服务与 web 副本数分别为 2，当前 Pod 均为 `1/1 Running`。保存“旧版本部署成功和镜像 tag”的截图，作为更新前基线。
 
 如果端口转发已经退出，重新启动后可补做旧版本健康检查：
 
@@ -166,27 +169,26 @@ curl.exe -i http://127.0.0.1:8080/api/health
 kubectl get pods -n doinb -w
 ```
 
-在终端 4 将两个服务更新到当前版本：
+在终端 4 将服务更新到当前版本：
 
 ```powershell
-./deploy/k8s/rollout.ps1 -BackendTag cde7310 -WebTag cde7310
+./deploy/k8s/rollout.ps1 -Tag cde7310
 ```
 
 `rollout.ps1` 的执行逻辑是：
 
 1. 拒绝空 tag 和 `latest`。
-2. 更新 backend Deployment 的容器镜像。
-3. 更新 web Deployment 的容器镜像。
-4. 分别等待 backend、web rollout 完成。
-5. 调用 `verify.ps1`，等待 MySQL、backend、web 全部就绪。
-6. 创建临时 curl Pod，从集群内部检查 `http://backend:8081/health` 和 `http://web/`，成功后删除临时 Pod。
+2. 更新 user / video / live / interact / message / gateway / web 的容器镜像，并写入 ConfigMap `APP_VERSION`。
+3. 分别等待上述 Deployment rollout 完成。
+4. 调用 `verify.ps1`，等待 MySQL、五服务、网关、web 全部就绪。
+5. 创建临时 curl Pod，从集群内部检查 `http://gateway:8081/health`、`/ready`、`/version` 和 `http://web/`，成功后删除临时 Pod。
 
 终端 4 最终应出现：
 
 ```text
-deployment "backend" successfully rolled out
+deployment "gateway" successfully rolled out
 deployment "web" successfully rolled out
-OK: backend /health returned successfully and web / was reachable.
+OK: probes passed.
 ```
 
 ## 5. 判断终端 3 中的新旧 Pod
@@ -202,12 +204,12 @@ OK: backend /health returned successfully and web / was reachable.
 
 | 服务 | `fade254` 旧 ReplicaSet | `cde7310` 新 ReplicaSet |
 |---|---|---|
-| backend | `85497996d7` | `85dfdcdcbc` |
+| gateway（演示时以实际 `kubectl get pods -w` 为准） | 见集群输出 | 见集群输出 |
 | web | `74785676f4` | `79647c57b6` |
 
-因此看到 `backend-85dfdcdcbc-*` 或 `web-79647c57b6-*` 从 `Pending` 变为 `1/1 Running`，随后 `backend-85497996d7-*` 或 `web-74785676f4-*` 进入 `Terminating`，就是滚动替换过程。
+因此看到 `gateway-85dfdcdcbc-*` 或 `web-79647c57b6-*` 从 `Pending` 变为 `1/1 Running`，随后 `gateway-85497996d7-*` 或 `web-74785676f4-*` 进入 `Terminating`，就是滚动替换过程。
 
-旧 backend Pod 在终止阶段可能短暂显示 `Error`，Java 进程收到终止信号时可能以非零状态退出。只要旧 Pod 随后消失、新 Pod 全部 Ready、Deployment 显示 rollout 成功，就不属于新版本启动失败。
+旧 Java Pod 在终止阶段可能短暂显示 `Error`，Java 进程收到终止信号时可能以非零状态退出。只要旧 Pod 随后消失、新 Pod 全部 Ready、Deployment 显示 rollout 成功，就不属于新版本启动失败。
 
 ## 6. 更新后的最终验证和取证
 
@@ -217,11 +219,11 @@ OK: backend /health returned successfully and web / was reachable.
 kubectl get pods -n doinb -o wide
 kubectl get deployments -n doinb `
   -o custom-columns=NAME:.metadata.name,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[*].image
-kubectl rollout history deployment/backend -n doinb
+kubectl rollout history deployment/gateway -n doinb
 kubectl rollout history deployment/web -n doinb
 ```
 
-最终应只剩当前 ReplicaSet 的两个 backend、两个 web，以及一个 MySQL，全部为 `1/1 Running`。如果端口转发已退出，重新执行第一部分第 4 节中的两条命令，然后验证：
+最终应只剩当前 ReplicaSet 的各服务副本以及一个 MySQL，全部为 `1/1 Running`。如果端口转发已退出，重新执行第一部分第 4 节中的命令，然后验证：
 
 ```powershell
 curl.exe -i http://127.0.0.1:8081/health
@@ -257,7 +259,7 @@ kubectl get events -n doinb --sort-by=.lastTimestamp
 | 状态 | 通常原因 | 优先检查 |
 |---|---|---|
 | `Pending` | 无可用节点、PVC 未绑定或资源不足 | `describe pod`、`get pvc` |
-| `Init:0/1` | backend 正在等待 MySQL 3306 | MySQL Pod、Service 和 endpoints |
+| `Init:0/1` | 业务服务正在等待 MySQL 3306 | MySQL Pod、Service 和 endpoints |
 | `ImagePullBackOff` | tag 不存在、仓库私有或拉取失败 | Pod Events、镜像名和登录配置 |
 | `CrashLoopBackOff` | 应用启动后退出 | 当前日志和 `--previous` 日志 |
 | `Running 0/1` | 容器运行但探针未通过 | Pod Events、探针地址和应用日志 |
@@ -273,15 +275,15 @@ kubectl logs -n doinb <Pod名称> --all-containers=true --previous
 
 `--previous` 只在容器发生过重启或退出时有内容。
 
-## 2. MySQL 与 backend 启动问题
+## 2. MySQL 与业务服务启动问题
 
-backend 有 `wait-for-mysql` initContainer。若长期停在 `Init:0/1`：
+五个业务服务都有 `wait-for-mysql` initContainer。若长期停在 `Init:0/1`：
 
 ```powershell
 kubectl get pod -n doinb -l app=mysql
 kubectl get service/mysql endpoints/mysql -n doinb
 kubectl logs -n doinb deployment/mysql
-kubectl logs -n doinb <backend Pod名称> -c wait-for-mysql
+kubectl logs -n doinb <业务 Pod名称> -c wait-for-mysql
 kubectl get pvc -n doinb
 ```
 
@@ -302,29 +304,29 @@ kubectl get configmap doinb-db-init -n doinb
 
 如果表没有创建，先确认是不是复用了旧 PVC。初始化 SQL 只在空数据卷首次启动时执行。不要为了调试直接删除 PVC；删除会丢失数据库数据。确实允许清空实验数据时，才重新创建 namespace/PVC。
 
-## 3. backend 探针失败
+## 3. 网关 / 业务服务探针失败
 
-backend 为 `Running 0/1`，或 Events 中出现 readiness/liveness failure 时：
+Java 服务为 `Running 0/1`，或 Events 中出现 readiness/liveness failure 时（以网关为例，其它服务把名字换成 user/video/live/interact/message）：
 
 ```powershell
-kubectl describe deployment backend -n doinb
-kubectl describe pod -n doinb -l app=backend
-kubectl logs -n doinb deployment/backend --tail=200
-kubectl get endpoints backend -n doinb
+kubectl describe deployment gateway -n doinb
+kubectl describe pod -n doinb -l app=gateway
+kubectl logs -n doinb deployment/gateway --tail=200
+kubectl get endpoints gateway -n doinb
 ```
 
 从集群内部直接请求健康接口：
 
 ```powershell
-kubectl run backend-debug -n doinb `
+kubectl run gateway-debug -n doinb `
   --image=curlimages/curl:8.12.1 --restart=Never --rm -i `
-  --command -- curl -v http://backend:8081/health
+  --command -- curl -v http://gateway:8081/health
 ```
 
-- 返回 HTTP 200：backend 与 Service 正常，继续检查 web 或本地端口转发。
-- 连接被拒绝：确认容器监听 8081，以及 `Service/backend` 的 `targetPort`。
-- 返回 500 或连接超时：重点查看 backend 日志和 MySQL 连通性。
-- 没有 backend endpoints：readiness 未通过，Service 不会选择该 Pod。
+- 返回 HTTP 200：网关与 Service 正常，继续检查 web 或本地端口转发。
+- 连接被拒绝：确认容器监听 8081，以及 `Service/gateway` 的 `targetPort`。
+- 返回 500 或连接超时：重点查看该服务日志和 MySQL 连通性。
+- 没有 gateway endpoints：readiness 未通过，Service 不会选择该 Pod。
 
 ## 4. web、Nginx 与 `/api` 代理问题
 
@@ -340,12 +342,12 @@ kubectl run web-debug -n doinb `
 
 ```powershell
 kubectl logs -n doinb deployment/web --tail=200
-kubectl get service/web endpoints/web service/backend endpoints/backend -n doinb
+kubectl get service/web endpoints/web service/gateway endpoints/gateway -n doinb
 ```
 
-- `http://web/` 成功、`/api/health` 失败：检查 backend Service/endpoints 和 `web/nginx.conf`。
+- `http://web/` 成功、`/api/health` 失败：检查 gateway Service/endpoints 和 `web/nginx.conf`。
 - 两者都失败：检查 web Pod 探针、Nginx 日志和 Service 80 端口。
-- backend 直连成功但 web 代理失败：确认 Service 名仍为 `backend`，端口仍为 8081；Nginx 使用 Kubernetes DNS 名 `backend:8081`。
+- 网关直连成功但 web 代理失败：确认 Service 名仍为 `gateway`，端口仍为 8081；Nginx 使用 Kubernetes DNS 名 `gateway:8081`。
 
 ## 5. 镜像拉取失败
 
@@ -353,7 +355,7 @@ kubectl get service/web endpoints/web service/backend endpoints/backend -n doinb
 
 ```powershell
 kubectl describe pod -n doinb <Pod名称>
-kubectl get deployment backend web -n doinb `
+kubectl get deployment gateway web -n doinb `
   -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[*].image
 ```
 
@@ -367,14 +369,14 @@ kubectl get deployment backend web -n doinb `
 
 ```powershell
 kubectl port-forward service/web 8080:80 -n doinb
-kubectl port-forward service/backend 8081:8081 -n doinb
+kubectl port-forward service/gateway 8081:8081 -n doinb
 ```
 
 如果端口被占用，可改用其他本地端口：
 
 ```powershell
 kubectl port-forward service/web 18080:80 -n doinb
-kubectl port-forward service/backend 18081:8081 -n doinb
+kubectl port-forward service/gateway 18081:8081 -n doinb
 ```
 
 此时访问 `http://127.0.0.1:18080` 和 `http://127.0.0.1:18081/health`。Windows 上可用下面的命令查看占用进程：
@@ -389,10 +391,10 @@ netstat -ano | findstr :8081
 查看 Deployment、ReplicaSet 和发布状态：
 
 ```powershell
-kubectl rollout status deployment/backend -n doinb --timeout=5m
+kubectl rollout status deployment/gateway -n doinb --timeout=5m
 kubectl rollout status deployment/web -n doinb --timeout=5m
 kubectl get replicasets -n doinb
-kubectl describe deployment backend -n doinb
+kubectl describe deployment gateway -n doinb
 kubectl describe deployment web -n doinb
 ```
 
@@ -401,9 +403,9 @@ kubectl describe deployment web -n doinb
 确认新版本确实无法修复时再回退：
 
 ```powershell
-kubectl rollout undo deployment/backend -n doinb
+kubectl rollout undo deployment/gateway -n doinb
 kubectl rollout undo deployment/web -n doinb
-kubectl rollout status deployment/backend -n doinb --timeout=5m
+kubectl rollout status deployment/gateway -n doinb --timeout=5m
 kubectl rollout status deployment/web -n doinb --timeout=5m
 ./deploy/k8s/verify.ps1
 ```
@@ -424,9 +426,9 @@ kubectl get deployments -n doinb `
 确认临时调试 Pod 已由 `--rm` 自动删除。若命令中断导致它们残留，可删除明确命名的临时 Pod：
 
 ```powershell
-kubectl delete pod backend-debug web-debug -n doinb --ignore-not-found
+kubectl delete pod gateway-debug web-debug -n doinb --ignore-not-found
 ```
 
 停止端口转发只需在对应终端按 `Ctrl+C`。
 
-> 当前 backend 上传目录使用 `emptyDir`。这适合本次实验，但 Pod 被替换后上传文件不会保留，多副本之间也不共享；生产环境应改用共享存储或对象存储。
+> 当前 user / video 上传目录使用 `emptyDir`。这适合本次实验，但 Pod 被替换后上传文件不会保留，多副本之间也不共享；生产环境应改用共享存储或对象存储。
