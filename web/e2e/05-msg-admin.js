@@ -2,7 +2,8 @@
  * TASK-E2E-05 通知 + 私信 + 后台。
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
  * 后台管理员默认 demo_admin / 123456（可用 E2E_ADMIN_USER、E2E_ADMIN_PASSWORD 覆盖）。
- * 覆盖：发私信、通知面板、非管理员进后台被拦、管理员概览/待审/通过、用户举报、举报复审页。
+ * 覆盖：发私信、通知面板、非管理员进后台被拦、管理员概览/待审/通过、
+ *      页面点赞后作者收到通知、3 名用户举报后进入举报复审队列（UC-07、UC-13）。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
 import assert from 'node:assert/strict'
@@ -19,33 +20,18 @@ import {
   waitLoggedIn,
   logout,
   cleanupUserVideos,
+  injectSession,
+  apiLogin,
+  waitMessageContains,
+  setVueInputValue,
 } from './helpers.js'
 
-const API = process.env.E2E_API || 'http://127.0.0.1:8081'
 const ADMIN_USER = process.env.E2E_ADMIN_USER || 'demo_admin'
 const ADMIN_PASS = process.env.E2E_ADMIN_PASSWORD || '123456'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURE_VIDEO = path.join(__dirname, 'fixtures', 'test-video.mp4')
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-
-async function waitToast(driver, text, timeoutMs = 8000) {
-  await driver.wait(
-    async () => (await driver.getPageSource()).includes(text),
-    timeoutMs,
-    `页面未出现预期文案: ${text}`
-  )
-}
-
-async function apiLogin(username, password) {
-  const res = await fetch(`${API}/user/account/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  })
-  const body = await res.json()
-  return body
-}
 
 async function apiGetUserId(username, password) {
   const body = await apiLogin(username, password)
@@ -61,36 +47,29 @@ async function shot(driver, name) {
   console.log('📷 已保存截图 artifacts/' + name + '.png')
 }
 
-/** 页面登录在已有其他账号 token 时偶发填表失败；后续切账号改写 session（前面已测过登录页） */
-async function injectSession(driver, username, password) {
-  const body = await apiLogin(username, password)
-  assert.equal(body.code, 200, `切换账号失败 ${username}: ${body.message}`)
-  const { token, user } = body.data
-  await driver.get(BASE_URL)
-  await driver.executeScript(
-    `const token = arguments[0];
-     const user = arguments[1];
-     const key = 'doinb_accounts';
-     let list = [];
-     try { list = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { list = []; }
-     if (!Array.isArray(list)) list = [];
-     const entry = { user: user, token: token, updatedAt: Date.now() };
-     const idx = list.findIndex(function (a) { return Number(a.user && a.user.id) === Number(user.id); });
-     if (idx >= 0) list[idx] = entry; else list.push(entry);
-     localStorage.setItem(key, JSON.stringify(list));
-     sessionStorage.setItem('doinb_active_id', String(user.id));`,
-    token,
-    user
-  )
-  await driver.navigate().refresh()
-  await driver.wait(until.elementLocated(By.css('.user-name')), 20000, `注入登录后顶栏应显示用户名: ${username}`)
-}
-
 async function clickXpath(driver, xpath, timeoutMs = 12000) {
   const el = await driver.wait(until.elementLocated(By.xpath(xpath)), timeoutMs)
   await driver.wait(until.elementIsVisible(el), timeoutMs)
   await el.click()
   return el
+}
+
+async function reportCurrentVideo(driver, reason) {
+  const reportBtn = await driver.wait(until.elementLocated(By.css('.report-btn')), 12000)
+  await driver.executeScript(
+    'arguments[0].scrollIntoView({block:"center"}); arguments[0].click();',
+    reportBtn
+  )
+  const reportInput = await driver.wait(
+    until.elementLocated(By.css('.el-message-box input, .el-message-box textarea')),
+    12000
+  )
+  await reportInput.sendKeys(reason)
+  const submitReport = await driver.wait(
+    until.elementLocated(By.xpath("//div[contains(@class,'el-message-box')]//button[contains(., '提交')]")),
+    12000
+  )
+  await submitReport.click()
 }
 
 async function uploadPublicVideo(driver, title) {
@@ -103,9 +82,9 @@ async function uploadPublicVideo(driver, title) {
     until.elementLocated(By.css('input[placeholder="请输入视频标题"]')),
     12000
   )
-  await titleInput.sendKeys(title)
+  await setVueInputValue(driver, titleInput, title)
   await clickXpath(driver, "//button[contains(., '提交上传')]")
-  await waitToast(driver, '上传成功')
+  await waitMessageContains(driver, '上传成功')
   await driver.wait(until.urlContains('/studio/edit'), 12000)
   const url = await driver.getCurrentUrl()
   const match = url.match(/\/studio\/edit\/(\d+)/)
@@ -167,14 +146,14 @@ async function run() {
     )
     await notifyBtn.click()
     await driver.wait(until.elementLocated(By.css('.panel .title')), 12000)
-    await waitToast(driver, '发来私信', 12000)
-    await waitToast(driver, dmText, 12000)
+    await waitMessageContains(driver, '发来私信', 12000)
+    await waitMessageContains(driver, dmText, 12000)
     console.log('OK  通知面板出现「发来私信」')
     await shot(driver, '05-2-notify')
 
     /* ---------- 4. 非管理员进后台 ---------- */
     await driver.get(`${BASE_URL}/admin`)
-    await waitToast(driver, '需要管理员权限')
+    await waitMessageContains(driver, '需要管理员权限')
     await driver.wait(async () => {
       const url = await driver.getCurrentUrl()
       return /\/$/.test(new URL(url).pathname) || url.endsWith('/')
@@ -213,74 +192,93 @@ async function run() {
       By.xpath(`//div[contains(@class,'el-table')]//tr[contains(., '${videoTitle}')]//button[contains(., '通过')]`)
     )
     await driver.executeScript('arguments[0].scrollIntoView({block:"center"}); arguments[0].click();', approveBtn)
-    await waitToast(driver, '已通过审核', 12000)
+    await waitMessageContains(driver, '已通过审核', 12000)
     console.log('OK  待审视频通过', videoTitle)
     await shot(driver, '05-4-approve')
 
-    if (videoId) {
-      await injectSession(driver, viewerName, password)
-      await driver.get(`${BASE_URL}/video/${videoId}`)
-      await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
-      const reportBtn = await driver.wait(until.elementLocated(By.css('.report-btn')), 12000)
-      await driver.executeScript('arguments[0].scrollIntoView({block:"center"}); arguments[0].click();', reportBtn)
-      const reportInput = await driver.wait(
-        until.elementLocated(By.css('.el-message-box input, .el-message-box textarea')),
-        12000
-      )
-      await reportInput.sendKeys('E2E举报')
-      const submitReport = await driver.wait(
-        until.elementLocated(By.xpath("//div[contains(@class,'el-message-box')]//button[contains(., '提交')]")),
-        12000
-      )
-      await submitReport.click()
-      await waitToast(driver, '举报已提交', 12000)
-      console.log('OK  用户举报已发布视频')
-      await shot(driver, '05-4b-report')
-    }
+    assert.ok(videoId, '上传后应拿到视频 id')
+
+    /* ---------- 6. 用户B 在页面点赞 → 作者通知「赞了你的视频」 ---------- */
+    await injectSession(driver, viewerName, password)
+    await driver.get(`${BASE_URL}/video/${videoId}`)
+    await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
+    const likeBtn = await driver.wait(
+      until.elementLocated(By.xpath("//div[contains(@class,'video-actions')]//button[.//img[@alt='赞']]")),
+      12000
+    )
+    await likeBtn.click()
+    await waitMessageContains(driver, '点赞成功')
+    console.log('OK  页面点赞已过审视频')
+    await shot(driver, '05-5-like')
+
+    await injectSession(driver, authorName, password)
+    const notifyBtn2 = await driver.wait(
+      until.elementLocated(By.css('button.notify-btn[aria-label="通知"]')),
+      12000
+    )
+    await driver.executeScript('arguments[0].click()', notifyBtn2)
+    await driver.wait(until.elementLocated(By.css('.panel .title')), 12000)
+    await waitMessageContains(driver, '赞了你的视频', 12000)
+    console.log('OK  通知面板出现「赞了你的视频」')
+    await shot(driver, '05-5-like-notify')
+
+    /* ---------- 7. 3 名用户举报后进入复审（阈值 3，不改产品） ---------- */
+    const reporter2 = uniqueUsername('e2e5c')
+    const reporter3 = uniqueUsername('e2e5d')
+
+    await injectSession(driver, viewerName, password)
+    await driver.get(`${BASE_URL}/video/${videoId}`)
+    await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
+    await reportCurrentVideo(driver, 'E2E举报1')
+    await waitMessageContains(driver, '举报已提交', 12000)
+    assert.ok(
+      !(await driver.getPageSource()).includes('该视频已进入复审'),
+      '第 1 次举报不应进入复审'
+    )
+    console.log('OK  第 1 次举报已提交')
+
+    await register(driver, reporter2, password)
+    await driver.wait(until.urlContains('/login'), 12000)
+    await login(driver, reporter2, password)
+    await waitLoggedIn(driver)
+    await driver.get(`${BASE_URL}/video/${videoId}`)
+    await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
+    await reportCurrentVideo(driver, 'E2E举报2')
+    await waitMessageContains(driver, '举报已提交', 12000)
+    assert.ok(
+      !(await driver.getPageSource()).includes('该视频已进入复审'),
+      '第 2 次举报不应进入复审'
+    )
+    console.log('OK  第 2 次举报已提交')
+
+    await register(driver, reporter3, password)
+    await driver.wait(until.urlContains('/login'), 12000)
+    await login(driver, reporter3, password)
+    await waitLoggedIn(driver)
+    await driver.get(`${BASE_URL}/video/${videoId}`)
+    await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
+    await reportCurrentVideo(driver, 'E2E举报3')
+    await waitMessageContains(driver, '举报已提交，该视频已进入复审', 12000)
+    console.log('OK  第 3 次举报，视频进入复审')
+    await shot(driver, '05-4b-report')
 
     await injectSession(driver, ADMIN_USER, ADMIN_PASS)
     await driver.get(`${BASE_URL}/admin/report`)
     await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '举报复审')]")), 12000)
-    console.log('OK  打开举报复审页')
-
-    /* ---------- 6. 用户B 点赞已过审视频 → 作者通知「赞了你的视频」 ---------- */
-    if (videoId) {
-      // 直接走登录页切换账号（多账号时「退出当前账号」会切到列表里下一个，不保证登出）
-      await injectSession(driver, viewerName, password)
-      await driver.get(`${BASE_URL}/video/${videoId}`)
-      await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
-      const likeResult = await driver.executeAsyncScript(
-        `const videoId = arguments[0];
-         const done = arguments[1];
-         const id = sessionStorage.getItem('doinb_active_id');
-         const list = JSON.parse(localStorage.getItem('doinb_accounts') || '[]');
-         const acc = list.find(function (a) { return String(a.user && a.user.id) === String(id); });
-         if (!acc) { done({ code: 0, message: '浏览器里没有当前账号 token' }); return; }
-         fetch('/api/video/reaction', {
-           method: 'POST',
-           headers: {
-             'Content-Type': 'application/x-www-form-urlencoded',
-             Authorization: acc.token
-           },
-           body: 'videoId=' + encodeURIComponent(videoId) + '&reaction=1'
-         }).then(function (r) { return r.json(); }).then(done).catch(function (e) { done({ code: 0, message: String(e) }); });`,
-        videoId
-      )
-      assert.equal(likeResult.code, 200, `点赞接口失败: ${likeResult.message}`)
-      console.log('OK  点赞已过审视频')
-      await shot(driver, '05-5-like')
-
-      await injectSession(driver, authorName, password)
-      const notifyBtn2 = await driver.wait(
-        until.elementLocated(By.css('button.notify-btn[aria-label="通知"]')),
-        12000
-      )
-      await driver.executeScript('arguments[0].click()', notifyBtn2)
-      await driver.wait(until.elementLocated(By.css('.panel .title')), 12000)
-      await waitToast(driver, '赞了你的视频', 12000)
-      console.log('OK  通知面板出现「赞了你的视频」')
-      await shot(driver, '05-5-like-notify')
-    }
+    await driver.wait(
+      until.elementLocated(
+        By.xpath(
+          `//div[contains(@class,'el-table')]//tr[contains(., '${videoTitle}') and contains(., '举报待复核')]`
+        )
+      ),
+      15000
+    )
+    const countText = await driver
+      .findElement(By.xpath(`//div[contains(@class,'el-table')]//tr[contains(., '${videoTitle}')]/td[4]`))
+      .getText()
+    assert.equal(countText.trim(), '3', `复审列表举报次数应为 3，实际「${countText.trim()}」`)
+    console.log('OK  举报复审队列出现该视频')
+    await shot(driver, '05-6-report-queue')
 
     console.log('\n全部通过 ✅  TASK-E2E-05 通知+私信+后台')
   } finally {

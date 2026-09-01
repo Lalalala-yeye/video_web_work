@@ -1,4 +1,4 @@
-import { Builder, By, Key, until } from 'selenium-webdriver'
+import { Builder, By, until } from 'selenium-webdriver'
 import chrome from 'selenium-webdriver/chrome.js'
 
 /** 前端地址。本机先 `npm run dev`（8787），后端 8081 也要开。 */
@@ -23,8 +23,48 @@ export async function createDriver() {
   }
   options.setPageLoadStrategy('eager')
   const driver = await new Builder().forBrowser('chrome').setChromeOptions(options).build()
-  await driver.manage().setTimeouts({ implicit: 0, pageLoad: 20000, script: 15000 })
+  await driver.manage().setTimeouts({ implicit: 0, pageLoad: 20000, script: 20000 })
   return driver
+}
+
+export async function apiLogin(username, password) {
+  const res = await fetch(`${API_BASE}/user/account/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+  return res.json()
+}
+
+/** 多账号切换。登录页本身由 01-auth 覆盖；「退出当前账号」会切到列表里下一个，不能当登出。 */
+export async function injectSession(driver, username, password) {
+  const body = await apiLogin(username, password)
+  if (body.code !== 200 || !body.data?.token || !body.data?.user) {
+    throw new Error(`切换账号失败 ${username}: ${body.message || body.code}`)
+  }
+  const { token, user } = body.data
+  await driver.get(BASE_URL)
+  await driver.executeScript(
+    `const token = arguments[0];
+     const user = arguments[1];
+     const key = 'doinb_accounts';
+     let list = [];
+     try { list = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { list = []; }
+     if (!Array.isArray(list)) list = [];
+     const entry = { user: user, token: token, updatedAt: Date.now() };
+     const idx = list.findIndex(function (a) { return Number(a.user && a.user.id) === Number(user.id); });
+     if (idx >= 0) list[idx] = entry; else list.push(entry);
+     localStorage.setItem(key, JSON.stringify(list));
+     sessionStorage.setItem('doinb_active_id', String(user.id));`,
+    token,
+    user
+  )
+  await driver.navigate().refresh()
+  await driver.wait(
+    until.elementLocated(By.css('.user-name')),
+    20000,
+    `注入登录后顶栏应显示用户名: ${username}`
+  )
 }
 
 export async function fillByPlaceholder(driver, placeholder, text) {
@@ -33,8 +73,7 @@ export async function fillByPlaceholder(driver, placeholder, text) {
     WAIT_MS
   )
   await input.click()
-  await input.sendKeys(Key.CONTROL, 'a', Key.BACK_SPACE)
-  await input.sendKeys(text)
+  await setVueInputValue(driver, input, text)
   return input
 }
 
@@ -100,12 +139,30 @@ export async function logout(driver) {
   await driver.wait(until.elementLocated(By.xpath("//a[contains(., '登录')]")), WAIT_MS)
 }
 
-export async function waitMessageContains(driver, text) {
-  await driver.wait(until.elementLocated(By.css('.el-message, .el-form-item__error')), WAIT_MS)
-  const body = await driver.getPageSource()
-  if (!body.includes(text)) {
-    throw new Error(`页面未出现预期文案: ${text}`)
-  }
+export async function waitMessageContains(driver, text, timeoutMs = WAIT_MS) {
+  await driver.wait(
+    async () => (await driver.getPageSource()).includes(text),
+    timeoutMs,
+    `页面未出现预期文案: ${text}`
+  )
+}
+
+/** 写入 Element Plus / Vue 绑定的 input，避免 Selenium 改 DOM 但 v-model 仍是空。 */
+export async function setVueInputValue(driver, element, value) {
+  await driver.executeScript(
+    `const el = arguments[0];
+     const val = arguments[1];
+     const desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+     if (desc && desc.set) {
+       desc.set.call(el, val);
+     } else {
+       el.value = val;
+     }
+     el.dispatchEvent(new Event('input', { bubbles: true }));
+     el.dispatchEvent(new Event('change', { bubbles: true }));`,
+    element,
+    value
+  )
 }
 
 /**

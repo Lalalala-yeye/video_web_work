@@ -3,7 +3,8 @@
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
  * 管理员账号默认 demo_admin / 123456（可用 E2E_ADMIN_USER / E2E_ADMIN_PASSWORD 覆盖）。
  * 覆盖：未登录浏览首页、未登录搜索空结果、上传公开视频并过审后首页列表出现、
- *      点击进入视频详情、播放历史（UC-05）、按关键词搜到视频、按标题搜到直播间、按昵称搜到用户、
+ *      点击进入视频详情、用播放器上报进度并在个人中心看到历史/续播（UC-05）、
+ *      按关键词搜到视频、按标题搜到直播间、按昵称搜到用户、
  *      搜索不存在关键词时视频/直播/用户三个 Tab 均为空。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
@@ -22,9 +23,12 @@ import {
   fillByPlaceholder,
   cleanupUserVideos,
   openProfile,
+  injectSession,
+  apiLogin,
+  waitMessageContains,
+  setVueInputValue,
 } from './helpers.js'
 
-const API = process.env.E2E_API || 'http://127.0.0.1:8081'
 const ADMIN_USER = process.env.E2E_ADMIN_USER || 'demo_admin'
 const ADMIN_PASS = process.env.E2E_ADMIN_PASSWORD || '123456'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -32,54 +36,12 @@ const FIXTURE_VIDEO = path.join(__dirname, 'fixtures', 'test-video.mp4')
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-async function waitToast(driver, text, timeoutMs = 8000) {
-  await driver.wait(
-    async () => (await driver.getPageSource()).includes(text),
-    timeoutMs,
-    `页面未出现预期文案: ${text}`
-  )
-}
-
-async function apiLogin(username, password) {
-  const res = await fetch(`${API}/user/account/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  })
-  return res.json()
-}
-
 async function shot(driver, name) {
   const img = await driver.takeScreenshot()
   const dir = path.join(__dirname, 'artifacts')
   fs.mkdirSync(dir, { recursive: true })
   fs.writeFileSync(path.join(dir, `${name}.png`), img, 'base64')
   console.log('📷 已保存截图 artifacts/' + name + '.png')
-}
-
-/** 页面登录在已有其他账号 token 时偶发填表失败；后续切账号改写 session（登录页已由 01 覆盖） */
-async function injectSession(driver, username, password) {
-  const body = await apiLogin(username, password)
-  assert.equal(body.code, 200, `切换账号失败 ${username}: ${body.message}`)
-  const { token, user } = body.data
-  await driver.get(BASE_URL)
-  await driver.executeScript(
-    `const token = arguments[0];
-     const user = arguments[1];
-     const key = 'doinb_accounts';
-     let list = [];
-     try { list = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { list = []; }
-     if (!Array.isArray(list)) list = [];
-     const entry = { user: user, token: token, updatedAt: Date.now() };
-     const idx = list.findIndex(function (a) { return Number(a.user && a.user.id) === Number(user.id); });
-     if (idx >= 0) list[idx] = entry; else list.push(entry);
-     localStorage.setItem(key, JSON.stringify(list));
-     sessionStorage.setItem('doinb_active_id', String(user.id));`,
-    token,
-    user
-  )
-  await driver.navigate().refresh()
-  await driver.wait(until.elementLocated(By.css('.user-name')), 20000, `注入登录后顶栏应显示用户名: ${username}`)
 }
 
 async function clickXpath(driver, xpath, timeoutMs = 12000) {
@@ -115,6 +77,34 @@ async function waitDisplayed(driver, locator, timeoutMs = 12000) {
   )
 }
 
+/** 空搜索文案在三个 Tab 的 DOM 里都有，必须看当前可见面板，不能扫整页 HTML。 */
+async function waitVisibleEmpty(driver, text, timeoutMs = 12000) {
+  await driver.wait(
+    async () => {
+      const panes = await driver.findElements(
+        By.css('.el-tab-pane:not([aria-hidden="true"]), .el-tab-pane.is-active')
+      )
+      const seen = new Set()
+      for (const pane of panes) {
+        try {
+          const id = await pane.getId()
+          if (seen.has(id)) continue
+          seen.add(id)
+          if (await pane.isDisplayed()) {
+            const t = await pane.getText()
+            if (t.includes(text)) return true
+          }
+        } catch {
+          /* stale */
+        }
+      }
+      return false
+    },
+    timeoutMs,
+    `当前 Tab 未出现空结果文案: ${text}`
+  )
+}
+
 /** 创作中心上传"他人可见"视频（进入待审），返回视频 id */
 async function uploadPublicVideo(driver, title) {
   await driver.get(`${BASE_URL}/studio/upload`)
@@ -126,9 +116,9 @@ async function uploadPublicVideo(driver, title) {
     until.elementLocated(By.css('input[placeholder="请输入视频标题"]')),
     12000
   )
-  await titleInput.sendKeys(title)
+  await setVueInputValue(driver, titleInput, title)
   await clickXpath(driver, "//button[contains(., '提交上传')]")
-  await waitToast(driver, '上传成功')
+  await waitMessageContains(driver, '上传成功')
   await driver.wait(until.urlContains('/studio/edit'), 12000)
   const url = await driver.getCurrentUrl()
   const match = url.match(/\/studio\/edit\/(\d+)/)
@@ -175,11 +165,11 @@ async function run() {
 
     /* ---------- 2. 未登录：搜索不存在关键词 → 三个 Tab 均为空 ---------- */
     await doSearch(driver, garbage)
-    await waitToast(driver, '没有找到相关视频')
+    await waitVisibleEmpty(driver, '没有找到相关视频')
     await clickSearchTab(driver, '直播')
-    await waitToast(driver, '没有找到相关直播')
+    await waitVisibleEmpty(driver, '没有找到相关直播')
     await clickSearchTab(driver, '用户')
-    await waitToast(driver, '没有找到相关用户')
+    await waitVisibleEmpty(driver, '没有找到相关用户')
     console.log('OK  未登录搜索空结果：视频/直播/用户均为空')
     await shot(driver, '02-0-search-empty-anonymous')
 
@@ -212,7 +202,7 @@ async function run() {
       By.xpath(`//div[contains(@class,'el-table')]//tr[contains(., '${videoTitle}')]//button[contains(., '通过')]`)
     )
     await driver.executeScript('arguments[0].scrollIntoView({block:"center"}); arguments[0].click();', approveBtn)
-    await waitToast(driver, '已通过审核', 12000)
+    await waitMessageContains(driver, '已通过审核', 12000)
     console.log('OK  管理员通过审核')
 
     /* ---------- 5. 切回作者：创建直播间（标题含关键词，供搜索验证） ---------- */
@@ -221,7 +211,7 @@ async function run() {
     await driver.wait(until.elementLocated(By.css('input[placeholder="直播间标题"]')), 12000)
     await fillByPlaceholder(driver, '直播间标题', liveTitle)
     await clickXpath(driver, "//div[contains(@class,'create-row')]//button[contains(., '创建')]")
-    await waitToast(driver, '创建成功')
+    await waitMessageContains(driver, '创建成功')
     console.log('OK  创建直播间', liveTitle)
 
     /* ---------- 6. 首页浏览：已发布视频出现在列表，点击进入详情 ---------- */
@@ -245,32 +235,71 @@ async function run() {
     console.log('OK  视频详情页：标题/播放器/作者均展示')
     await shot(driver, '02-2-video-detail')
 
-    const progressResult = await driver.executeAsyncScript(
-      `const videoId = arguments[0];
-       const done = arguments[1];
-       const id = sessionStorage.getItem('doinb_active_id');
-       const list = JSON.parse(localStorage.getItem('doinb_accounts') || '[]');
-       const acc = list.find(function (a) { return String(a.user && a.user.id) === String(id); });
-       if (!acc) { done({ code: 0, message: '浏览器里没有当前账号 token' }); return; }
-       fetch('/api/video/history/progress', {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'application/x-www-form-urlencoded',
-           Authorization: acc.token
-         },
-         body: 'videoId=' + encodeURIComponent(videoId) + '&progress=15'
-       }).then(function (r) { return r.json(); }).then(done).catch(function (e) { done({ code: 0, message: String(e) }); });`,
-      videoId
-    )
-    assert.equal(progressResult.code, 200, `保存播放进度失败: ${progressResult.message}`)
+    const progressInfo = await driver.executeAsyncScript(`
+      const done = arguments[arguments.length - 1];
+      const v = document.querySelector('video.player');
+      if (!v) { done({ ok: false, message: '页面没有 video.player' }); return; }
+      let finished = false;
+      const once = function (result) {
+        if (finished) return;
+        finished = true;
+        done(result);
+      };
+      const finish = function () {
+        const dur = Number(v.duration);
+        if (!Number.isFinite(dur) || dur < 1) {
+          once({ ok: false, message: '视频无法播放 duration=' + v.duration });
+          return;
+        }
+        const target = dur >= 10 ? 10 : Math.max(1, Math.floor(dur));
+        try { v.currentTime = target; } catch (e) { once({ ok: false, message: String(e) }); return; }
+        v.dispatchEvent(new Event('timeupdate'));
+        v.dispatchEvent(new Event('pause'));
+        once({ ok: true, progress: Math.floor(v.currentTime), duration: dur });
+      };
+      if (v.readyState >= 1) { finish(); return; }
+      v.addEventListener('loadedmetadata', finish, { once: true });
+      v.addEventListener('error', function () { once({ ok: false, message: '播放器加载失败' }); }, { once: true });
+      setTimeout(function () {
+        if (v.readyState >= 1) finish();
+        else once({ ok: false, message: '等待视频元数据超时 readyState=' + v.readyState });
+      }, 10000);
+    `)
+    assert.equal(progressInfo.ok, true, `未能通过播放器上报进度: ${progressInfo.message}`)
+    await sleep(800)
     await openProfile(driver)
     await driver.wait(
       until.elementLocated(By.xpath(`//a[contains(@class,'history-item')][contains(., '${videoTitle}')]`)),
       12000
     )
-    await driver.wait(until.elementLocated(By.xpath("//*[contains(., '看到 15 秒')]")), 12000)
-    console.log('OK  个人中心播放历史出现该视频')
+    await driver.wait(
+      until.elementLocated(
+        By.xpath(
+          `//a[contains(@class,'history-item')][contains(., '${videoTitle}')][contains(., '看到 ${progressInfo.progress} 秒')]`
+        )
+      ),
+      12000
+    )
+    console.log('OK  个人中心播放历史出现该视频，进度', progressInfo.progress, '秒')
     await shot(driver, '02-2b-history')
+
+    const historyLink = await driver.findElement(
+      By.xpath(`//a[contains(@class,'history-item')][contains(., '${videoTitle}')]`)
+    )
+    await historyLink.click()
+    await driver.wait(until.urlContains(`/video/${videoId}`), 12000)
+    await driver.wait(until.elementLocated(By.css('video.player')), 12000)
+    await driver.wait(
+      async () => {
+        const t = await driver.executeScript(
+          'const v = document.querySelector("video.player"); return v && Number.isFinite(v.currentTime) ? v.currentTime : 0'
+        )
+        return Math.abs(Number(t) - Number(progressInfo.progress)) < 1.5
+      },
+      12000,
+      `从历史进入详情应续播到约 ${progressInfo.progress} 秒`
+    )
+    console.log('OK  从播放历史进入详情已续播')
 
     /* ---------- 7. 搜索关键词 → 视频结果 ---------- */
     await doSearch(driver, videoTitle)
@@ -308,11 +337,11 @@ async function run() {
 
     /* ---------- 10. 登录态搜索不存在关键词 → 三个 Tab 均为空 ---------- */
     await doSearch(driver, garbage)
-    await waitToast(driver, '没有找到相关视频')
+    await waitVisibleEmpty(driver, '没有找到相关视频')
     await clickSearchTab(driver, '直播')
-    await waitToast(driver, '没有找到相关直播')
+    await waitVisibleEmpty(driver, '没有找到相关直播')
     await clickSearchTab(driver, '用户')
-    await waitToast(driver, '没有找到相关用户')
+    await waitVisibleEmpty(driver, '没有找到相关用户')
     console.log('OK  登录态搜索空结果：视频/直播/用户均为空')
     await shot(driver, '02-6-search-empty')
 

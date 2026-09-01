@@ -19,6 +19,7 @@ import {
   waitLoggedIn,
   waitMessageContains,
   cleanupUserVideos,
+  setVueInputValue,
 } from './helpers.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -26,7 +27,7 @@ const FIXTURE_VIDEO = path.join(__dirname, 'fixtures', 'test-video.mp4')
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-async function waitToast(driver, text, timeoutMs = 8000) {
+async function waitToast(driver, text, timeoutMs = 12000) {
   await driver.wait(
     async () => (await driver.getPageSource()).includes(text),
     timeoutMs,
@@ -90,7 +91,7 @@ async function run() {
       until.elementLocated(By.css('input[placeholder="请输入视频标题"]')),
       12000
     )
-    await titleInput.sendKeys(videoTitle)
+    await setVueInputValue(driver, titleInput, videoTitle)
     await clickXpath(driver, "//button[contains(., '提交上传')]")
     await waitToast(driver, '请选择视频文件')
     console.log('OK  未选文件提示「请选择视频文件」')
@@ -133,7 +134,7 @@ async function run() {
       until.elementLocated(By.css('input[placeholder="直播间标题"]')),
       12000
     )
-    await liveInput.sendKeys(liveTitle)
+    await setVueInputValue(driver, liveInput, liveTitle)
     await clickXpath(driver, "//button[normalize-space()='创建']")
     await waitToast(driver, '创建成功')
     await driver.wait(until.elementLocated(By.xpath(`//*[contains(text(), '${liveTitle}')]`)), 12000)

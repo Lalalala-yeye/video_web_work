@@ -3,7 +3,7 @@
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机已装 Chrome。
  */
 import assert from 'node:assert/strict'
-import { By, Key, until } from 'selenium-webdriver'
+import { By, until } from 'selenium-webdriver'
 import {
   BASE_URL,
   createDriver,
@@ -14,6 +14,7 @@ import {
   openProfile,
   logout,
   waitMessageContains,
+  setVueInputValue,
 } from './helpers.js'
 
 async function run() {
@@ -51,13 +52,11 @@ async function run() {
     console.log('OK  个人中心')
 
     const nickInput = await driver.wait(
-      until.elementLocated(By.css('.edit-form .el-form-item input')),
+      until.elementLocated(By.css('.edit-form .el-form-item .el-input input')),
       12000
     )
-    await nickInput.click()
-    await nickInput.sendKeys(Key.CONTROL, 'a', Key.BACK_SPACE)
     const newNick = `E2E资料_${Date.now().toString().slice(-4)}`
-    await nickInput.sendKeys(newNick)
+    await setVueInputValue(driver, nickInput, newNick)
     await driver.findElement(By.xpath("//button[contains(., '保存资料')]")).click()
     await waitMessageContains(driver, '资料已更新')
     console.log('OK  保存昵称', newNick)

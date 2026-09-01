@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import VideoCard from '@/components/VideoCard.vue'
 import LiveCard from '@/components/LiveCard.vue'
-import { fetchFeed } from '@/api/subscription'
+import { fetchFeed, fetchFollowing } from '@/api/subscription'
 import { isLoggedIn } from '@/utils/auth'
 import { useRouter } from 'vue-router'
 
@@ -11,6 +11,7 @@ const router = useRouter()
 const loading = ref(false)
 const loadError = ref('')
 const items = ref([])
+const followingCount = ref(0)
 
 async function load() {
   if (!isLoggedIn()) {
@@ -21,11 +22,17 @@ async function load() {
   loading.value = true
   loadError.value = ''
   try {
-    const res = await fetchFeed(1, 20, { skipErrorHandler: true })
-    if (res.data.code === 200) {
-      items.value = res.data.data?.records || []
+    const [feedRes, followingRes] = await Promise.all([
+      fetchFeed(1, 20, { skipErrorHandler: true }),
+      fetchFollowing(1, 1, { skipErrorHandler: true }),
+    ])
+    if (feedRes.data.code === 200) {
+      items.value = feedRes.data.data?.records || []
     } else {
-      loadError.value = res.data.message || '关注动态加载失败'
+      loadError.value = feedRes.data.message || '关注动态加载失败'
+    }
+    if (followingRes.data.code === 200) {
+      followingCount.value = Number(followingRes.data.data?.total) || 0
     }
   } catch {
     loadError.value = '暂时连接不上后端服务，请确认后端已启动后重试'
@@ -74,7 +81,14 @@ onMounted(load)
           />
         </template>
       </div>
-      <el-empty v-else-if="!loading" description="还没有关注任何人，去首页发现 UP 主吧">
+      <el-empty
+        v-else-if="!loading"
+        :description="
+          followingCount > 0
+            ? '关注的 UP 主暂时没有新视频或直播'
+            : '还没有关注任何人，去首页发现 UP 主吧'
+        "
+      >
         <router-link to="/">
           <el-button type="primary">去首页</el-button>
         </router-link>
