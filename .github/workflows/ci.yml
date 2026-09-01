@@ -54,6 +54,7 @@ jobs:
     name: Postman Newman (gateway + MySQL)
     needs: services-test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
@@ -92,6 +93,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq mysql-client
           mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < database/database.sql
+          mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < database/seed.sql
       - name: Package microservices
         working-directory: services
         run: |
@@ -103,19 +105,56 @@ jobs:
           mkdir -p /tmp/doinb-uploads
           bash ./ci-start.sh
           touch /tmp/services-up
-      - name: Newman
+      - name: Newman (all public APIs)
         run: |
           set -o pipefail
-          npx --yes newman@6 run postman/doinb.postman_collection.json \
+          npx --yes newman@6 run postman/doinb.full.postman_collection.json \
             -e postman/doinb.ci.postman_environment.json \
+            --working-dir . \
+            --timeout-request 120000 \
             --bail \
             --color off \
             2>&1 | tee /tmp/newman.log
+      - name: Probe health / ready / version + service logs
+        if: always()
+        run: |
+          {
+            echo "### 网关探活（健康 / 就绪 / 版本）"
+            echo ""
+            echo '```'
+            echo "GET /health"
+            curl -sS http://127.0.0.1:8081/health || true
+            echo
+            echo "GET /ready"
+            curl -sS http://127.0.0.1:8081/ready || true
+            echo
+            echo "GET /version"
+            curl -sS http://127.0.0.1:8081/version || true
+            echo
+            echo "----- 各业务服务 /health /ready /version -----"
+            for spec in user:8082 video:8083 live:8084 interact:8085 message:8086; do
+              name="${spec%%:*}"
+              port="${spec##*:}"
+              echo "==== doinb-${name} :${port} ===="
+              curl -sS "http://127.0.0.1:${port}/health" || true
+              echo
+              curl -sS "http://127.0.0.1:${port}/ready" || true
+              echo
+              curl -sS "http://127.0.0.1:${port}/version" || true
+              echo
+            done
+            echo "----- 各服务日志末尾 -----"
+            for n in doinb-gateway doinb-user doinb-video doinb-live doinb-interact doinb-message; do
+              echo "==== $n ===="
+              tail -30 "/tmp/${n}.log" 2>/dev/null || true
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Write Newman result to summary
         if: always()
         run: |
           {
-            echo "### Postman Newman（打网关 8081）"
+            echo "### Postman Newman（全量公开接口，打网关 8081）"
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
               echo "- 结果: 通过"
@@ -134,11 +173,6 @@ jobs:
                   tail -40 /tmp/newman.log
                 fi
               fi
-              echo "----- 各服务日志末尾 -----"
-              for n in doinb-gateway doinb-user doinb-video doinb-live doinb-interact doinb-message; do
-                echo "==== $n ===="
-                tail -30 "/tmp/${n}.log" 2>/dev/null || true
-              done
               echo '```'
             fi
           } >> "$GITHUB_STEP_SUMMARY"

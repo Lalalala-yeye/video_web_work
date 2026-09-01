@@ -130,8 +130,8 @@ docker compose down -v       # 停容器并清空数据库（会丢演示数据�
 | 顺序 | Job | 测什么 | 是否挡住后续 |
 |------|-----|--------|----------------|
 | 1 | Microservices unit + API tests | 网关 + 五服务 JUnit（不启 MySQL） | 是 |
-| 2 | Postman Newman | 真库打网关 8081（15 条冒烟） | 是（不过不打镜像） |
-| 3a | Selenium E2E | 无头 Chrome 对着 GUI | 否（与打镜像并行） |
+| 2 | Postman Newman | 真库打网关：接口清单全部公开路径 + `/health` `/ready` `/version` | 是（不过不打镜像） |
+| 3a | Selenium E2E | 15 个用例主路径（无头 Chrome） | 否（与打镜像并行） |
 | 3b | Build versioned images | Newman 通过后构建并推送到 GHCR（6 个 Java 镜像 + web） | 是（该 job 失败则流水线红） |
 | 4 | Deploy kind + health | 用本次 SHA 在 kind 里部署并探活 `/health` `/ready` `/version` | 是 |
 

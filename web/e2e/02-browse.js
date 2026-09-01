@@ -3,7 +3,7 @@
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
  * 管理员账号默认 demo_admin / 123456（可用 E2E_ADMIN_USER / E2E_ADMIN_PASSWORD 覆盖）。
  * 覆盖：未登录浏览首页、未登录搜索空结果、上传公开视频并过审后首页列表出现、
- *      点击进入视频详情、按关键词搜到视频、按标题搜到直播间、按昵称搜到用户、
+ *      点击进入视频详情、播放历史（UC-05）、按关键词搜到视频、按标题搜到直播间、按昵称搜到用户、
  *      搜索不存在关键词时视频/直播/用户三个 Tab 均为空。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
@@ -21,6 +21,7 @@ import {
   waitLoggedIn,
   fillByPlaceholder,
   cleanupUserVideos,
+  openProfile,
 } from './helpers.js'
 
 const API = process.env.E2E_API || 'http://127.0.0.1:8081'
@@ -243,6 +244,33 @@ async function run() {
     assert.ok((await authorNameEl.getText()).length > 0, '详情页应展示作者昵称')
     console.log('OK  视频详情页：标题/播放器/作者均展示')
     await shot(driver, '02-2-video-detail')
+
+    const progressResult = await driver.executeAsyncScript(
+      `const videoId = arguments[0];
+       const done = arguments[1];
+       const id = sessionStorage.getItem('doinb_active_id');
+       const list = JSON.parse(localStorage.getItem('doinb_accounts') || '[]');
+       const acc = list.find(function (a) { return String(a.user && a.user.id) === String(id); });
+       if (!acc) { done({ code: 0, message: '浏览器里没有当前账号 token' }); return; }
+       fetch('/api/video/history/progress', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/x-www-form-urlencoded',
+           Authorization: acc.token
+         },
+         body: 'videoId=' + encodeURIComponent(videoId) + '&progress=15'
+       }).then(function (r) { return r.json(); }).then(done).catch(function (e) { done({ code: 0, message: String(e) }); });`,
+      videoId
+    )
+    assert.equal(progressResult.code, 200, `保存播放进度失败: ${progressResult.message}`)
+    await openProfile(driver)
+    await driver.wait(
+      until.elementLocated(By.xpath(`//a[contains(@class,'history-item')][contains(., '${videoTitle}')]`)),
+      12000
+    )
+    await driver.wait(until.elementLocated(By.xpath("//*[contains(., '看到 15 秒')]")), 12000)
+    console.log('OK  个人中心播放历史出现该视频')
+    await shot(driver, '02-2b-history')
 
     /* ---------- 7. 搜索关键词 → 视频结果 ---------- */
     await doSearch(driver, videoTitle)

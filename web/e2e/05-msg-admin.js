@@ -2,7 +2,7 @@
  * TASK-E2E-05 通知 + 私信 + 后台。
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
  * 后台管理员默认 demo_admin / 123456（可用 E2E_ADMIN_USER、E2E_ADMIN_PASSWORD 覆盖）。
- * 覆盖：发私信、通知面板、非管理员进后台被拦、管理员概览/待审/通过、举报复审页。
+ * 覆盖：发私信、通知面板、非管理员进后台被拦、管理员概览/待审/通过、用户举报、举报复审页。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
 import assert from 'node:assert/strict'
@@ -217,6 +217,28 @@ async function run() {
     console.log('OK  待审视频通过', videoTitle)
     await shot(driver, '05-4-approve')
 
+    if (videoId) {
+      await injectSession(driver, viewerName, password)
+      await driver.get(`${BASE_URL}/video/${videoId}`)
+      await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
+      const reportBtn = await driver.wait(until.elementLocated(By.css('.report-btn')), 12000)
+      await driver.executeScript('arguments[0].scrollIntoView({block:"center"}); arguments[0].click();', reportBtn)
+      const reportInput = await driver.wait(
+        until.elementLocated(By.css('.el-message-box input, .el-message-box textarea')),
+        12000
+      )
+      await reportInput.sendKeys('E2E举报')
+      const submitReport = await driver.wait(
+        until.elementLocated(By.xpath("//div[contains(@class,'el-message-box')]//button[contains(., '提交')]")),
+        12000
+      )
+      await submitReport.click()
+      await waitToast(driver, '举报已提交', 12000)
+      console.log('OK  用户举报已发布视频')
+      await shot(driver, '05-4b-report')
+    }
+
+    await injectSession(driver, ADMIN_USER, ADMIN_PASS)
     await driver.get(`${BASE_URL}/admin/report`)
     await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '举报复审')]")), 12000)
     console.log('OK  打开举报复审页')

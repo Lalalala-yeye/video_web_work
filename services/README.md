@@ -31,6 +31,12 @@ curl http://127.0.0.1:8081/ready
 curl http://127.0.0.1:8081/version
 ```
 
+业务服务同样有这三个接口（8082–8086）。看日志：
+
+```powershell
+docker compose logs -f gateway user video live interact message
+```
+
 CI 打镜像：`services/Dockerfile`，`--build-arg MODULE=doinb-user --build-arg PORT=8082`。
 
 ## 约定

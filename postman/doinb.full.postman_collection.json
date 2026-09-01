@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "doinb 全量系统测试（59 条）",
-    "description": "对应交付文档/测试报告第 4 节。必须按顺序整集跑。Newman：npx newman run postman/doinb.full.postman_collection.json -e postman/doinb.ci.postman_environment.json --working-dir . --reporters cli,json --reporter-json-export postman/out/newman-report.json。写进报告请用 node postman/run-full-report.mjs（会落每条真实 JSON）。",
+    "name": "doinb 全量系统测试（公开接口）",
+    "description": "覆盖接口清单全部对外路径 + 网关 /health /ready /version。必须按顺序整集跑。Newman：npx newman@6 run postman/doinb.full.postman_collection.json -e postman/doinb.ci.postman_environment.json --working-dir .",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -100,7 +100,8 @@
               "pm.test('H000 HTTP 可解析且 code=200', () => {",
               "  pm.expect(j).to.be.an(\"object\");",
               "  pm.expect(j.code).to.eql(200);",
-              "});"
+              "});",
+              "pm.test('H000 data', () => pm.expect(j.data).to.eql('doinb-gateway ok'));"
             ]
           }
         }
@@ -109,6 +110,62 @@
         "method": "GET",
         "header": [],
         "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "H001 就绪检查",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('H001 HTTP 200 且 code=200', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});",
+              "pm.test('H001 data', () => pm.expect(j.data).to.eql('ready'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/ready"
+      }
+    },
+    {
+      "name": "H002 版本号",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('H002 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});",
+              "pm.test('H002 service/version', () => {",
+              "  pm.expect(j.data).to.be.an('object');",
+              "  pm.expect(j.data.service).to.eql('doinb-gateway');",
+              "  pm.expect(j.data.version).to.be.a('string');",
+              "  pm.expect(String(j.data.version).length).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/version"
       }
     },
     {
@@ -473,6 +530,35 @@
       }
     },
     {
+      "name": "U032 管理员个人信息",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('U032 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/personal/info"
+      }
+    },
+    {
       "name": "U060 公开资料",
       "event": [
         {
@@ -494,6 +580,30 @@
         "method": "GET",
         "header": [],
         "url": "{{baseUrl}}/user/info/get-one?uid={{userAId}}"
+      }
+    },
+    {
+      "name": "U062 用户主页 showcase",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('U062 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/user/profile/showcase?uid={{userAId}}&page=1&size=12"
       }
     },
     {
@@ -558,6 +668,50 @@
             {
               "key": "bio",
               "value": "这是简介",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "U082 修改密码",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('U082 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ],
+        "url": "{{baseUrl}}/user/password/update",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "pw",
+              "value": "{{password}}",
+              "type": "text"
+            },
+            {
+              "key": "npw",
+              "value": "654321",
               "type": "text"
             }
           ]
@@ -842,6 +996,35 @@
       }
     },
     {
+      "name": "V041 我的视频详情",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('V041 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ],
+        "url": "{{baseUrl}}/video/my/getone?id={{videoId}}"
+      }
+    },
+    {
       "name": "A001 无权限访问",
       "event": [
         {
@@ -897,6 +1080,35 @@
           }
         ],
         "url": "{{baseUrl}}/admin/video/pending?page=1&size=10"
+      }
+    },
+    {
+      "name": "A002 管理员预览视频",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('A002 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/video/getone?id={{videoId}}"
       }
     },
     {
@@ -970,6 +1182,45 @@
           "urlencoded": [
             {
               "key": "videoId",
+              "value": "{{videoIdReject}}",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "V070 作者删除视频",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('V070 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ],
+        "url": "{{baseUrl}}/video/delete",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "id",
               "value": "{{videoIdReject}}",
               "type": "text"
             }
@@ -1411,6 +1662,35 @@
       }
     },
     {
+      "name": "A021 管理员查看举报记录",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('A021 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/video/reports?videoId={{videoId}}"
+      }
+    },
+    {
       "name": "C001 未登录发评论",
       "event": [
         {
@@ -1744,6 +2024,35 @@
       }
     },
     {
+      "name": "F002 关注列表",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('F002 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ],
+        "url": "{{baseUrl}}/subscription/following?page=1&size=12"
+      }
+    },
+    {
       "name": "F001 取消关注",
       "event": [
         {
@@ -1950,6 +2259,35 @@
             }
           ]
         }
+      }
+    },
+    {
+      "name": "L023 我的直播间列表",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let j;",
+              "try { j = pm.response.json(); } catch (e) { j = null; }",
+              "pm.test('L023 HTTP 可解析且 code=200', () => {",
+              "  pm.expect(j).to.be.an(\"object\");",
+              "  pm.expect(j.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ],
+        "url": "{{baseUrl}}/live/my/list?page=1&size=12"
       }
     },
     {

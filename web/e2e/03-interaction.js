@@ -1,7 +1,7 @@
 /**
  * TASK-E2E-03 互动：评论、点赞、关注功能的点击成功反馈。
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
- * 覆盖：视频点赞/取消/点踩、发表评论、评论点赞、关注/取消关注。
+ * 覆盖：视频点赞/取消/点踩、发表评论、评论点赞、关注/取消关注、关注动态页。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
 import assert from 'node:assert/strict'
@@ -173,6 +173,14 @@ async function run() {
     assert.ok(textAfter.includes('已关注'), '按钮状态应切换为"已关注"')
     await shot(driver, '03-3-following')
     await sleep(600)
+
+    await driver.get(`${BASE_URL}/subscribe`)
+    await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '关注动态')]")), 12000)
+    console.log('OK  打开关注动态页')
+    await shot(driver, '03-4-subscribe-feed')
+
+    await driver.get(`${BASE_URL}/user/${authorId}`)
+    await driver.wait(until.elementLocated(By.css('.follow-btn')), 12000)
 
     await driver.findElement(By.css('.follow-btn')).click()
     await waitToast(driver,'已取消关注')
