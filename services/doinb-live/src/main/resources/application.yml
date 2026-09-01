@@ -1,6 +1,30 @@
 server:
   port: 8084
 
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:doinb}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:test}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+live:
+  media-path-prefix: /live/
+
 doinb:
   role: service
   service-name: doinb-live
@@ -9,10 +33,3 @@ doinb:
     - /health
     - /live/list
     - /live/getone
-
-live:
-  media-path-prefix: /live/
-
-jwt:
-  secret: ${JWT_SECRET:change-me-in-local-config-at-least-32-chars!!}
-  expire: 86400000
