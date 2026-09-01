@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   actor_id INT NOT NULL,
   ref_id INT,
   preview VARCHAR(255),
+  link_path VARCHAR(255),
   is_read BOOLEAN DEFAULT FALSE,
   create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id),

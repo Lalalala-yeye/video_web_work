@@ -1,0 +1,5 @@
+jwt:
+  secret: "改成至少32个字符的随机字符串用于JWT签名，必须与用户服务相同"
+
+doinb:
+  internal-token: doinb-internal-dev-token

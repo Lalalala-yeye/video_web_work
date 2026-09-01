@@ -1,5 +1,7 @@
 # CD-02 Kubernetes 部署验收记录
 
+> 本文是 **2026-08-27 单体 backend + web** 的验收截图归档。当前清单已改为五服务 + 网关，见 [`java-services.yaml`](java-services.yaml) 与 [`README.md`](README.md)。
+
 执行日期：2026-08-27
 
 执行环境：本地 Kubernetes 集群，节点 `desktop-control-plane`

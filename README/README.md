@@ -39,13 +39,8 @@
 
 ```
 video_web/
-├── backend/                 # Spring Boot（端口 8081；8080 留给 SRS 流媒体）
-│   └── src/main/
-│       ├── java/com/doinb/backend/
-│       └── resources/
-│           ├── application.yml
-│           ├── application-local.example.yml   # 模板（可提交）
-│           └── application-local.yml           # 本地配置（勿提交）
+├── services/                # 微服务（网关 + 用户/视频/直播/互动/消息）
+├── backend/                 # 旧单体（保留对照，日常不再启动）
 ├── web/                     # Vue 用户端（端口 8787）
 │   ├── public/              # favicon、like 图标、emojis 等静态资源
 │   └── src/
@@ -55,7 +50,7 @@ video_web/
 │       ├── utils/auth.js    # 多账号登录态
 │       ├── router/
 │       └── views/           # 首页、播放、创作中心、管理后台等
-├── docker-compose.yml       # 前端 + 后端 + MySQL 三容器
+├── docker-compose.yml       # MySQL + 五服务 + 网关 8081 + web
 ├── .env.example             # 容器环境变量模板
 ├── database/
 │   ├── database.sql         # 建表（新库 / compose 首次自动执行）
@@ -73,13 +68,13 @@ video_web/
 
 - **Git**
 - **用 Docker 启动（推荐换机器 / 课设容器化）**：安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) 即可，不必本机装 JDK / Node / MySQL。
-- **本机开发**：JDK 25、MySQL 8.x、Node.js 20.19+ 或 22.12+（见 `web/package.json`）。后端用项目自带 Maven Wrapper（`backend/mvnw.cmd`）。
+- **本机开发**：JDK 25、MySQL 8.x、Node.js 20.19+ 或 22.12+（见 `web/package.json`）。微服务用 `services/mvnw.cmd`。
 
 ---
 
 ## 用 Docker 启动（换机器按这里做）
 
-前端、后端、数据库各跑在独立容器里。数据库用官方 `mysql:8.0`；前后端用仓库里的 Dockerfile。首次会构建镜像，需要几分钟。
+前端、网关、五个业务服务、数据库各跑在独立容器里。数据库用官方 `mysql:8.0`；Java 服务共用 `services/Dockerfile`。首次会构建镜像，需要几分钟。
 
 ```powershell
 git clone https://github.com/Lalalala-yeye/video_web_work.git
@@ -94,8 +89,9 @@ docker compose up --build -d
 
 | 容器 | 宿主机端口 | 说明 |
 |------|------------|------|
-| web | 8787 | Nginx 静态页，`/api` 反代到后端 |
-| backend | 8081 | Spring Boot |
+| web | 8787 | Nginx 静态页，`/api` 反代到网关 |
+| gateway | 8081 | 对外入口（JWT、转发、聚合搜索） |
+| user / video / live / interact / message | 8082–8086 | 业务微服务 |
 | mysql | 3307 | 映射到容器 3306，避免和本机 MySQL 抢端口 |
 
 建表脚本 `database/database.sql` 与测试数据 `database/seed.sql` 仅在 **空数据卷第一次启动** 时自动执行。样片文件在 `backend/demo-media/`，容器启动时拷到 `uploads/`。演示账号（密码均为 `123456`）：
@@ -109,12 +105,12 @@ docker compose up --build -d
 本机已有早期数据库、缺列缺表时，手动执行 `database/migrate.sql`（compose 新库不必跑）。
 
 ```powershell
-docker compose logs -f backend
+docker compose logs -f gateway
 docker compose down          # 停容器，保留数据
 docker compose down -v       # 停容器并清空数据库（会丢演示数据）
 ```
 
-变量名与 CI 相同，见 `.env.example`（`MYSQL_*`、`JWT_SECRET`）。不要把填好的 `.env` 提交进 Git。
+变量名与 CI 相同，见 `.env.example`（`MYSQL_*`、`JWT_SECRET`、`DOINB_INTERNAL_TOKEN`）。不要把填好的 `.env` 提交进 Git。
 
 ### 换机器带上已有视频
 
@@ -133,10 +129,11 @@ docker compose down -v       # 停容器并清空数据库（会丢演示数据�
 
 | 顺序 | Job | 测什么 | 是否挡住后续 |
 |------|-----|--------|----------------|
-| 1 | Backend unit + API tests | V 模型**单元测试**：Service 对象级 + MockMvc 系统操作契约，不启 MySQL | 是 |
-| 2 | Postman Newman | V 模型**系统测试**：真库打后端（15 条冒烟，对应用例基本/扩展路径） | 是（不过不打镜像） |
-| 3a | Selenium E2E | V 模型**验收测试**（加分）：无头 Chrome 对着 GUI | 否（与打镜像并行） |
-| 3b | Build versioned images | Newman 通过后构建并推送到 GHCR | 是（该 job 失败则流水线红） |
+| 1 | Microservices unit + API tests | 网关 + 五服务 JUnit（不启 MySQL） | 是 |
+| 2 | Postman Newman | 真库打网关：接口清单全部公开路径 + `/health` `/ready` `/version` | 是（不过不打镜像） |
+| 3a | Selenium E2E | 15 个用例主路径（无头 Chrome） | 否（与打镜像并行） |
+| 3b | Build versioned images | Newman 通过后构建并推送到 GHCR（6 个 Java 镜像 + web） | 是（该 job 失败则流水线红） |
+| 4 | Deploy kind + health | 用本次 SHA 在 kind 里部署并探活 `/health` `/ready` `/version` | 是 |
 
 E2E 需要管理员种子账号 `demo_admin` / `123456`（`database/seed.sql`）。OBS 真推流不进 CI。
 
@@ -145,14 +142,19 @@ E2E 需要管理员种子账号 `demo_admin` / `123456`（`database/seed.sql`）
 Newman 通过后会推送（**没有 `latest`**），tag 为本次提交的 **7 位 git SHA**：
 
 ```text
-ghcr.io/<GitHub用户名>/doinb-backend:<sha>
+ghcr.io/<GitHub用户名>/doinb-gateway:<sha>
+ghcr.io/<GitHub用户名>/doinb-user:<sha>
+ghcr.io/<GitHub用户名>/doinb-video:<sha>
+ghcr.io/<GitHub用户名>/doinb-live:<sha>
+ghcr.io/<GitHub用户名>/doinb-interact:<sha>
+ghcr.io/<GitHub用户名>/doinb-message:<sha>
 ghcr.io/<GitHub用户名>/doinb-web:<sha>
 ```
 
 本仓库示例（把 tag 换成 Actions 摘要或 `git rev-parse --short=7 HEAD`）：
 
 ```powershell
-docker pull ghcr.io/lalalala-yeye/doinb-backend:cde7310
+docker pull ghcr.io/lalalala-yeye/doinb-gateway:cde7310
 docker pull ghcr.io/lalalala-yeye/doinb-web:cde7310
 ```
 
@@ -163,13 +165,14 @@ docker pull ghcr.io/lalalala-yeye/doinb-web:cde7310
 
 ## Kubernetes 部署（CD-02）
 
-GitHub Actions 的 **Test gate** 在打完镜像后会跑 **Deploy kind + health (CD-02)**：在 runner 上起 kind 集群，部署本次 push 的 SHA 镜像（MySQL 8 + backend + web），并从集群内检查 backend `/health`、web `/` 和 `/api/health`。失败则整个 workflow 失败。
+GitHub Actions 的 **Test gate** 在打完镜像后会跑 **Deploy kind + health (CD-02)**：在 runner 上起 kind 集群，部署本次 push 的 SHA 镜像（MySQL 8 + 五服务 + 网关 + web），并从集群内检查网关 `/health` `/ready` `/version`、web `/` 和 `/api/health`。失败则整个 workflow 失败。
 
-本地集群仍可用下面的清单和脚本。仓库已提供 MySQL、backend、web 的 Deployment/Service、健康探针和滚动更新验证脚本，默认部署 CD-01 生成的固定版本镜像：
+本地集群仍可用下面的清单和脚本。仓库已提供 MySQL、五个业务服务、网关、web 的 Deployment/Service、健康探针和滚动更新验证脚本：
 
 ```text
-ghcr.io/lalalala-yeye/doinb-backend:cde7310
-ghcr.io/lalalala-yeye/doinb-web:cde7310
+ghcr.io/lalalala-yeye/doinb-gateway:<sha>
+ghcr.io/lalalala-yeye/doinb-user:<sha>
+ghcr.io/lalalala-yeye/doinb-web:<sha>
 ```
 
 密钥不会写入清单，需要在部署时创建 Kubernetes Secret。完整的 namespace 创建、密钥注入、数据库初始化、页面访问和滚动更新步骤见 [`deploy/k8s/README.md`](deploy/k8s/README.md)，本地集群的实际验收结果与截图见 [`deploy/k8s/EVIDENCE.md`](deploy/k8s/EVIDENCE.md)。
@@ -196,45 +199,27 @@ CREATE DATABASE doinb DEFAULT CHARACTER SET utf8mb4;
 
 若库是早期版本、已存在部分表，请对照 **`功能测试和完善.md`** 中的「数据库增量」段落按需补执行。
 
-### 3. 配置后端
+### 3. 配置微服务
 
-复制模板并填写本机账号密码与 JWT 密钥：
+各服务复制 `services/doinb-*/src/main/resources/application-local.example.yml` 为 `application-local.yml`，填本机 MySQL 与 JWT。网关本机默认 8080；compose / CI 对外仍是 8081。
 
-```powershell
-copy backend\src\main\resources\application-local.example.yml backend\src\main\resources\application-local.yml
-```
-
-示例：
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/doinb?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: "你的MySQL密码"
-
-jwt:
-  secret: "至少32个字符的随机字符串"
-```
-
-> **YAML 注意**：密码含 `@`、`:`、`#` 等特殊字符时，必须用英文双引号包裹，例如 `password: "@abc123"`。
-
-### 4. 启动后端
+### 4. 启动微服务
 
 ```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
+cd services
+.\mvnw.cmd -pl doinb-user,doinb-video,doinb-live,doinb-interact,doinb-message,doinb-gateway -am package -DskipTests
+bash .\ci-start.sh
 ```
+
+Windows 上更省事用 Docker：`docker compose up --build -d`。
 
 健康检查：http://localhost:8081/health  
 
 期望返回：
 
 ```json
-{"code":200,"message":"OK","data":"doinb-backend ok"}
+{"code":200,"message":"OK","data":"doinb-gateway ok"}
 ```
-
-**改过后端 Java 代码后必须重新编译并重启**，否则会出现 `No static resource xxx` 等新接口 404。
 
 ### 5. 启动前端
 
@@ -380,7 +365,7 @@ git status
 
 ### 3. 前端「网络错误」
 
-先启后端（8081），再启前端；确认 Vite 代理指向正确。
+先启网关（8081）和业务服务，再启前端；确认 Vite 代理指向正确。
 
 ### 4. `npm` 报 `ENOENT ... video_web\package.json`
 
@@ -388,7 +373,7 @@ git status
 
 ### 5. 接口报 `No static resource xxx`
 
-后端未加载最新代码。在 `backend/` 下重新 `.\mvnw.cmd spring-boot:run`（或 IDE 重启应用）。
+Java 服务未加载最新代码。在 `services/` 下重新打包并重启对应模块（或 `docker compose up --build`）。
 
 ### 6. 新功能（通知、私信、视频编辑等）表不存在
 

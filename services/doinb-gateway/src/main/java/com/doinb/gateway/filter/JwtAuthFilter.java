@@ -30,6 +30,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final Set<String> PUBLIC_EXACT = Set.of(
             "/health",
+            "/ready",
+            "/version",
             "/search",
             "/user/account/register",
             "/user/account/login",

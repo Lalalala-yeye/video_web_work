@@ -44,7 +44,7 @@ export default defineConfig({
     open: process.env.CI !== 'true',
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8081',
+        target: process.env.E2E_API || 'http://127.0.0.1:8081',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api/, ''),
         timeout: 120000,

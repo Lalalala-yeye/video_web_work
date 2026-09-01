@@ -31,5 +31,7 @@ doinb:
   internal-token: ${DOINB_INTERNAL_TOKEN:doinb-internal-dev-token}
   public-path-prefixes:
     - /health
+    - /ready
+    - /version
     - /live/list
     - /live/getone

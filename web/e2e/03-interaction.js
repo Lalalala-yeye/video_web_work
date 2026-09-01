@@ -1,7 +1,9 @@
 /**
- * TASK-E2E-03 互动：评论、点赞、关注功能的点击成功反馈。
+ * TASK-E2E-03 互动：评论、点赞、关注、订阅动态。
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
- * 覆盖：视频点赞/取消/点踩、发表评论、评论点赞、关注/取消关注。
+ * 管理员账号默认 demo_admin / 123456（可用 E2E_ADMIN_USER / E2E_ADMIN_PASSWORD 覆盖）。
+ * 覆盖：视频点赞/取消/点踩、发表评论、评论点赞、关注/取消关注、
+ *      关注后动态出现已发布视频、取消关注后动态不再出现（UC-09）。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
 import assert from 'node:assert/strict'
@@ -16,51 +18,48 @@ import {
   register,
   login,
   waitLoggedIn,
-  logout,
   cleanupUserVideos,
+  injectSession,
+  apiLogin,
+  waitMessageContains,
+  setVueInputValue,
+  approvePendingVideo,
 } from './helpers.js'
 
-const API = process.env.E2E_API || 'http://127.0.0.1:8081'
+const ADMIN_USER = process.env.E2E_ADMIN_USER || 'demo_admin'
+const ADMIN_PASS = process.env.E2E_ADMIN_PASSWORD || '123456'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURE_VIDEO = path.join(__dirname, 'fixtures', 'test-video.mp4')
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-/** 轮询等待页面出现目标文案（旧提示未消失也不会误判，比 waitMessageContains 稳） */
-async function waitToast(driver, text, timeoutMs = 8000) {
-  await driver.wait(
-    async () => (await driver.getPageSource()).includes(text),
-    timeoutMs,
-    `页面未出现预期文案: ${text}`
-  )
-}
-
-/** 通过后端接口登录拿用户 id（仅用于测试数据准备，不经过页面） */
-async function apiGetUserId(username, password) {
-  const res = await fetch(`${API}/user/account/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  })
-  const body = await res.json()
-  assert.equal(body.code, 200, `API 登录失败: ${body.message}`)
-  return body.data.user.id
-}
-
 async function shot(driver, name) {
-  const img = await driver.takeScreenshot()
-  const dir = path.join(__dirname, 'artifacts')
-  fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(dir, `${name}.png`), img, 'base64')
-  console.log('📷 已保存截图 artifacts/' + name + '.png')
+  try {
+    const img = await driver.takeScreenshot()
+    const dir = path.join(__dirname, 'artifacts')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(path.join(dir, `${name}.png`), img, 'base64')
+    console.log('📷 已保存截图 artifacts/' + name + '.png')
+  } catch (err) {
+    console.warn('截图保存失败', name, err.message)
+  }
+}
+
+async function clickXpath(driver, xpath, timeoutMs = 12000) {
+  const el = await driver.wait(until.elementLocated(By.xpath(xpath)), timeoutMs)
+  await driver.wait(until.elementIsVisible(el), timeoutMs)
+  await el.click()
+  return el
 }
 
 async function run() {
+  assert.ok(fs.existsSync(FIXTURE_VIDEO), `缺少测试视频: ${FIXTURE_VIDEO}`)
   console.log('启动 Chrome…  目标:', BASE_URL)
   const driver = await createDriver()
   const password = '123456'
-  const authorName = uniqueUsername('e2e3a') // 作者：上传视频并互动
-  const viewerName = uniqueUsername('e2e3b') // 用户：关注作者
+  const authorName = uniqueUsername('e2e3a')
+  const viewerName = uniqueUsername('e2e3b')
+  const videoTitle = `E2E互动_${Date.now()}`
 
   try {
     /* ---------- 1. 作者注册并登录 ---------- */
@@ -70,29 +69,25 @@ async function run() {
     await waitLoggedIn(driver)
     console.log('OK  作者登录', authorName)
 
-    /* ---------- 2. 上传一个"仅自己可见"的视频（无需管理员审核即可预览） ---------- */
+    /* ---------- 2. 上传公开视频（进入待审；作者仍可预览互动） ---------- */
     await driver.get(`${BASE_URL}/studio/upload`)
     await driver.wait(until.elementLocated(By.css('.page-title')), 12000)
     const fileInputs = await driver.findElements(By.css('input[type="file"]'))
     assert.ok(fileInputs.length >= 1, '上传页应有文件选择框')
-    await fileInputs[0].sendKeys(FIXTURE_VIDEO) // 第一个 input 是视频
-    const privateRadio = await driver.wait(
-      until.elementLocated(By.xpath("//label[contains(., '仅自己可见')]")),
-      12000
-    )
-    await privateRadio.click()
+    await fileInputs[0].sendKeys(FIXTURE_VIDEO)
     const titleInput = await driver.wait(
       until.elementLocated(By.css('input[placeholder="请输入视频标题"]')),
       12000
     )
-    await titleInput.sendKeys('E2E 互动测试视频')
-    const submitBtn = await driver.wait(
-      until.elementLocated(By.xpath("//button[contains(., '提交上传')]")),
-      12000
-    )
-    await submitBtn.click()
-    await waitToast(driver,'上传成功')
-    console.log('OK  上传视频成功（仅自己可见）')
+    await setVueInputValue(driver, titleInput, videoTitle)
+    await clickXpath(driver, "//button[contains(., '提交上传')]")
+    await waitMessageContains(driver, '上传成功')
+    await driver.wait(until.urlContains('/studio/edit'), 12000)
+    const uploadUrl = await driver.getCurrentUrl()
+    const uploadMatch = uploadUrl.match(/\/studio\/edit\/(\d+)/)
+    const videoId = uploadMatch ? uploadMatch[1] : null
+    assert.ok(videoId, '上传后应拿到视频 id')
+    console.log('OK  上传公开视频（待审）', videoTitle, `id=${videoId}`)
     await sleep(800)
 
     /* ---------- 3. 从创作中心进入视频详情 ---------- */
@@ -107,19 +102,19 @@ async function run() {
     await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
     console.log('OK  打开视频详情页')
 
-    /* ---------- 4. 视频点赞 → 取消 → 点踩（本轮新增的反馈） ---------- */
+    /* ---------- 4. 视频点赞 → 取消 → 点踩 ---------- */
     const likeBtn = await driver.wait(
       until.elementLocated(By.xpath("//div[contains(@class,'video-actions')]//button[.//img[@alt='赞']]")),
       12000
     )
     await likeBtn.click()
-    await waitToast(driver,'点赞成功')
+    await waitMessageContains(driver, '点赞成功')
     console.log('OK  视频点赞：出现"点赞成功"反馈')
     await shot(driver, '03-1-video-like')
     await sleep(600)
 
     await likeBtn.click()
-    await waitToast(driver,'已取消')
+    await waitMessageContains(driver, '已取消')
     console.log('OK  取消点赞：出现"已取消"反馈')
     await sleep(600)
 
@@ -127,7 +122,7 @@ async function run() {
       By.xpath("//div[contains(@class,'video-actions')]//button[.//img[@alt='踩']]")
     )
     await dislikeBtn.click()
-    await waitToast(driver,'已点踩')
+    await waitMessageContains(driver, '已点踩')
     console.log('OK  视频点踩：出现"已点踩"反馈')
     await sleep(600)
 
@@ -135,7 +130,7 @@ async function run() {
     const commentBox = await driver.findElement(By.css('textarea[placeholder="发表你的看法..."]'))
     await commentBox.sendKeys('E2E 自动化评论 e2e3')
     await driver.findElement(By.xpath("//button[contains(., '发表评论')]")).click()
-    await waitToast(driver,'评论成功')
+    await waitMessageContains(driver, '评论成功')
     await driver.wait(
       until.elementLocated(By.xpath("//*[contains(text(), 'E2E 自动化评论')]")),
       12000
@@ -143,42 +138,81 @@ async function run() {
     console.log('OK  发表评论：出现"评论成功"反馈且评论上屏')
     await sleep(600)
 
-    /* ---------- 6. 评论点赞（本轮新增的反馈） ---------- */
+    /* ---------- 6. 评论点赞 ---------- */
     const commentLike = await driver.wait(
       until.elementLocated(By.xpath("//div[contains(@class,'comment-item')]//button[.//img[@alt='赞']]")),
       12000
     )
     await commentLike.click()
-    await waitToast(driver,'评论已点赞')
+    await waitMessageContains(driver, '评论已点赞')
     console.log('OK  评论点赞：出现"评论已点赞"反馈')
     await shot(driver, '03-2-comment-like')
 
-    /* ---------- 7. 换用户B，关注作者 ---------- */
-    const authorId = await apiGetUserId(authorName, password)
-    await logout(driver)
+    /* ---------- 7. 管理员过审（订阅动态只聚合已发布内容） ---------- */
+    const adminBody = await apiLogin(ADMIN_USER, ADMIN_PASS)
+    if (adminBody.code !== 200 || Number(adminBody.data?.user?.role) !== 2) {
+      throw new Error(
+        `管理员登录失败（${ADMIN_USER}）：${adminBody.message || '非管理员'}。` +
+          '请确认库里有 role=2 的账号，或设置 E2E_ADMIN_USER / E2E_ADMIN_PASSWORD'
+      )
+    }
+    await injectSession(driver, ADMIN_USER, ADMIN_PASS)
+    await driver.get(`${BASE_URL}/admin/pending`)
+    await approvePendingVideo(driver, videoId, videoTitle)
+    await waitMessageContains(driver, '已通过审核', 12000)
+    console.log('OK  管理员通过审核', videoTitle)
+
+    /* ---------- 8. 用户B 关注作者 ---------- */
+    const authorLogin = await apiLogin(authorName, password)
+    assert.equal(authorLogin.code, 200, `读取作者 id 失败: ${authorLogin.message}`)
+    const targetAuthorId = authorLogin.data.user.id
+
     await register(driver, viewerName, password)
     await driver.wait(until.urlContains('/login'), 12000)
     await login(driver, viewerName, password)
     await waitLoggedIn(driver)
     console.log('OK  用户B登录', viewerName)
 
-    await driver.get(`${BASE_URL}/user/${authorId}`)
+    await driver.get(`${BASE_URL}/user/${targetAuthorId}`)
     const followBtn = await driver.wait(until.elementLocated(By.css('.follow-btn')), 12000)
     const textBefore = await followBtn.getText()
     assert.ok(textBefore.includes('关注') && !textBefore.includes('已关注'), '初始应为未关注')
     await followBtn.click()
-    await waitToast(driver,'关注成功')
+    await waitMessageContains(driver, '关注成功')
     console.log('OK  关注：出现"关注成功"反馈')
     const textAfter = await driver.findElement(By.css('.follow-btn')).getText()
     assert.ok(textAfter.includes('已关注'), '按钮状态应切换为"已关注"')
     await shot(driver, '03-3-following')
     await sleep(600)
 
+    await driver.get(`${BASE_URL}/subscribe`)
+    await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '关注动态')]")), 12000)
+    await driver.wait(
+      until.elementLocated(By.xpath(`//a[contains(@class,'video-card')][contains(., '${videoTitle}')]`)),
+      12000
+    )
+    console.log('OK  关注动态出现该作者已发布视频')
+    await shot(driver, '03-4-subscribe-feed')
+
+    await driver.get(`${BASE_URL}/user/${targetAuthorId}`)
+    await driver.wait(until.elementLocated(By.css('.follow-btn')), 12000)
     await driver.findElement(By.css('.follow-btn')).click()
-    await waitToast(driver,'已取消关注')
+    await waitMessageContains(driver, '已取消关注')
     console.log('OK  取消关注：出现"已取消关注"反馈')
 
-    console.log('\n全部通过 ✅  TASK-E2E-03 互动（评论/点赞/关注 点击成功反馈）')
+    await driver.get(`${BASE_URL}/subscribe`)
+    await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '关注动态')]")), 12000)
+    await driver.wait(
+      async () => {
+        const src = await driver.getPageSource()
+        return src.includes('还没有关注任何人') && !src.includes(videoTitle)
+      },
+      12000,
+      '取消关注后动态页不应再出现该视频'
+    )
+    console.log('OK  取消关注后动态不再出现该视频')
+
+    console.log('\n全部通过 ✅  TASK-E2E-03 互动（评论/点赞/关注/订阅动态）')
   } finally {
     await cleanupUserVideos(authorName, password)
     await driver.quit()
@@ -187,5 +221,6 @@ async function run() {
 
 run().catch((e) => {
   console.error('FAILED:', e.message)
+  if (e.stack) console.error(e.stack)
   process.exit(1)
 })

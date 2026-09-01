@@ -122,6 +122,26 @@ class UserAccountServiceImplTest {
     }
 
     @Test
+    void login_whenAdmin_issuesAdminToken() {
+        User user = new User();
+        user.setId(11);
+        user.setUsername("demo_admin");
+        user.setNickname("演示管理员");
+        user.setRole(2);
+        user.setPassword("hashed");
+        when(userMapper.selectByUsername("demo_admin")).thenReturn(user);
+        when(passwordEncoder.matches("123456", "hashed")).thenReturn(true);
+        when(jwtUtil.createToken(11, "admin")).thenReturn("admin-jwt");
+
+        CustomResponse resp = service.login("demo_admin", "123456");
+        assertEquals(200, resp.getCode());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) resp.getData();
+        assertEquals("admin-jwt", data.get("token"));
+        verify(jwtUtil).createToken(11, "admin");
+    }
+
+    @Test
     void adminLogin_whenNotAdmin_returns403() {
         User user = new User();
         user.setId(10);

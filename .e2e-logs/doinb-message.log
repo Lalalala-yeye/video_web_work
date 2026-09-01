@@ -1,0 +1,21 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::       (v4.1.0-SNAPSHOT)
+
+2026-09-01T14:17:31.071+08:00  INFO 68676 --- [           main] com.doinb.message.MessageApplication     : Starting MessageApplication v0.0.1-SNAPSHOT using Java 25 with PID 68676 (C:\Users\zhaozhewen\video_web\services\doinb-message\target\doinb-message-0.0.1-SNAPSHOT.jar started by zhaozhewen in C:\Users\zhaozhewen\video_web\services)
+2026-09-01T14:17:31.077+08:00  INFO 68676 --- [           main] com.doinb.message.MessageApplication     : The following 1 profile is active: "ci"
+2026-09-01T14:17:32.735+08:00  INFO 68676 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 18086 (http)
+2026-09-01T14:17:32.757+08:00  INFO 68676 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-09-01T14:17:32.757+08:00  INFO 68676 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-09-01T14:17:32.803+08:00  INFO 68676 --- [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1609 ms
+2026-09-01T14:17:33.713+08:00  INFO 68676 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 18086 (http) with context path '/'
+2026-09-01T14:17:33.725+08:00  INFO 68676 --- [           main] com.doinb.message.MessageApplication     : Started MessageApplication in 3.708 seconds (process running for 4.488)
+2026-09-01T14:18:37.726+08:00  INFO 68676 --- [io-18086-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-01T14:18:37.727+08:00  INFO 68676 --- [io-18086-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-09-01T14:18:37.728+08:00  INFO 68676 --- [io-18086-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

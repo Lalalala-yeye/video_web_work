@@ -1,5 +1,5 @@
 /**
- * 人1：账号相关 E2E（UC-01～03 主路径）。
+ * 人1：账号相关 E2E（UC-01～03：注册、登录/登出、改资料与个人主页）。
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机已装 Chrome。
  */
 import assert from 'node:assert/strict'
@@ -14,6 +14,7 @@ import {
   openProfile,
   logout,
   waitMessageContains,
+  setVueInputValue,
 } from './helpers.js'
 
 async function run() {
@@ -49,6 +50,21 @@ async function run() {
 
     await openProfile(driver)
     console.log('OK  个人中心')
+
+    const nickInput = await driver.wait(
+      until.elementLocated(By.css('.edit-form .el-form-item .el-input input')),
+      12000
+    )
+    const newNick = `E2E资料_${Date.now().toString().slice(-4)}`
+    await setVueInputValue(driver, nickInput, newNick)
+    await driver.findElement(By.xpath("//button[contains(., '保存资料')]")).click()
+    await waitMessageContains(driver, '资料已更新')
+    console.log('OK  保存昵称', newNick)
+
+    await driver.findElement(By.xpath("//a[contains(., '预览我的主页')]")).click()
+    await driver.wait(until.urlContains('/user/'), 12000)
+    await driver.wait(until.elementLocated(By.xpath(`//*[contains(., '${newNick}')]`)), 12000)
+    console.log('OK  预览个人主页')
 
     await logout(driver)
     await driver.get(`${BASE_URL}/admin`)

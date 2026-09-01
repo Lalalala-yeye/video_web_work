@@ -350,6 +350,9 @@ public class VideoServiceImpl implements VideoService {
         if (!canManageVideo(userId, role, video)) {
             return CustomResponse.fail(403, "无权删除该视频");
         }
+        playHistoryMapper.delete(new LambdaQueryWrapper<PlayHistory>().eq(PlayHistory::getVideoId, videoId));
+        videoReportMapper.delete(new LambdaQueryWrapper<VideoReport>().eq(VideoReport::getVideoId, videoId));
+        videoMapper.deleteReactionsByVideoId(videoId);
         deleteFiles(video);
         videoMapper.deleteById(videoId);
         return CustomResponse.ok("删除成功", null);

@@ -16,8 +16,8 @@ export function saveProgress(videoId, progress) {
   return postParams('/video/history/progress', { videoId, progress }, { skipErrorHandler: true })
 }
 
-export function fetchHistoryList(page = 1, size = 12) {
-  return get('/video/history/list', { page, size })
+export function fetchHistoryList(page = 1, size = 12, config = {}) {
+  return get('/video/history/list', { page, size }, config)
 }
 
 export function fetchMyVideos(page = 1, size = 12, config = {}) {

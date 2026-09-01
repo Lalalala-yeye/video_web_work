@@ -51,7 +51,7 @@ public class GatewayProxyFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if ("/health".equals(path) || "/search".equals(path)) {
+        if ("/health".equals(path) || "/ready".equals(path) || "/version".equals(path) || "/search".equals(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -119,15 +119,18 @@ public class GatewayProxyFilter extends OncePerRequestFilter {
     }
 
     private HttpRequest.BodyPublisher bodyPublisher(HttpServletRequest request) throws IOException {
-        if ("GET".equalsIgnoreCase(request.getMethod())
-                || "HEAD".equalsIgnoreCase(request.getMethod())
-                || "DELETE".equalsIgnoreCase(request.getMethod())) {
+        if ("GET".equalsIgnoreCase(request.getMethod()) || "HEAD".equalsIgnoreCase(request.getMethod())) {
             return HttpRequest.BodyPublishers.noBody();
         }
-        byte[] bytes = request.getInputStream().readAllBytes();
-        if (bytes.length == 0) {
+        if (request.getContentLength() == 0) {
             return HttpRequest.BodyPublishers.noBody();
         }
-        return HttpRequest.BodyPublishers.ofByteArray(bytes);
+        return HttpRequest.BodyPublishers.ofInputStream(() -> {
+            try {
+                return request.getInputStream();
+            } catch (IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        });
     }
 }

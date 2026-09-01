@@ -96,7 +96,7 @@ CI 冒烟 Newman 仍为 15 条子集（\`postman/doinb.postman_collection.json\`
 ### 2.3 测试方法
 
 - **单元**：JUnit 5 + Mockito，不启 Spring、不连 MySQL。
-- **系统测试**：Node 脚本按第 4 节顺序请求 \`http://127.0.0.1:8081\`（Docker 中的 \`doinb-backend\`），对比 \`{code,message,data}\`。
+- **系统测试**：Node 脚本按第 4 节顺序请求 \`http://127.0.0.1:8081\`（Docker 中的 \`doinb-gateway\`），对比 \`{code,message,data}\`。
 - **验收**：Selenium 操作 \`http://localhost:8787\`，关键步骤截图。
 - **异常**：未登录、错误参数、资源不存在、权限不足。
 
@@ -110,7 +110,7 @@ CI 冒烟 Newman 仍为 15 条子集（\`postman/doinb.postman_collection.json\`
 
 | 项目 | 实际值 |
 | ---- | ------ |
-| 后端 | \`http://127.0.0.1:8081\`（docker compose \`doinb-backend\`） |
+| 后端 | \`http://127.0.0.1:8081\`（docker compose \`doinb-gateway\`） |
 | 前端 | \`http://localhost:8787\`（docker compose \`doinb-web\`） |
 | 数据库 | MySQL 8.0 容器 \`doinb-mysql\` |
 | JDK | 25；Spring Boot 4.1.0-SNAPSHOT |
@@ -165,7 +165,7 @@ cd backend
 
 | 编号 | 测试名称 | 方法 URL | 前置条件 | 输入数据 | Header | 预期输出 | 实际输出 | 通过 |
 | ---- | -------- | -------- | -------- | -------- | ------ | -------- | -------- | ---- |
-${row('H000', '\`code=200\`，data=doinb-backend ok', { pre: '后端已启动', input: '无', header: '无' })}
+${row('H000', '\`code=200\`，data=doinb-gateway ok', { pre: '网关已启动', input: '无', header: '无' })}
 
 ### 4.2 用户与账号（U）
 

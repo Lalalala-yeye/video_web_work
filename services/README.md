@@ -1,55 +1,49 @@
-# doinb 微服务骨架
+# doinb 微服务
 
-单体 `backend/` 先不要动。本目录是拆进程用的空壳：网关验 JWT、按路径转发，5 个业务服务只提供 `/health` 和内部接口桩。
+网关 + 5 个业务服务，可分别构建、测试、打镜像、部署。
 
-前端联调入口暂时是 **8080**（避免和现网单体 8081 抢端口）。切流时把网关改成 8081，停掉单体即可。
+CI / compose / K8s 对外入口是 **网关 8081**（前端 `/api` 与 Newman 不用改路径）。本机直接 `spring-boot:run` 时网关默认仍是 **8080**，避免和旧进程抢端口；compose 会把网关映射到 8081。
 
 ## 端口
 
-| 进程 | 端口 | 说明 |
+| 进程 | 端口 | 探活 |
 |------|------|------|
-| 网关 `doinb-gateway` | 8080 | 对外入口、`/search` 聚合 |
-| 用户 `doinb-user` | 8082 | |
-| 视频 `doinb-video` | 8083 | |
-| 直播 `doinb-live` | 8084 | |
-| 互动 `doinb-interact` | 8085 | |
-| 消息 `doinb-message` | 8086 | |
+| 网关 `doinb-gateway` | 8080 本机 / 8081 CI | `/health` 存活，`/ready` 就绪，`/version` 版本 |
+| 用户 `doinb-user` | 8082 | 同上（`/ready` 会探数据库） |
+| 视频 `doinb-video` | 8083 | 同上 |
+| 直播 `doinb-live` | 8084 | 同上 |
+| 互动 `doinb-interact` | 8085 | 同上 |
+| 消息 `doinb-message` | 8086 | 同上 |
 
 ## 启动
 
-本机已装 JDK 25。在 `services/` 下：
+本机 JDK 25，在 `services/` 下分别启动，或仓库根目录：
 
 ```powershell
-.\start-skeleton.ps1
-```
-
-或分别开窗口：
-
-```powershell
-.\mvnw.cmd -pl doinb-gateway -am spring-boot:run
-.\mvnw.cmd -pl doinb-user -am spring-boot:run
-.\mvnw.cmd -pl doinb-video -am spring-boot:run
-.\mvnw.cmd -pl doinb-live -am spring-boot:run
-.\mvnw.cmd -pl doinb-interact -am spring-boot:run
-.\mvnw.cmd -pl doinb-message -am spring-boot:run
+docker compose up -d --build
 ```
 
 探活：
 
 ```powershell
-.\verify-skeleton.ps1
+curl http://127.0.0.1:8081/health
+curl http://127.0.0.1:8081/ready
+curl http://127.0.0.1:8081/version
 ```
 
-应看到网关与 5 个服务的 `/health` 为 200，`GET /search?keyword=test` 返回空列表（桩）。
+业务服务同样有这三个接口（8082–8086）。看日志：
 
-## 约定（不要改）
+```powershell
+docker compose logs -f gateway user video live interact message
+```
 
-- 对外路径与单体一致，见 `文档-已确认/服务接口清单.md`
-- 服务间同步 HTTP + JSON，头：`X-Internal-Token`
-- 网关验 JWT 后注入 `X-User-Id`、`X-User-Role`（`user` / `admin`）
+CI 打镜像：`services/Dockerfile`，`--build-arg MODULE=doinb-user --build-arg PORT=8082`。
+
+## 约定
+
+- 对外路径与清单一致
+- 服务间同步 HTTP + `X-Internal-Token`
+- 网关验 JWT 后注入 `X-User-Id`、`X-User-Role`
 - 浏览器打不到 `/internal/**`
-- 返回体继续用 `{code,message,data}`
-- JWT 密钥、内部令牌全组相同：`JWT_SECRET`、`DOINB_INTERNAL_TOKEN`
-
-任务卡片：`文档-已确认/任务卡片/`
-内部接口：`文档-已确认/内部接口契约.md`
+- 返回 `{code,message,data}`
+- `JWT_SECRET`、`DOINB_INTERNAL_TOKEN` 全组相同

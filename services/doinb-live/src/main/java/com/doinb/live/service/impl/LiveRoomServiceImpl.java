@@ -13,7 +13,6 @@ import com.doinb.live.config.LiveStreamHelper;
 import com.doinb.live.mapper.LiveRoomMapper;
 import com.doinb.live.pojo.LiveRoom;
 import com.doinb.live.service.LiveRoomService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -33,7 +32,6 @@ public class LiveRoomServiceImpl implements LiveRoomService {
     private final LiveStreamHelper liveStreamHelper;
     private final ServiceClient serviceClient;
     private final DoinbProperties properties;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public LiveRoomServiceImpl(LiveRoomMapper liveRoomMapper,
                                LiveStreamHelper liveStreamHelper,
@@ -182,7 +180,6 @@ public class LiveRoomServiceImpl implements LiveRoomService {
             return List.of();
         }
         return liveRoomMapper.selectList(new LambdaQueryWrapper<LiveRoom>()
-                .eq(LiveRoom::getIsLive, true)
                 .like(LiveRoom::getTitle, keyword.trim())
                 .orderByDesc(LiveRoom::getSessionStart)
                 .last("LIMIT " + Math.min(Math.max(limit, 1), 50)));
@@ -235,12 +232,13 @@ public class LiveRoomServiceImpl implements LiveRoomService {
             String ids = userIds.stream().map(String::valueOf).collect(Collectors.joining(","));
             String baseUrl = properties.getServices().getUser();
             CustomResponse resp = serviceClient.get(baseUrl, "/internal/users?ids=" + ids);
-            if (resp.getCode() == 200 && resp.getData() != null) {
-                List<UserDTO> users = objectMapper.convertValue(resp.getData(),
-                        objectMapper.getTypeFactory().constructCollectionType(List.class, UserDTO.class));
+            if (resp.getCode() == 200 && resp.getData() instanceof List<?> list) {
                 Map<Integer, String> map = new HashMap<>();
-                for (UserDTO u : users) {
-                    map.put(u.getId(), u.getNickname() != null ? u.getNickname() : u.getUsername());
+                for (Object item : list) {
+                    UserDTO u = toUser(item);
+                    if (u != null && u.getId() != null) {
+                        map.put(u.getId(), u.getNickname() != null ? u.getNickname() : u.getUsername());
+                    }
                 }
                 return map;
             }
@@ -248,6 +246,25 @@ public class LiveRoomServiceImpl implements LiveRoomService {
             // 用户服务不可用时降级
         }
         return Map.of();
+    }
+
+    private static UserDTO toUser(Object item) {
+        if (item instanceof UserDTO dto) {
+            return dto;
+        }
+        if (!(item instanceof Map<?, ?> raw)) {
+            return null;
+        }
+        UserDTO dto = new UserDTO();
+        Object id = raw.get("id");
+        if (id instanceof Number n) {
+            dto.setId(n.intValue());
+        }
+        Object nickname = raw.get("nickname");
+        dto.setNickname(nickname == null ? null : String.valueOf(nickname));
+        Object username = raw.get("username");
+        dto.setUsername(username == null ? null : String.valueOf(username));
+        return dto;
     }
 
     private CustomResponse ok(String message) {

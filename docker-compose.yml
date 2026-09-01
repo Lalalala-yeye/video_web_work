@@ -1,3 +1,20 @@
+x-java-env: &java-env
+  SPRING_PROFILES_ACTIVE: ci
+  MYSQL_HOST: mysql
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: ${MYSQL_DATABASE:-doinb}
+  MYSQL_USER: ${MYSQL_USER:-root}
+  MYSQL_PASSWORD: ${MYSQL_PASSWORD:-test}
+  JWT_SECRET: ${JWT_SECRET:-compose-demo-secret-at-least-32-chars!!}
+  DOINB_INTERNAL_TOKEN: ${DOINB_INTERNAL_TOKEN:-doinb-internal-dev-token}
+  DOINB_USER_URL: http://user:8082
+  DOINB_VIDEO_URL: http://video:8083
+  DOINB_LIVE_URL: http://live:8084
+  DOINB_INTERACT_URL: http://interact:8085
+  DOINB_MESSAGE_URL: http://message:8086
+  UPLOAD_PATH: /app/uploads
+  APP_VERSION: ${APP_VERSION:-local}
+
 services:
   mysql:
     image: mysql:8.0
@@ -19,28 +36,161 @@ services:
       retries: 20
       start_period: 20s
 
-  backend:
+  user:
     build:
-      context: ./backend
-    image: doinb-backend:local
-    container_name: doinb-backend
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        MODULE: doinb-user
+        PORT: "8082"
+    image: doinb-user:local
+    container_name: doinb-user
     depends_on:
       mysql:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: ci
-      MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-doinb}
-      MYSQL_USER: ${MYSQL_USER:-root}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-test}
-      JWT_SECRET: ${JWT_SECRET:-compose-demo-secret-at-least-32-chars!!}
-      UPLOAD_PATH: /app/uploads
+      <<: *java-env
+      SERVER_PORT: "8082"
+    ports:
+      - "8082:8082"
+    volumes:
+      - doinb-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://127.0.0.1:8082/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  video:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        MODULE: doinb-video
+        PORT: "8083"
+    image: doinb-video:local
+    container_name: doinb-video
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8083"
+    ports:
+      - "8083:8083"
+    volumes:
+      - doinb-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://127.0.0.1:8083/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  live:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        MODULE: doinb-live
+        PORT: "8084"
+    image: doinb-live:local
+    container_name: doinb-live
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8084"
+    ports:
+      - "8084:8084"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://127.0.0.1:8084/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  interact:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        MODULE: doinb-interact
+        PORT: "8085"
+    image: doinb-interact:local
+    container_name: doinb-interact
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8085"
+    ports:
+      - "8085:8085"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://127.0.0.1:8085/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  message:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        MODULE: doinb-message
+        PORT: "8086"
+    image: doinb-message:local
+    container_name: doinb-message
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8086"
+    ports:
+      - "8086:8086"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://127.0.0.1:8086/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  gateway:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        MODULE: doinb-gateway
+        PORT: "8081"
+    image: doinb-gateway:local
+    container_name: doinb-gateway
+    depends_on:
+      user:
+        condition: service_healthy
+      video:
+        condition: service_healthy
+      live:
+        condition: service_healthy
+      interact:
+        condition: service_healthy
+      message:
+        condition: service_healthy
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8081"
     ports:
       - "8081:8081"
-    volumes:
-      # 沿用本机已上传的视频/封面/头像，避免容器里只有空目录
-      - ./backend/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://127.0.0.1:8081/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
 
   web:
     build:
@@ -48,10 +198,11 @@ services:
     image: doinb-web:local
     container_name: doinb-web
     depends_on:
-      backend:
+      gateway:
         condition: service_healthy
     ports:
       - "8787:80"
 
 volumes:
   doinb-mysql-data:
+  doinb-uploads:

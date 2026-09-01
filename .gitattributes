@@ -1,0 +1,2 @@
+*.sh text eol=lf
+services/ci-start.sh text eol=lf

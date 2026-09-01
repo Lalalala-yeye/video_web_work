@@ -1,18 +1,17 @@
-# 测试门禁：单测+MockMvc → Postman/Newman 失败则整条流水线失败（后面不打镜像、不部署）。
-# Newman 通过后打带 git 短 SHA 的镜像推到 GHCR（禁止 latest），再在 kind 上部署并探活。
-# Selenium E2E 仍会跑，但 continue-on-error：失败不挡住打镜像和 K8s 部署。
+# 测试门禁：微服务单测 → 网关 Newman → 打各服务镜像 → kind 部署并探活。
+# Selenium E2E continue-on-error：失败不挡住打镜像和 K8s 部署。
 name: Test gate
 
 on:
   push:
 
 jobs:
-  backend-test:
-    name: Backend unit + API tests
+  services-test:
+    name: Microservices unit + API tests
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: services
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -20,16 +19,17 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: maven
+          cache-dependency-path: services/pom.xml
       - name: Run tests (no MySQL)
         run: |
           chmod +x mvnw
           set -o pipefail
-          ./mvnw -B test 2>&1 | tee /tmp/backend-test.log
+          ./mvnw -B test 2>&1 | tee /tmp/services-test.log
       - name: Write test result to summary
         if: always()
         run: |
           {
-            echo "### Backend unit + API tests"
+            echo "### Microservices unit + API tests"
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
               echo "- 结果: 通过"
@@ -39,23 +39,22 @@ jobs:
               echo "#### 出错原因"
               echo ""
               echo '```'
-              if ls target/surefire-reports/*.txt >/dev/null 2>&1; then
-                grep -E 'Tests run:|FAILURE|ERROR|<<< FAILURE|<<< ERROR' target/surefire-reports/*.txt | head -50 || true
-              fi
-              if [ -f /tmp/backend-test.log ]; then
+              find . -path '*/surefire-reports/*.txt' -print0 2>/dev/null | xargs -0 grep -h -E 'Tests run:|FAILURE|ERROR|<<< FAILURE|<<< ERROR' | head -80 || true
+              if [ -f /tmp/services-test.log ]; then
                 echo "----- Maven 错误 -----"
-                grep -E '\[ERROR\]' /tmp/backend-test.log | tail -40 || true
+                grep -E '\[ERROR\]' /tmp/services-test.log | tail -40 || true
                 echo "----- 日志末尾 -----"
-                tail -25 /tmp/backend-test.log
+                tail -25 /tmp/services-test.log
               fi
               echo '```'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
   postman:
-    name: Postman Newman (MySQL)
-    needs: backend-test
+    name: Postman Newman (gateway + MySQL)
+    needs: services-test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
@@ -64,6 +63,7 @@ jobs:
       MYSQL_PASSWORD: test
       JWT_SECRET: ci-test-secret-at-least-32-characters!!
       SPRING_PROFILES_ACTIVE: ci
+      APP_VERSION: ci
     services:
       mysql:
         image: mysql:8.0
@@ -84,6 +84,7 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: maven
+          cache-dependency-path: services/pom.xml
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
@@ -92,42 +93,68 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq mysql-client
           mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < database/database.sql
-      - name: Package backend
-        working-directory: backend
+          mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < database/seed.sql
+      - name: Package microservices
+        working-directory: services
         run: |
-          chmod +x mvnw
+          chmod +x mvnw ci-start.sh
           ./mvnw -B package -DskipTests
-      - name: Start backend
-        working-directory: backend
-        env:
-          SPRING_PROFILES_ACTIVE: ci
+      - name: Start gateway + five services
+        working-directory: services
         run: |
           mkdir -p /tmp/doinb-uploads
-          nohup java -jar target/backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=ci > /tmp/doinb-backend.log 2>&1 &
-          for i in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:8081/health >/dev/null; then
-              echo "backend is up"
-              touch /tmp/backend-up
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "backend failed to start"
-          cat /tmp/doinb-backend.log
-          exit 1
-      - name: Newman
+          bash ./ci-start.sh
+          touch /tmp/services-up
+      - name: Newman (all public APIs)
         run: |
           set -o pipefail
-          npx --yes newman@6 run postman/doinb.postman_collection.json \
+          npx --yes newman@6 run postman/doinb.full.postman_collection.json \
             -e postman/doinb.ci.postman_environment.json \
+            --working-dir . \
+            --timeout-request 120000 \
             --bail \
             --color off \
             2>&1 | tee /tmp/newman.log
+      - name: Probe health / ready / version + service logs
+        if: always()
+        run: |
+          {
+            echo "### 网关探活（健康 / 就绪 / 版本）"
+            echo ""
+            echo '```'
+            echo "GET /health"
+            curl -sS http://127.0.0.1:8081/health || true
+            echo
+            echo "GET /ready"
+            curl -sS http://127.0.0.1:8081/ready || true
+            echo
+            echo "GET /version"
+            curl -sS http://127.0.0.1:8081/version || true
+            echo
+            echo "----- 各业务服务 /health /ready /version -----"
+            for spec in user:8082 video:8083 live:8084 interact:8085 message:8086; do
+              name="${spec%%:*}"
+              port="${spec##*:}"
+              echo "==== doinb-${name} :${port} ===="
+              curl -sS "http://127.0.0.1:${port}/health" || true
+              echo
+              curl -sS "http://127.0.0.1:${port}/ready" || true
+              echo
+              curl -sS "http://127.0.0.1:${port}/version" || true
+              echo
+            done
+            echo "----- 各服务日志末尾 -----"
+            for n in doinb-gateway doinb-user doinb-video doinb-live doinb-interact doinb-message; do
+              echo "==== $n ===="
+              tail -30 "/tmp/${n}.log" 2>/dev/null || true
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Write Newman result to summary
         if: always()
         run: |
           {
-            echo "### Postman Newman（系统测试，打后端容器）"
+            echo "### Postman Newman（全量公开接口，打网关 8081）"
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
               echo "- 结果: 通过"
@@ -137,18 +164,14 @@ jobs:
               echo "#### 出错原因"
               echo ""
               echo '```'
-              if [ ! -f /tmp/backend-up ]; then
-                echo "后端未能在 8081 启动，Newman 未执行。"
-                echo "----- backend 日志末尾 -----"
-                tail -80 /tmp/doinb-backend.log || true
+              if [ ! -f /tmp/services-up ]; then
+                echo "微服务未能启动，Newman 未执行。"
               else
                 if [ -f /tmp/newman.log ]; then
                   grep -E 'failed|AssertionError|Error|FAIL' /tmp/newman.log | tail -40 || true
                   echo "----- Newman 日志末尾 -----"
                   tail -40 /tmp/newman.log
                 fi
-                echo "----- backend 日志末尾 -----"
-                tail -40 /tmp/doinb-backend.log || true
               fi
               echo '```'
             fi
@@ -157,7 +180,6 @@ jobs:
   e2e:
     name: Selenium E2E (Chrome)
     needs: postman
-    # 课设门禁以单测+集成为准；E2E 保留可见结果，失败不让 workflow 变红。后续打镜像请 needs: postman，不要 needs: e2e。
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -194,6 +216,7 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: maven
+          cache-dependency-path: services/pom.xml
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
@@ -209,27 +232,14 @@ jobs:
           sudo apt-get install -y -qq mysql-client
           mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < database/database.sql
           mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < database/seed.sql
-      - name: Package backend
-        working-directory: backend
+      - name: Package and start microservices
+        working-directory: services
         run: |
-          chmod +x mvnw
+          chmod +x mvnw ci-start.sh
           ./mvnw -B package -DskipTests
-      - name: Start backend
-        working-directory: backend
-        run: |
           mkdir -p /tmp/doinb-uploads
-          nohup java -jar target/backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=ci > /tmp/doinb-backend.log 2>&1 &
-          for i in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:8081/health >/dev/null; then
-              echo "backend is up"
-              touch /tmp/e2e-backend-up
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "backend failed to start"
-          cat /tmp/doinb-backend.log
-          exit 1
+          bash ./ci-start.sh
+          touch /tmp/e2e-backend-up
       - name: Install frontend deps
         working-directory: web
         run: npm ci
@@ -253,7 +263,6 @@ jobs:
         working-directory: web
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-        # 01 账号 → 02 浏览搜索 → 03 互动 → 04 创作中心/直播 → 05 通知私信后台
         run: |
           set -o pipefail
           npm run e2e:ci 2>&1 | tee /tmp/e2e.log
@@ -264,9 +273,13 @@ jobs:
           name: e2e-screenshots
           path: web/e2e/artifacts/
           if-no-files-found: ignore
-      - name: Dump backend log
+      - name: Dump service logs
         if: failure()
-        run: cat /tmp/doinb-backend.log || true
+        run: |
+          for n in doinb-gateway doinb-user doinb-video doinb-live doinb-interact doinb-message; do
+            echo "==== $n ===="
+            tail -80 "/tmp/${n}.log" || true
+          done
       - name: Write E2E result to summary
         if: always()
         run: |
@@ -282,8 +295,7 @@ jobs:
               echo ""
               echo '```'
               if [ ! -f /tmp/e2e-backend-up ]; then
-                echo "后端未能在 8081 启动，E2E 未执行。"
-                tail -80 /tmp/doinb-backend.log || true
+                echo "网关/业务服务未能启动，E2E 未执行。"
               elif [ ! -f /tmp/e2e-web-up ]; then
                 echo "前端未能在 8787 启动，E2E 未执行。"
                 tail -80 /tmp/doinb-web.log || true
@@ -293,8 +305,6 @@ jobs:
                   echo "----- E2E 日志末尾 -----"
                   tail -40 /tmp/e2e.log
                 fi
-                echo "----- backend 日志末尾 -----"
-                tail -30 /tmp/doinb-backend.log || true
               fi
               echo '```'
               echo ""
@@ -306,11 +316,10 @@ jobs:
     name: Build versioned images (GHCR)
     needs: postman
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     outputs:
-      backend: ${{ steps.meta.outputs.backend }}
-      web: ${{ steps.meta.outputs.web }}
       sha: ${{ steps.meta.outputs.sha }}
+      owner: ${{ steps.meta.outputs.owner }}
     permissions:
       contents: read
       packages: write
@@ -321,8 +330,7 @@ jobs:
         run: |
           OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           SHA="${GITHUB_SHA::7}"
-          echo "backend=ghcr.io/${OWNER}/doinb-backend:${SHA}" >> "$GITHUB_OUTPUT"
-          echo "web=ghcr.io/${OWNER}/doinb-web:${SHA}" >> "$GITHUB_OUTPUT"
+          echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
           echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@v3
         with:
@@ -330,25 +338,102 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/setup-buildx-action@v3
-      - name: Build and push backend
+      - name: Build and push gateway
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          context: ./services
+          file: ./services/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.backend }}
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/doinb-gateway:${{ steps.meta.outputs.sha }}
+          build-args: |
+            MODULE=doinb-gateway
+            PORT=8081
+            APP_VERSION=${{ steps.meta.outputs.sha }}
           provenance: false
           sbom: false
-          labels: |
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-          cache-from: type=gha,scope=doinb-backend
-          cache-to: type=gha,mode=max,scope=doinb-backend
+          cache-from: type=gha,scope=doinb-gateway
+          cache-to: type=gha,mode=max,scope=doinb-gateway
+      - name: Build and push user
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services
+          file: ./services/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/doinb-user:${{ steps.meta.outputs.sha }}
+          build-args: |
+            MODULE=doinb-user
+            PORT=8082
+            APP_VERSION=${{ steps.meta.outputs.sha }}
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=doinb-user
+          cache-to: type=gha,mode=max,scope=doinb-user
+      - name: Build and push video
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services
+          file: ./services/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/doinb-video:${{ steps.meta.outputs.sha }}
+          build-args: |
+            MODULE=doinb-video
+            PORT=8083
+            APP_VERSION=${{ steps.meta.outputs.sha }}
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=doinb-video
+          cache-to: type=gha,mode=max,scope=doinb-video
+      - name: Build and push live
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services
+          file: ./services/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/doinb-live:${{ steps.meta.outputs.sha }}
+          build-args: |
+            MODULE=doinb-live
+            PORT=8084
+            APP_VERSION=${{ steps.meta.outputs.sha }}
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=doinb-live
+          cache-to: type=gha,mode=max,scope=doinb-live
+      - name: Build and push interact
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services
+          file: ./services/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/doinb-interact:${{ steps.meta.outputs.sha }}
+          build-args: |
+            MODULE=doinb-interact
+            PORT=8085
+            APP_VERSION=${{ steps.meta.outputs.sha }}
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=doinb-interact
+          cache-to: type=gha,mode=max,scope=doinb-interact
+      - name: Build and push message
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services
+          file: ./services/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/doinb-message:${{ steps.meta.outputs.sha }}
+          build-args: |
+            MODULE=doinb-message
+            PORT=8086
+            APP_VERSION=${{ steps.meta.outputs.sha }}
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=doinb-message
+          cache-to: type=gha,mode=max,scope=doinb-message
       - name: Build and push web
         uses: docker/build-push-action@v6
         with:
           context: ./web
           push: true
-          tags: ${{ steps.meta.outputs.web }}
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/doinb-web:${{ steps.meta.outputs.sha }}
           provenance: false
           sbom: false
           labels: |
@@ -362,19 +447,17 @@ jobs:
           {
             echo "### CD-01 构建镜像"
             echo ""
+            OWNER="${{ steps.meta.outputs.owner }}"
+            SHA="${{ steps.meta.outputs.sha }}"
             if [ "${{ job.status }}" = "success" ]; then
               echo "- 结果: 已推送"
-              echo "- \`${{ steps.meta.outputs.backend }}\`"
-              echo "- \`${{ steps.meta.outputs.web }}\`"
-              echo "- tag = \`${{ steps.meta.outputs.sha }}\`"
+              for m in doinb-gateway doinb-user doinb-video doinb-live doinb-interact doinb-message doinb-web; do
+                echo "- \`ghcr.io/${OWNER}/${m}:${SHA}\`"
+              done
+              echo "- tag = \`${SHA}\`"
             else
               echo "- 结果: 失败"
-              echo ""
-              echo "#### 出错原因"
-              echo ""
-              echo "- 镜像构建或推送 GHCR 未成功（状态: ${{ job.status }}）。"
-              echo "- 常见原因: 仓库 Actions 权限未开 \`packages: write\`、GHCR 403、Dockerfile 构建错误。"
-              echo "- 请查看 \`Build and push backend\` / \`Build and push web\` 步骤日志。"
+              echo "- 请查看 Java services / web 构建步骤日志。"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -382,7 +465,7 @@ jobs:
     name: Deploy kind + health (CD-02)
     needs: build-images
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     permissions:
       contents: read
       packages: read
@@ -390,8 +473,9 @@ jobs:
       MYSQL_ROOT_PASSWORD: test
       MYSQL_PASSWORD: test
       JWT_SECRET: ci-test-secret-at-least-32-characters!!
-      BACKEND_IMAGE: ${{ needs.build-images.outputs.backend }}
-      WEB_IMAGE: ${{ needs.build-images.outputs.web }}
+      DOINB_INTERNAL_TOKEN: doinb-internal-dev-token
+      OWNER: ${{ needs.build-images.outputs.owner }}
+      SHA: ${{ needs.build-images.outputs.sha }}
     steps:
       - uses: actions/checkout@v5
       - uses: docker/login-action@v3
@@ -401,8 +485,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull this SHA's images
         run: |
-          docker pull "$BACKEND_IMAGE"
-          docker pull "$WEB_IMAGE"
+          for m in doinb-gateway doinb-user doinb-video doinb-live doinb-interact doinb-message doinb-web; do
+            docker pull "ghcr.io/${OWNER}/${m}:${SHA}"
+          done
           docker pull mysql:8.0
           docker pull busybox:1.36.1
           docker pull curlimages/curl:8.12.1
@@ -412,36 +497,42 @@ jobs:
           wait: 120s
       - name: Load images into kind
         run: |
-          for img in "$BACKEND_IMAGE" "$WEB_IMAGE" mysql:8.0 busybox:1.36.1 curlimages/curl:8.12.1; do
-            kind load docker-image "$img" --name doinb-ci
+          for m in doinb-gateway doinb-user doinb-video doinb-live doinb-interact doinb-message doinb-web; do
+            kind load docker-image "ghcr.io/${OWNER}/${m}:${SHA}" --name doinb-ci
           done
+          kind load docker-image mysql:8.0 --name doinb-ci
+          kind load docker-image busybox:1.36.1 --name doinb-ci
+          kind load docker-image curlimages/curl:8.12.1 --name doinb-ci
       - name: Apply manifests (this SHA, 1 replica)
         run: |
-          sed -i "s|image: ghcr.io/.*/doinb-backend:.*|image: ${BACKEND_IMAGE}|" deploy/k8s/backend.yaml
-          sed -i "s|image: ghcr.io/.*/doinb-web:.*|image: ${WEB_IMAGE}|" deploy/k8s/web.yaml
-          sed -i '0,/replicas: 2/s//replicas: 1/' deploy/k8s/backend.yaml
-          sed -i '0,/replicas: 2/s//replicas: 1/' deploy/k8s/web.yaml
+          for m in gateway user video live interact message; do
+            sed -i "s|image: ghcr.io/.*/doinb-${m}:.*|image: ghcr.io/${OWNER}/doinb-${m}:${SHA}|" deploy/k8s/java-services.yaml
+          done
+          sed -i "s|image: ghcr.io/.*/doinb-web:.*|image: ghcr.io/${OWNER}/doinb-web:${SHA}|" deploy/k8s/web.yaml
+          sed -i "s/APP_VERSION: \"cde7310\"/APP_VERSION: \"${SHA}\"/" deploy/k8s/java-services.yaml
+          sed -i 's/replicas: 2/replicas: 1/g' deploy/k8s/java-services.yaml deploy/k8s/web.yaml
           kubectl apply -f deploy/k8s/namespace.yaml
           kubectl create secret generic doinb-secrets -n doinb \
             --from-literal=MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
             --from-literal=MYSQL_PASSWORD="$MYSQL_PASSWORD" \
-            --from-literal=JWT_SECRET="$JWT_SECRET"
+            --from-literal=JWT_SECRET="$JWT_SECRET" \
+            --from-literal=DOINB_INTERNAL_TOKEN="$DOINB_INTERNAL_TOKEN"
           kubectl create configmap doinb-db-init -n doinb \
             --from-file=database.sql=database/database.sql
           kubectl apply -k deploy/k8s
       - name: Wait for rollouts
         run: |
-          kubectl rollout status deployment/mysql -n doinb --timeout=180s
-          kubectl rollout status deployment/backend -n doinb --timeout=300s
-          kubectl rollout status deployment/web -n doinb --timeout=180s
+          for d in mysql user video live interact message gateway web; do
+            kubectl rollout status "deployment/${d}" -n doinb --timeout=300s
+          done
           kubectl get pods,services,deployments -n doinb -o wide
-      - name: Health checks from inside the cluster
+      - name: Health / ready / version from inside the cluster
         run: |
           kubectl run doinb-healthcheck -n doinb --restart=Never \
             --image=curlimages/curl:8.12.1 \
             --command -- sh -c \
-            'curl -fsS http://backend:8081/health && echo && curl -fsS http://web/ >/dev/null && curl -fsS http://web/api/health && echo'
-          for i in $(seq 1 36); do
+            'curl -fsS http://gateway:8081/health && echo && curl -fsS http://gateway:8081/ready && echo && curl -fsS http://gateway:8081/version && echo && curl -fsS http://user:8082/health && echo && curl -fsS http://video:8083/ready && echo && curl -fsS http://web/ >/dev/null && curl -fsS http://web/api/health && echo'
+          for i in $(seq 1 48); do
             phase=$(kubectl get pod doinb-healthcheck -n doinb -o jsonpath='{.status.phase}')
             echo "healthcheck phase=${phase}"
             if [ "$phase" = "Succeeded" ]; then
@@ -463,19 +554,19 @@ jobs:
         run: |
           kubectl get pods,svc,deploy -n doinb -o wide || true
           kubectl describe pods -n doinb || true
-          kubectl logs -n doinb -l app=backend --tail=120 || true
-          kubectl logs -n doinb -l app=web --tail=80 || true
-          kubectl logs -n doinb -l app=mysql --tail=80 || true
+          for app in gateway user video live interact message web mysql; do
+            echo "==== logs $app ===="
+            kubectl logs -n doinb -l "app=${app}" --tail=80 || true
+          done
       - name: Write deploy result to summary
         if: always()
         run: |
           {
             echo "### CD-02 kind 部署"
             echo ""
-            echo "- backend: \`$BACKEND_IMAGE\`"
-            echo "- web: \`$WEB_IMAGE\`"
+            echo "- tag: \`$SHA\`"
             if [ "${{ job.status }}" = "success" ]; then
-              echo "- 部署成功，健康检查通过: \`/health\`、\`/\`、\`/api/health\` 均通过健康检查"
+              echo "- 部署成功。集群内已探活: gateway \`/health\` \`/ready\` \`/version\`、user \`/health\`、video \`/ready\`、web \`/\` 与 \`/api/health\`"
             else
               echo "- 部署或健康检查未通过（状态: ${{ job.status }}）"
               echo ""
@@ -484,9 +575,7 @@ jobs:
               echo '```'
               kubectl get pods,svc,deploy -n doinb -o wide 2>/dev/null || echo "集群信息不可用"
               echo "----- 最近事件 -----"
-              kubectl get events -n doinb --sort-by='.lastTimestamp' 2>/dev/null | tail -20 || true
-              echo "----- backend 日志 -----"
-              kubectl logs -n doinb -l app=backend --tail=40 2>/dev/null || true
+              kubectl get events -n doinb --sort-by='.lastTimestamp' 2>/dev/null | tail -25 || true
               echo '```'
               echo ""
               echo "更完整日志见步骤 Dump cluster on failure。"

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
@@ -26,7 +27,7 @@ public class ServiceClient {
     public CustomResponse get(String baseUrl, String pathAndQuery) {
         try {
             CustomResponse body = restClient.get()
-                    .uri(join(baseUrl, pathAndQuery))
+                    .uri(URI.create(join(baseUrl, pathAndQuery)))
                     .header(GatewayHeaders.INTERNAL_TOKEN, properties.getInternalToken())
                     .retrieve()
                     .body(CustomResponse.class);
@@ -39,7 +40,7 @@ public class ServiceClient {
     public CustomResponse post(String baseUrl, String path, Object jsonBody) {
         try {
             CustomResponse body = restClient.post()
-                    .uri(join(baseUrl, path))
+                    .uri(URI.create(join(baseUrl, path)))
                     .header(GatewayHeaders.INTERNAL_TOKEN, properties.getInternalToken())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(jsonBody)

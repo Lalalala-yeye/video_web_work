@@ -142,6 +142,9 @@ public class AdminVideoServiceImpl implements AdminVideoService {
             return CustomResponse.fail(404, "视频不存在");
         }
         deleteFiles(video);
+        videoMapper.deleteHistoryByVideoId(videoId);
+        videoMapper.deleteReportsByVideoId(videoId);
+        videoMapper.deleteReactionsByVideoId(videoId);
         videoMapper.deleteById(videoId);
         return CustomResponse.ok("已删除", null);
     }

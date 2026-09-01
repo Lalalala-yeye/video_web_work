@@ -1,18 +1,18 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AppAvatar from '@/components/AppAvatar.vue'
 import CommentItem from '@/components/CommentItem.vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import FollowButton from '@/components/FollowButton.vue'
-import { fetchVideoDetail, saveProgress, reportVideo } from '@/api/video'
+import { fetchVideoDetail, saveProgress, reportVideo, fetchHistoryList } from '@/api/video'
 import { fetchAdminVideoDetail } from '@/api/admin'
 import { fetchComments, addComment } from '@/api/comment'
 import { reactVideo } from '@/api/reaction'
 import { fetchFollowing } from '@/api/subscription'
 import { resolveMediaUrl } from '@/utils/media'
-import { getUser, isLoggedIn, isAdmin } from '@/utils/auth'
+import { getUser, isLoggedIn, isAdmin, AUTH_UPDATED_EVENT } from '@/utils/auth'
 import { LIKE_ICON_URL, DISLIKE_ICON_URL } from '@/constants/staticAssets'
 
 import { parseRouteId } from '@/utils/format'
@@ -40,6 +40,7 @@ const coverSrc = computed(() => resolveMediaUrl(video.value?.coverUrl))
 const shareUrl = computed(() => `${window.location.origin}/video/${videoId.value}`)
 
 const lastSavedProgress = ref(-1)
+const resumeTo = ref(0)
 const adminPreview = ref(false)
 
 async function loadVideo() {
@@ -59,12 +60,33 @@ async function loadVideo() {
       }
     }
     if (res.data.code === 200) {
+      lastSavedProgress.value = -1
+      await prepareResumePoint()
       video.value = res.data.data
       reactions.value = res.data.data?.reactions || { likeCount: 0, dislikeCount: 0, userReaction: 0 }
+      loading.value = false
       await syncAuthorFollow()
     }
   } finally {
     loading.value = false
+  }
+}
+
+/** 打开详情前先取出历史进度，避免 video 元素 loadedmetadata 抢在请求完成前触发。 */
+async function prepareResumePoint() {
+  resumeTo.value = 0
+  if (!loggedIn.value || videoId.value == null) return
+  try {
+    const res = await fetchHistoryList(1, 50, { skipErrorHandler: true })
+    if (res.data.code !== 200) return
+    const row = (res.data.data?.records || []).find(
+      h => Number(h.videoId) === Number(videoId.value)
+    )
+    if (row && Number(row.progress) > 0) {
+      resumeTo.value = Number(row.progress)
+    }
+  } catch {
+    /* 续播失败不挡播放 */
   }
 }
 
@@ -101,13 +123,30 @@ function onCommentReactionUpdated(commentId, data) {
   }
 }
 
-async function onTimeUpdate(e) {
+function persistProgress(seconds, { requireTenSecondMark = false } = {}) {
   if (!loggedIn.value) return
-  const progress = Math.floor(e.target.currentTime)
-  if (progress <= 0 || progress % 10 !== 0) return
+  const progress = Math.floor(seconds)
+  if (progress <= 0) return
+  if (requireTenSecondMark && progress % 10 !== 0) return
   if (progress === lastSavedProgress.value) return
   lastSavedProgress.value = progress
   saveProgress(videoId.value, progress).catch(() => {})
+}
+
+function onTimeUpdate(e) {
+  persistProgress(e.target.currentTime, { requireTenSecondMark: true })
+}
+
+function onPlaybackStop(e) {
+  persistProgress(e.target.currentTime)
+}
+
+function onLoadedMetadata(e) {
+  const t = resumeTo.value
+  const duration = e.target.duration
+  if (t <= 0 || !Number.isFinite(duration) || duration <= 0) return
+  e.target.currentTime = Math.min(t, Math.max(0, duration - 0.25))
+  lastSavedProgress.value = Math.floor(e.target.currentTime)
 }
 
 async function submitComment() {
@@ -138,18 +177,22 @@ async function toggleVideoReaction(reaction) {
   }
   const current = reactions.value?.userReaction || 0
   const next = current === reaction ? 0 : reaction
-  const res = await reactVideo(videoId.value, next)
-  if (res.data.code === 200) {
-    reactions.value = res.data.data
-    if (next === 1) {
-      ElMessage.success('点赞成功')
-    } else if (next === -1) {
-      ElMessage.success('已点踩')
+  try {
+    const res = await reactVideo(videoId.value, next)
+    if (res.data.code === 200) {
+      reactions.value = res.data.data
+      if (next === 1) {
+        ElMessage.success('点赞成功')
+      } else if (next === -1) {
+        ElMessage.success('已点踩')
+      } else {
+        ElMessage.info('已取消')
+      }
     } else {
-      ElMessage.info('已取消')
+      ElMessage.error(res.data.message || '操作失败，请重试')
     }
-  } else {
-    ElMessage.error(res.data.message || '操作失败，请重试')
+  } catch {
+    /* 拦截器已提示网络/权限错误 */
   }
 }
 
@@ -198,12 +241,23 @@ function appendEmoji(payload) {
 }
 
 onMounted(() => {
+  loggedIn.value = isLoggedIn()
   loadVideo()
   loadComments()
+  window.addEventListener(AUTH_UPDATED_EVENT, onAuthUpdated)
 })
+
+onUnmounted(() => {
+  window.removeEventListener(AUTH_UPDATED_EVENT, onAuthUpdated)
+})
+
+function onAuthUpdated() {
+  loggedIn.value = isLoggedIn()
+}
 
 watch(videoId, () => {
   lastSavedProgress.value = -1
+  resumeTo.value = 0
   loadVideo()
   loadComments()
 })
@@ -225,6 +279,9 @@ watch(videoId, () => {
               preload="metadata"
               playsinline
               @timeupdate="onTimeUpdate"
+              @pause="onPlaybackStop"
+              @ended="onPlaybackStop"
+              @loadedmetadata="onLoadedMetadata"
             />
             <div v-else class="player player--empty">暂无播放地址</div>
           </div>
