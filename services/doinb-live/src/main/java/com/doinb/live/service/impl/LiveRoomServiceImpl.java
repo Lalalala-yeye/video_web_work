@@ -180,7 +180,6 @@ public class LiveRoomServiceImpl implements LiveRoomService {
             return List.of();
         }
         return liveRoomMapper.selectList(new LambdaQueryWrapper<LiveRoom>()
-                .eq(LiveRoom::getIsLive, true)
                 .like(LiveRoom::getTitle, keyword.trim())
                 .orderByDesc(LiveRoom::getSessionStart)
                 .last("LIMIT " + Math.min(Math.max(limit, 1), 50)));

@@ -1,0 +1,1 @@
+{"code":200,"message":"登录成功","data":{"user":{"id":14,"username":"demo_admin","nickname":"演示管理员","avatar":null,"role":2,"bio":"课设演示管理员，密码 123456"},"token":"eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiIyODhkYjA1ZDRiNjk0MDQ2ODEzOTM0NWIyMWM3ZTE5NiIsInN1YiI6IjE0Iiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzg4MjQ0MTY1LCJleHAiOjE3ODgzMzA1NjV9.csobHOU14EtmYGv6czBMqytJgW9KqQLBj24-MP5PaBc"}}

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AppAvatar from '@/components/AppAvatar.vue'
@@ -12,7 +12,7 @@ import { fetchComments, addComment } from '@/api/comment'
 import { reactVideo } from '@/api/reaction'
 import { fetchFollowing } from '@/api/subscription'
 import { resolveMediaUrl } from '@/utils/media'
-import { getUser, isLoggedIn, isAdmin } from '@/utils/auth'
+import { getUser, isLoggedIn, isAdmin, AUTH_UPDATED_EVENT } from '@/utils/auth'
 import { LIKE_ICON_URL, DISLIKE_ICON_URL } from '@/constants/staticAssets'
 
 import { parseRouteId } from '@/utils/format'
@@ -64,6 +64,7 @@ async function loadVideo() {
       await prepareResumePoint()
       video.value = res.data.data
       reactions.value = res.data.data?.reactions || { likeCount: 0, dislikeCount: 0, userReaction: 0 }
+      loading.value = false
       await syncAuthorFollow()
     }
   } finally {
@@ -176,18 +177,22 @@ async function toggleVideoReaction(reaction) {
   }
   const current = reactions.value?.userReaction || 0
   const next = current === reaction ? 0 : reaction
-  const res = await reactVideo(videoId.value, next)
-  if (res.data.code === 200) {
-    reactions.value = res.data.data
-    if (next === 1) {
-      ElMessage.success('点赞成功')
-    } else if (next === -1) {
-      ElMessage.success('已点踩')
+  try {
+    const res = await reactVideo(videoId.value, next)
+    if (res.data.code === 200) {
+      reactions.value = res.data.data
+      if (next === 1) {
+        ElMessage.success('点赞成功')
+      } else if (next === -1) {
+        ElMessage.success('已点踩')
+      } else {
+        ElMessage.info('已取消')
+      }
     } else {
-      ElMessage.info('已取消')
+      ElMessage.error(res.data.message || '操作失败，请重试')
     }
-  } else {
-    ElMessage.error(res.data.message || '操作失败，请重试')
+  } catch {
+    /* 拦截器已提示网络/权限错误 */
   }
 }
 
@@ -236,9 +241,19 @@ function appendEmoji(payload) {
 }
 
 onMounted(() => {
+  loggedIn.value = isLoggedIn()
   loadVideo()
   loadComments()
+  window.addEventListener(AUTH_UPDATED_EVENT, onAuthUpdated)
 })
+
+onUnmounted(() => {
+  window.removeEventListener(AUTH_UPDATED_EVENT, onAuthUpdated)
+})
+
+function onAuthUpdated() {
+  loggedIn.value = isLoggedIn()
+}
 
 watch(videoId, () => {
   lastSavedProgress.value = -1

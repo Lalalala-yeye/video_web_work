@@ -1,0 +1,31 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::       (v4.1.0-SNAPSHOT)
+
+2026-09-01T14:17:30.296+08:00  INFO 58828 --- [           main] com.doinb.user.UserApplication           : Starting UserApplication v0.0.1-SNAPSHOT using Java 25 with PID 58828 (C:\Users\zhaozhewen\video_web\services\doinb-user\target\doinb-user-0.0.1-SNAPSHOT.jar started by zhaozhewen in C:\Users\zhaozhewen\video_web\services)
+2026-09-01T14:17:30.304+08:00  INFO 58828 --- [           main] com.doinb.user.UserApplication           : The following 1 profile is active: "ci"
+2026-09-01T14:17:32.461+08:00  INFO 58828 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 18082 (http)
+2026-09-01T14:17:32.484+08:00  INFO 58828 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-09-01T14:17:32.485+08:00  INFO 58828 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-09-01T14:17:32.521+08:00  INFO 58828 --- [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 2102 ms
+ _ _   |_  _ _|_. ___ _ |    _ 
+| | |\/|_)(_| | |_\  |_)||_|_\ 
+     /               |         
+                        3.5.16 
+2026-09-01T14:17:33.866+08:00  INFO 58828 --- [           main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.server.servlet.context.AnnotationConfigServletWebServerApplicationContext@241e8ea6
+2026-09-01T14:17:33.931+08:00  INFO 58828 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 18082 (http) with context path '/'
+2026-09-01T14:17:33.939+08:00  INFO 58828 --- [           main] com.doinb.user.UserApplication           : Started UserApplication in 4.451 seconds (process running for 5.085)
+2026-09-01T14:18:35.575+08:00  INFO 58828 --- [io-18082-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-01T14:18:35.576+08:00  INFO 58828 --- [io-18082-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-09-01T14:18:35.577+08:00  INFO 58828 --- [io-18082-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-09-01T14:21:21.845+08:00  INFO 58828 --- [io-18082-exec-3] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-09-01T14:21:22.118+08:00  INFO 58828 --- [io-18082-exec-3] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@5f7db398
+2026-09-01T14:21:22.121+08:00  INFO 58828 --- [io-18082-exec-3] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-09-01T14:24:49.231+08:00  WARN 58828 --- [o-18082-exec-10] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Unexpected character ('\' (code 92)): was expecting double-quote to start property name]
+2026-09-01T14:24:49.289+08:00  WARN 58828 --- [io-18082-exec-8] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Unexpected character ('\' (code 92)): was expecting double-quote to start property name]

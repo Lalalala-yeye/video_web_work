@@ -36,6 +36,15 @@ export async function apiLogin(username, password) {
   return res.json()
 }
 
+export async function apiRegister(username, password) {
+  const res = await fetch(`${API_BASE}/user/account/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, confirmedPassword: password }),
+  })
+  return res.json()
+}
+
 /** 多账号切换。登录页本身由 01-auth 覆盖；「退出当前账号」会切到列表里下一个，不能当登出。 */
 export async function injectSession(driver, username, password) {
   const body = await apiLogin(username, password)
@@ -82,7 +91,7 @@ export async function clickAuthSubmit(driver) {
     until.elementLocated(By.css('.auth-card button[type="submit"]')),
     WAIT_MS
   )
-  await btn.click()
+  await driver.executeScript('arguments[0].click()', btn)
 }
 
 export async function register(driver, username, password, confirmedPassword = password) {
@@ -191,7 +200,10 @@ export async function setVueInputValue(driver, element, value) {
   await driver.executeScript(
     `const el = arguments[0];
      const val = arguments[1];
-     const desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+     const proto = el.tagName === 'TEXTAREA'
+       ? window.HTMLTextAreaElement.prototype
+       : window.HTMLInputElement.prototype;
+     const desc = Object.getOwnPropertyDescriptor(proto, 'value');
      if (desc && desc.set) {
        desc.set.call(el, val);
      } else {

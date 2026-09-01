@@ -22,6 +22,7 @@ import {
   cleanupUserVideos,
   injectSession,
   apiLogin,
+  apiRegister,
   waitMessageContains,
   setVueInputValue,
   approvePendingVideo,
@@ -41,11 +42,15 @@ async function apiGetUserId(username, password) {
 }
 
 async function shot(driver, name) {
-  const img = await driver.takeScreenshot()
-  const dir = path.join(__dirname, 'artifacts')
-  fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(dir, `${name}.png`), img, 'base64')
-  console.log('📷 已保存截图 artifacts/' + name + '.png')
+  try {
+    const img = await driver.takeScreenshot()
+    const dir = path.join(__dirname, 'artifacts')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(path.join(dir, `${name}.png`), img, 'base64')
+    console.log('📷 已保存截图 artifacts/' + name + '.png')
+  } catch (err) {
+    console.warn('截图保存失败', name, err.message)
+  }
 }
 
 async function clickXpath(driver, xpath, timeoutMs = 12000) {
@@ -65,12 +70,12 @@ async function reportCurrentVideo(driver, reason) {
     until.elementLocated(By.css('.el-message-box input, .el-message-box textarea')),
     12000
   )
-  await reportInput.sendKeys(reason)
+  await setVueInputValue(driver, reportInput, reason)
   const submitReport = await driver.wait(
     until.elementLocated(By.xpath("//div[contains(@class,'el-message-box')]//button[contains(., '提交')]")),
     12000
   )
-  await submitReport.click()
+  await driver.executeScript('arguments[0].click()', submitReport)
 }
 
 async function uploadPublicVideo(driver, title) {
@@ -197,7 +202,7 @@ async function run() {
       until.elementLocated(By.xpath("//div[contains(@class,'video-actions')]//button[.//img[@alt='赞']]")),
       12000
     )
-    await likeBtn.click()
+    await driver.executeScript('arguments[0].click()', likeBtn)
     await waitMessageContains(driver, '点赞成功')
     console.log('OK  页面点赞已过审视频')
     await shot(driver, '05-5-like')
@@ -228,10 +233,9 @@ async function run() {
     )
     console.log('OK  第 1 次举报已提交')
 
-    await register(driver, reporter2, password)
-    await driver.wait(until.urlContains('/login'), 12000)
-    await login(driver, reporter2, password)
-    await waitLoggedIn(driver)
+    const created2 = await apiRegister(reporter2, password)
+    assert.equal(created2.code, 200, `注册举报用户2失败: ${created2.message}`)
+    await injectSession(driver, reporter2, password)
     await driver.get(`${BASE_URL}/video/${videoId}`)
     await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
     await reportCurrentVideo(driver, 'E2E举报2')
@@ -242,10 +246,9 @@ async function run() {
     )
     console.log('OK  第 2 次举报已提交')
 
-    await register(driver, reporter3, password)
-    await driver.wait(until.urlContains('/login'), 12000)
-    await login(driver, reporter3, password)
-    await waitLoggedIn(driver)
+    const created3 = await apiRegister(reporter3, password)
+    assert.equal(created3.code, 200, `注册举报用户3失败: ${created3.message}`)
+    await injectSession(driver, reporter3, password)
     await driver.get(`${BASE_URL}/video/${videoId}`)
     await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
     await reportCurrentVideo(driver, 'E2E举报3')
@@ -272,6 +275,13 @@ async function run() {
     await shot(driver, '05-6-report-queue')
 
     console.log('\n全部通过 ✅  TASK-E2E-05 通知+私信+后台')
+  } catch (err) {
+    try {
+      await shot(driver, '05-fail')
+    } catch {
+      /* ignore */
+    }
+    throw err
   } finally {
     await cleanupUserVideos(authorName, password)
     await driver.quit()

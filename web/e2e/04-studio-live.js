@@ -36,11 +36,15 @@ async function waitToast(driver, text, timeoutMs = 12000) {
 }
 
 async function shot(driver, name) {
-  const img = await driver.takeScreenshot()
-  const dir = path.join(__dirname, 'artifacts')
-  fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(dir, `${name}.png`), img, 'base64')
-  console.log('📷 已保存截图 artifacts/' + name + '.png')
+  try {
+    const img = await driver.takeScreenshot()
+    const dir = path.join(__dirname, 'artifacts')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(path.join(dir, `${name}.png`), img, 'base64')
+    console.log('📷 已保存截图 artifacts/' + name + '.png')
+  } catch (err) {
+    console.warn('截图保存失败', name, err.message)
+  }
 }
 
 async function clickXpath(driver, xpath, timeoutMs = 12000) {
