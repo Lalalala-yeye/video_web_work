@@ -71,15 +71,15 @@ public class UserAccountServiceImpl implements UserAccountService {
 
     @Override
     public CustomResponse login(String username, String password) {
-        return doLogin(username, password, "user", false);
+        return doLogin(username, password, false);
     }
 
     @Override
     public CustomResponse adminLogin(String username, String password) {
-        return doLogin(username, password, "admin", true);
+        return doLogin(username, password, true);
     }
 
-    private CustomResponse doLogin(String username, String password, String tokenRole, boolean requireAdmin) {
+    private CustomResponse doLogin(String username, String password, boolean requireAdmin) {
         if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
             return CustomResponse.fail(403, "账号或密码不能为空");
         }
@@ -96,6 +96,7 @@ public class UserAccountServiceImpl implements UserAccountService {
         }
 
         userService.ensurePublisherRole(user);
+        String tokenRole = (user.getRole() != null && user.getRole() == 2) ? "admin" : "user";
         String token = jwtUtil.createToken(user.getId(), tokenRole);
 
         Map<String, Object> data = new HashMap<>();

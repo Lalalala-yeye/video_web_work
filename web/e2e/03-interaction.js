@@ -23,6 +23,7 @@ import {
   apiLogin,
   waitMessageContains,
   setVueInputValue,
+  approvePendingVideo,
 } from './helpers.js'
 
 const ADMIN_USER = process.env.E2E_ADMIN_USER || 'demo_admin'
@@ -77,7 +78,12 @@ async function run() {
     await setVueInputValue(driver, titleInput, videoTitle)
     await clickXpath(driver, "//button[contains(., '提交上传')]")
     await waitMessageContains(driver, '上传成功')
-    console.log('OK  上传公开视频（待审）', videoTitle)
+    await driver.wait(until.urlContains('/studio/edit'), 12000)
+    const uploadUrl = await driver.getCurrentUrl()
+    const uploadMatch = uploadUrl.match(/\/studio\/edit\/(\d+)/)
+    const videoId = uploadMatch ? uploadMatch[1] : null
+    assert.ok(videoId, '上传后应拿到视频 id')
+    console.log('OK  上传公开视频（待审）', videoTitle, `id=${videoId}`)
     await sleep(800)
 
     /* ---------- 3. 从创作中心进入视频详情 ---------- */
@@ -148,16 +154,7 @@ async function run() {
     }
     await injectSession(driver, ADMIN_USER, ADMIN_PASS)
     await driver.get(`${BASE_URL}/admin/pending`)
-    await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '待审视频')]")), 12000)
-    await driver.wait(
-      until.elementLocated(By.xpath(`//div[contains(@class,'el-table')]//tr[contains(., '${videoTitle}')]`)),
-      15000
-    )
-    await sleep(400)
-    const approveBtn = await driver.findElement(
-      By.xpath(`//div[contains(@class,'el-table')]//tr[contains(., '${videoTitle}')]//button[contains(., '通过')]`)
-    )
-    await driver.executeScript('arguments[0].scrollIntoView({block:"center"}); arguments[0].click();', approveBtn)
+    await approvePendingVideo(driver, videoId, videoTitle)
     await waitMessageContains(driver, '已通过审核', 12000)
     console.log('OK  管理员通过审核', videoTitle)
 

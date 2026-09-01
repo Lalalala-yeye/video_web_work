@@ -147,6 +147,45 @@ export async function waitMessageContains(driver, text, timeoutMs = WAIT_MS) {
   )
 }
 
+/**
+ * 待审列表找到该视频并点「通过」。
+ * Element Plus 操作列 fixed 后，标题和按钮不在同一行 DOM 里，不能用「标题所在 tr 里的按钮」。
+ */
+export async function approvePendingVideo(driver, videoId, title) {
+  await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '待审视频')]")), WAIT_MS)
+  const href = `/admin/preview/${videoId}`
+  try {
+    await driver.wait(until.elementLocated(By.css(`a[href="${href}"]`)), 15000)
+  } catch (err) {
+    const src = await driver.getPageSource()
+    let hint = '待审表里没有该视频'
+    if (src.includes('需要管理员权限')) hint = '管理员 JWT 未生效，待审接口拒绝访问'
+    else if (src.includes('暂无待审视频')) hint = '待审列表为空'
+    throw new Error(`${hint}（${title || videoId}）: ${err.message}`)
+  }
+  const clicked = await driver.executeScript(
+    `const href = arguments[0];
+     const link = document.querySelector('a[href="' + href + '"]');
+     if (!link) return false;
+     const tr = link.closest('tr');
+     if (!tr || !tr.parentElement) return false;
+     const idx = Array.prototype.indexOf.call(tr.parentElement.children, tr);
+     const fixedRows = document.querySelectorAll('.el-table__fixed-right tbody tr, .el-table__fixed-body-wrapper tbody tr');
+     const row = (fixedRows && fixedRows[idx]) || tr;
+     const btn = Array.from(row.querySelectorAll('button')).find(function (b) {
+       return (b.textContent || '').indexOf('通过') >= 0;
+     });
+     if (!btn) return false;
+     btn.scrollIntoView({ block: 'center' });
+     btn.click();
+     return true;`,
+    href
+  )
+  if (!clicked) {
+    throw new Error(`待审表找到了视频 ${videoId}，但没点到「通过」`)
+  }
+}
+
 /** 写入 Element Plus / Vue 绑定的 input，避免 Selenium 改 DOM 但 v-model 仍是空。 */
 export async function setVueInputValue(driver, element, value) {
   await driver.executeScript(
