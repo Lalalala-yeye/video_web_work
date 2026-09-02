@@ -6,3 +6,4 @@ resources:
   - mysql.yaml
   - java-services.yaml
   - web.yaml
+  - hpa.yaml

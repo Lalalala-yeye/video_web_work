@@ -15,7 +15,7 @@ ARG PORT=8080
 ARG APP_VERSION=dev
 ENV SERVER_PORT=${PORT}
 ENV APP_VERSION=${APP_VERSION}
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0"
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=20.0 -XX:+UseG1GC"
 COPY --from=builder /build/${MODULE}/target/${MODULE}-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE ${PORT}
 HEALTHCHECK --interval=15s --timeout=5s --start-period=75s --retries=5 \
