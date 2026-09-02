@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.doinb.common.CustomResponse;
 import com.doinb.common.dto.UserDTO;
 import com.doinb.common.dto.VideoDTO;
-import com.doinb.user.client.VideoDirectory;
+import com.doinb.user.internal.VideoDirectory;
 import com.doinb.user.mapper.UserMapper;
 import com.doinb.user.pojo.dto.UserPublicDTO;
 import com.doinb.user.pojo.dto.UserShowcaseDTO;
@@ -87,7 +87,7 @@ public class UserServiceImpl implements UserService {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        List<User> users = userMapper.selectBatchIds(ids);
+        List<User> users = userMapper.selectByIds(ids);
         List<UserDTO> result = new ArrayList<>();
         for (User user : users) {
             result.add(toDTO(user));

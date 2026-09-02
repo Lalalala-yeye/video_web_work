@@ -1,4 +1,4 @@
-package com.doinb.user.client;
+package com.doinb.user.internal;
 
 import com.doinb.common.CustomResponse;
 import com.doinb.common.InternalPaths;

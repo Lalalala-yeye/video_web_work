@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.doinb.common.CustomResponse;
 import com.doinb.common.dto.UserDTO;
 import com.doinb.common.dto.VideoDTO;
-import com.doinb.user.client.VideoDirectory;
+import com.doinb.user.internal.VideoDirectory;
 import com.doinb.user.mapper.UserMapper;
 import com.doinb.user.pojo.dto.UserPublicDTO;
 import com.doinb.user.pojo.dto.UserShowcaseDTO;
@@ -12,6 +12,7 @@ import com.doinb.user.pojo.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentMatchers;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -70,7 +71,7 @@ class UserServiceImplTest {
         CustomResponse resp = service.updateUserInfo(10, "  ", "这是简介");
         assertEquals(500, resp.getCode());
         assertEquals("昵称不能为空", resp.getMessage());
-        verify(userMapper, never()).update(isNull(), any(Wrapper.class));
+        verify(userMapper, never()).update(isNull(), ArgumentMatchers.<Wrapper<User>>any());
     }
 
     @Test
@@ -78,7 +79,7 @@ class UserServiceImplTest {
         CustomResponse resp = service.updateUserInfo(10, "测试昵称", "这是简介");
         assertEquals(200, resp.getCode());
         assertEquals("资料更新成功", resp.getMessage());
-        verify(userMapper).update(isNull(), any(Wrapper.class));
+        verify(userMapper).update(isNull(), ArgumentMatchers.<Wrapper<User>>any());
     }
 
     @Test
@@ -115,7 +116,7 @@ class UserServiceImplTest {
         user.setRole(null);
         service.ensurePublisherRole(user);
         assertEquals(1, user.getRole());
-        verify(userMapper).update(isNull(), any(Wrapper.class));
+        verify(userMapper).update(isNull(), ArgumentMatchers.<Wrapper<User>>any());
     }
 
     @Test
@@ -161,6 +162,6 @@ class UserServiceImplTest {
         CustomResponse resp = service.uploadAvatar(10, file);
         assertEquals(200, resp.getCode());
         assertEquals("头像更新成功", resp.getMessage());
-        verify(userMapper).update(isNull(), any(Wrapper.class));
+        verify(userMapper).update(isNull(), ArgumentMatchers.<Wrapper<User>>any());
     }
 }
