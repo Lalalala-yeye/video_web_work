@@ -4,7 +4,7 @@ FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /build
 COPY . .
 ARG MODULE=doinb-gateway
-RUN chmod +x mvnw && ./mvnw -B -pl ${MODULE} -am package -DskipTests
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw -B -pl ${MODULE} -am package -DskipTests
 
 FROM eclipse-temurin:25-jre
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
