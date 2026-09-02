@@ -111,6 +111,74 @@ curl.exe -i http://127.0.0.1:8080/api/health
 2. 网关 `/health` `/ready` `/version` 与 web `/api/health` 均返回 HTTP 200。
 3. 浏览器能够正常打开前端页面。
 
+# 第一部分 B：自动扩缩容
+
+任务：给容器设好 `requests`/`limits`（已在 `java-services.yaml`），再挂 HPA，加压后 Pod 变多，停压后 Pod 变少。现场记下吞吐、均时、P95、错误率。
+
+HPA 挂在 **gateway / video / user**（压测会打到的路径）。副本 1～4，CPU 目标 50%（相对 request 50m）。缩容窗口 30 秒，方便现场看降回去。不要给 MySQL 做 HPA。
+
+第 4 项单体对比时请先 `kubectl delete hpa -n doinb --all` 或不要加压，避免副本数变化污染对比。
+
+## 1. metrics-server（kind 必做）
+
+HPA 靠它读 CPU。没有的话 `kubectl get hpa` 里 TARGETS 一直是 `<unknown>`，Pod 不会动。
+
+```powershell
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl patch deployment metrics-server -n kube-system --type json -p "[{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/args/-\",\"value\":\"--kubelet-insecure-tls\"}]"
+kubectl rollout status deployment/metrics-server -n kube-system
+kubectl top pods -n doinb
+```
+
+最后一条必须打出 CPU 数字。
+
+## 2. 应用 HPA
+
+```powershell
+kubectl apply -k deploy/k8s
+kubectl get hpa -n doinb
+```
+
+空载时 gateway/video/user 各 1～2 个 Pod（Deployment 默认 2，HPA 允许降到 1）。
+
+## 3. 现场演示（建议三个终端）
+
+终端 1：
+
+```powershell
+kubectl get hpa -n doinb -w
+```
+
+终端 2：
+
+```powershell
+kubectl get pods -n doinb -l "app in (gateway,video,user)" -w
+```
+
+终端 3：转发网关并加压。登录更吃 CPU，列表打不上去时用登录。
+
+```powershell
+kubectl port-forward -n doinb svc/gateway 8081:8081
+```
+
+另开终端（仓库根目录）：
+
+```powershell
+./deploy/k8s/hpa-demo.ps1 -Scenario login -Vus 50 -Duration 90
+```
+
+或直接：
+
+```powershell
+node bench/run.mjs --label micro --base http://127.0.0.1:8081 --scenario login --vus 50 --duration 90 --warmup 5 --rounds 1
+```
+
+老师应看到：TARGETS 超过 50% → REPLICAS 增加 → 新 Pod `ContainerCreating` 再到 `Running`。脚本会打出吞吐、均时、P95、错误率，截下来。
+
+停压后等约 30～60 秒，副本减回去。
+
+CPU 上不去时：把 `--vus` 加到 80，或确认打的是集群里的 8081 而不是本机 Docker Compose。
+
 # 第二部分：滚动更新实验
 
 ## 1. 实验目的和成功判据

@@ -14,6 +14,9 @@ x-java-env: &java-env
   DOINB_MESSAGE_URL: http://message:8086
   UPLOAD_PATH: /app/uploads
   APP_VERSION: ${APP_VERSION:-local}
+  # compose 没有 memory limit，MaxRAMPercentage=75 会按整机开堆，六个 JVM 互相挤。
+  JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -XX:+UseG1GC"
+  SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "8"
 
 services:
   mysql:

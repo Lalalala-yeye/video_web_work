@@ -3,6 +3,7 @@ package com.doinb.common.client;
 import com.doinb.common.CustomResponse;
 import com.doinb.common.GatewayHeaders;
 import com.doinb.common.config.DoinbProperties;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -21,7 +22,9 @@ public class ServiceClient {
 
     public ServiceClient(DoinbProperties properties) {
         this.properties = properties;
-        this.restClient = RestClient.builder().build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(InternalHttp.jdkClient(16));
+        factory.setReadTimeout(java.time.Duration.ofSeconds(8));
+        this.restClient = RestClient.builder().requestFactory(factory).build();
     }
 
     public CustomResponse get(String baseUrl, String pathAndQuery) {

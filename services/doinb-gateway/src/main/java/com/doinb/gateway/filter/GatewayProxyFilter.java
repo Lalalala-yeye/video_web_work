@@ -2,6 +2,7 @@ package com.doinb.gateway.filter;
 
 import com.doinb.common.GatewayHeaders;
 import com.doinb.common.InternalPaths;
+import com.doinb.common.client.InternalHttp;
 import com.doinb.common.config.DoinbProperties;
 import com.doinb.gateway.route.RouteTable;
 import jakarta.servlet.FilterChain;
@@ -36,10 +37,7 @@ public class GatewayProxyFilter extends OncePerRequestFilter {
 
     private final RouteTable routeTable;
     private final DoinbProperties properties;
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .followRedirects(HttpClient.Redirect.NEVER)
-            .connectTimeout(Duration.ofSeconds(5))
-            .build();
+    private final HttpClient httpClient = InternalHttp.jdkClient(64);
 
     public GatewayProxyFilter(RouteTable routeTable, DoinbProperties properties) {
         this.routeTable = routeTable;
