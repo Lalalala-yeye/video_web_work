@@ -62,21 +62,11 @@ public class InternalLiveController {
         return CustomResponse.ok("OK", dtos);
     }
 
-    /** 网关搜索：直播标题模糊 */
+    /** 网关搜索：只返回开播中的房间，并补齐主播昵称 / playUrl */
     @GetMapping(InternalPaths.SEARCH_LIVES)
     public CustomResponse search(@RequestParam("keyword") String keyword,
                                  @RequestParam(value = "limit", defaultValue = "10") long limit) {
-        List<LiveRoom> rooms = liveRoomService.searchByKeyword(keyword, limit);
-        List<LiveRoomDTO> dtos = new ArrayList<>();
-        for (LiveRoom room : rooms) {
-            LiveRoomDTO dto = new LiveRoomDTO();
-            dto.setId(room.getId());
-            dto.setTitle(room.getTitle());
-            dto.setAnchorId(room.getAnchorId());
-            dto.setIsLive(room.getIsLive());
-            dtos.add(dto);
-        }
-        return CustomResponse.ok("OK", dtos);
+        return CustomResponse.ok(liveRoomService.searchPublished(keyword, limit));
     }
 
     private List<Integer> parseIds(String raw) {

@@ -5,6 +5,7 @@ import VideoCard from '@/components/VideoCard.vue'
 import LiveCard from '@/components/LiveCard.vue'
 import { fetchFeed, fetchFollowing } from '@/api/subscription'
 import { isLoggedIn } from '@/utils/auth'
+import { pageLoadErrorMessage } from '@/utils/httpError'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -34,8 +35,8 @@ async function load() {
     if (followingRes.data.code === 200) {
       followingCount.value = Number(followingRes.data.data?.total) || 0
     }
-  } catch {
-    loadError.value = '暂时连接不上后端服务，请确认后端已启动后重试'
+  } catch (err) {
+    loadError.value = pageLoadErrorMessage(err)
   } finally {
     loading.value = false
   }

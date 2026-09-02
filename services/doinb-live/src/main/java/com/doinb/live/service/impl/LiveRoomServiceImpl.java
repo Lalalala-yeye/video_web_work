@@ -180,9 +180,15 @@ public class LiveRoomServiceImpl implements LiveRoomService {
             return List.of();
         }
         return liveRoomMapper.selectList(new LambdaQueryWrapper<LiveRoom>()
+                .eq(LiveRoom::getIsLive, true)
                 .like(LiveRoom::getTitle, keyword.trim())
                 .orderByDesc(LiveRoom::getSessionStart)
                 .last("LIMIT " + Math.min(Math.max(limit, 1), 50)));
+    }
+
+    /** 网关搜索用：补齐主播昵称和播放地址，只返回开播中的房间。 */
+    public List<LiveRoomDTO> searchPublished(String keyword, long limit) {
+        return toDTOList(searchByKeyword(keyword, limit), false);
     }
 
     // ================= DTO 转换 =================

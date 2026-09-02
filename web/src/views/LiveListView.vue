@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import LiveCard from '@/components/LiveCard.vue'
 import PageHero from '@/components/visual/PageHero.vue'
 import { fetchLiveList } from '@/api/live'
+import { pageLoadErrorMessage } from '@/utils/httpError'
 
 const loading = ref(false)
 const loadError = ref('')
@@ -22,8 +23,8 @@ async function load() {
     } else {
       loadError.value = res.data.message || '直播列表加载失败'
     }
-  } catch {
-    loadError.value = '暂时连接不上后端服务，请确认后端已启动后重试'
+  } catch (err) {
+    loadError.value = pageLoadErrorMessage(err)
   } finally {
     loading.value = false
   }

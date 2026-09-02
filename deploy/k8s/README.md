@@ -179,6 +179,20 @@ node bench/run.mjs --label micro --base http://127.0.0.1:8081 --scenario login -
 
 CPU 上不去时：把 `--vus` 加到 80，或确认打的是集群里的 8081 而不是本机 Docker Compose。
 
+# 第一部分 C：故障处理
+
+选做：**超时 + 降级**。主动停掉视频服务，网关搜索 3 秒内放弃该路，返回空视频列表，并带事先写好的 `notices` 提示；用户/直播仍聚合，网关 `/health` 正常，其它服务不跟着崩溃。
+
+```powershell
+# 本机 Docker Compose（8081 已是微服务网关）
+./deploy/k8s/fault-demo.ps1 -Target compose
+
+# Kubernetes（先 port-forward 网关 8081）
+./deploy/k8s/fault-demo.ps1 -Target k8s
+```
+
+脚本会：打一次搜索 → `docker stop doinb-video`（或 K8s 把 video 副本打到 0）→ 再搜索。第二次应 `code=200`、`notices` 含「视频服务超时或不可用」、`videos` 为空。页面搜索同样会黄条提示。K8s 演示前会暂时删掉 video 的 HPA，结束再 apply 回去。
+
 # 第二部分：滚动更新实验
 
 ## 1. 实验目的和成功判据

@@ -2,17 +2,15 @@
  * TASK-E2E-02 浏览 + 搜索。
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
  * 管理员账号默认 demo_admin / 123456（可用 E2E_ADMIN_USER / E2E_ADMIN_PASSWORD 覆盖）。
- * 覆盖：未登录浏览首页、未登录搜索空结果、上传公开视频并过审后首页列表出现、
- *      点击进入视频详情、用播放器上报进度并在个人中心看到历史/续播（UC-05）、
- *      按关键词搜到视频、按标题搜到直播间、按昵称搜到用户、
- *      搜索不存在关键词时视频/直播/用户三个 Tab 均为空。
+ * 覆盖 UC-04 浏览播放、UC-05 播放历史、UC-08 直播列表进房、UC-12 顶栏搜索。
+ * 必须点顶栏/卡片进入，不能 driver.get 直达绕过「点不进去」。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { By, Key, until } from 'selenium-webdriver'
+import { By, until } from 'selenium-webdriver'
 import {
   BASE_URL,
   createDriver,
@@ -26,14 +24,23 @@ import {
   injectSession,
   apiLogin,
   waitMessageContains,
-  setVueInputValue,
   approvePendingVideo,
+  openHomeViaNav,
+  openStudioViaNav,
+  openStudioSidebar,
+  openLiveViaNav,
+  searchViaTopNav,
+  uploadStudioVideo,
+  clickVideoCard,
+  assertVideoCardCover,
+  assertVideoPlayerMedia,
 } from './helpers.js'
 
 const ADMIN_USER = process.env.E2E_ADMIN_USER || 'demo_admin'
 const ADMIN_PASS = process.env.E2E_ADMIN_PASSWORD || '123456'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURE_VIDEO = path.join(__dirname, 'fixtures', 'test-video.mp4')
+const FIXTURE_COVER = path.join(__dirname, 'fixtures', 'test-cover.png')
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -110,50 +117,24 @@ async function waitVisibleEmpty(driver, text, timeoutMs = 12000) {
   )
 }
 
-/** 创作中心上传"他人可见"视频（进入待审），返回视频 id */
+/** 创作中心上传「他人可见」视频（进入待审），返回视频 id */
 async function uploadPublicVideo(driver, title) {
-  await driver.get(`${BASE_URL}/studio/upload`)
-  await driver.wait(until.elementLocated(By.css('.page-title')), 12000)
-  const fileInputs = await driver.findElements(By.css('input[type="file"]'))
-  assert.ok(fileInputs.length >= 1, '上传页应有文件选择框')
-  await fileInputs[0].sendKeys(FIXTURE_VIDEO)
-  const titleInput = await driver.wait(
-    until.elementLocated(By.css('input[placeholder="请输入视频标题"]')),
-    12000
-  )
-  await setVueInputValue(driver, titleInput, title)
-  await clickXpath(driver, "//button[contains(., '提交上传')]")
-  await waitMessageContains(driver, '上传成功')
-  await driver.wait(until.urlContains('/studio/edit'), 12000)
-  const url = await driver.getCurrentUrl()
-  const match = url.match(/\/studio\/edit\/(\d+)/)
-  return match ? match[1] : null
+  return uploadStudioVideo(driver, {
+    title,
+    videoPath: FIXTURE_VIDEO,
+    coverPath: FIXTURE_COVER,
+    visibility: 'public',
+  })
 }
 
-/** 在搜索页输入关键词并点「搜索」，等待跳转到结果页（不要用顶栏同 placeholder 的输入框） */
+/** 用顶栏搜索框（UC-12），不要 driver.get('/search') 绕过导航 */
 async function doSearch(driver, keyword) {
-  await driver.get(`${BASE_URL}/search`)
-  const input = await driver.wait(until.elementLocated(By.css('.search-bar input')), 12000)
-  await input.click()
-  await input.sendKeys(Key.CONTROL, 'a', Key.BACK_SPACE)
-  await input.sendKeys(keyword)
-  const btn = await driver.wait(
-    until.elementLocated(By.css('.search-bar button, .search-bar .el-button')),
-    12000
-  )
-  await driver.executeScript('arguments[0].click()', btn)
-  await driver.wait(
-    async () => {
-      const url = await driver.getCurrentUrl()
-      return url.includes('/search?') && url.includes('keyword=')
-    },
-    12000,
-    '搜索后 URL 应带 keyword 查询参数'
-  )
+  await searchViaTopNav(driver, keyword)
 }
 
 async function run() {
   assert.ok(fs.existsSync(FIXTURE_VIDEO), `缺少测试视频: ${FIXTURE_VIDEO}`)
+  assert.ok(fs.existsSync(FIXTURE_COVER), `缺少测试封面: ${FIXTURE_COVER}`)
   console.log('启动 Chrome…  目标:', BASE_URL)
   const driver = await createDriver()
   const password = '123456'
@@ -201,34 +182,44 @@ async function run() {
     await waitMessageContains(driver, '已通过审核', 12000)
     console.log('OK  管理员通过审核')
 
-    /* ---------- 5. 切回作者：创建直播间（标题含关键词，供搜索验证） ---------- */
+    /* ---------- 5. 切回作者：创建并开播，供搜索 / 直播列表验证 ---------- */
     await injectSession(driver, authorName, password)
-    await driver.get(`${BASE_URL}/studio/live`)
+    await openStudioViaNav(driver)
+    await openStudioSidebar(driver, '我的直播')
     await driver.wait(until.elementLocated(By.css('input[placeholder="直播间标题"]')), 12000)
     await fillByPlaceholder(driver, '直播间标题', liveTitle)
     await clickXpath(driver, "//div[contains(@class,'create-row')]//button[contains(., '创建')]")
     await waitMessageContains(driver, '创建成功')
-    console.log('OK  创建直播间', liveTitle)
+    const obsBtn = await driver.wait(
+      until.elementLocated(
+        By.xpath(`//div[contains(@class,'el-table')]//tr[contains(., '${liveTitle}')]//button[contains(., 'OBS 开播')]`)
+      ),
+      12000
+    )
+    await obsBtn.click()
+    await waitMessageContains(driver, '已开播')
+    console.log('OK  创建并开播', liveTitle)
 
-    /* ---------- 6. 首页浏览：已发布视频出现在列表，点击进入详情 ---------- */
-    await driver.get(BASE_URL)
+    /* ---------- 6. 顶栏回首页：封面可点、点进详情、媒体可播 ---------- */
+    await openHomeViaNav(driver)
     const card = await driver.wait(
-      until.elementLocated(By.xpath(`//a[contains(@class,'video-card')][contains(@href, '/video/${videoId}')]`)),
+      until.elementLocated(By.css(`a.video-card[href="/video/${videoId}"]`)),
       12000
     )
     await driver.wait(until.elementIsVisible(card), 12000)
     assert.ok((await card.getText()).includes(videoTitle), '首页卡片应显示视频标题')
-    console.log('OK  首页列表出现已发布视频')
+    await assertVideoCardCover(driver, videoId)
+    console.log('OK  首页列表出现已发布视频且封面可加载')
     await shot(driver, '02-1-home-list')
 
-    await card.click()
-    await driver.wait(until.urlContains(`/video/${videoId}`), 12000)
+    await clickVideoCard(driver, videoId)
     const detailTitle = await driver.wait(until.elementLocated(By.css('.video-title')), 12000)
     assert.equal(await detailTitle.getText(), videoTitle, '详情页标题应与上传一致')
     await driver.wait(until.elementLocated(By.css('video.player')), 12000)
+    await assertVideoPlayerMedia(driver)
     const authorNameEl = await driver.wait(until.elementLocated(By.css('.author-name')), 12000)
     assert.ok((await authorNameEl.getText()).length > 0, '详情页应展示作者昵称')
-    console.log('OK  视频详情页：标题/播放器/作者均展示')
+    console.log('OK  视频详情页：标题/播放器/作者/成片均可访问')
     await shot(driver, '02-2-video-detail')
 
     const progressInfo = await driver.executeAsyncScript(`
@@ -316,19 +307,40 @@ async function run() {
     console.log('OK  按标题搜索到直播间')
     await shot(driver, '02-4-search-live')
 
+    await openLiveViaNav(driver)
+    const liveCard = await driver.wait(
+      until.elementLocated(By.xpath(`//a[contains(@class,'live-card') and contains(., '${liveTitle}')]`)),
+      12000
+    )
+    await driver.executeScript('arguments[0].click()', liveCard)
+    await driver.wait(until.urlMatches(/\/live\/\d+/), 12000)
+    await driver.wait(until.elementLocated(By.xpath(`//*[contains(., '${liveTitle}')]`)), 12000)
+    console.log('OK  UC-08 顶栏进直播列表并点进直播间')
+
+    await openStudioViaNav(driver)
+    await openStudioSidebar(driver, '我的直播')
+    const stopBtn = await driver.wait(
+      until.elementLocated(
+        By.xpath(`//div[contains(@class,'el-table')]//tr[contains(., '${liveTitle}')]//button[contains(., '停播')]`)
+      ),
+      12000
+    )
+    await stopBtn.click()
+    await waitMessageContains(driver, '已停播')
+    console.log('OK  停播，避免污染公开直播列表')
+
     /* ---------- 9. 搜索作者昵称 → 用户结果 ---------- */
     const nickname = `用户_${authorName}`
     await doSearch(driver, nickname)
     await clickSearchTab(driver, '用户')
-    await waitDisplayed(
-      driver,
-      By.xpath(`//div[contains(@class,'user-item')][contains(., '${nickname}')]`)
-    )
-    const userItem = await driver.findElement(
-      By.xpath(`//div[contains(@class,'user-item')][contains(., '${nickname}')]`)
+    const userItem = await driver.wait(
+      until.elementLocated(By.xpath(`//a[contains(@class,'user-item')][contains(., '${nickname}')]`)),
+      12000
     )
     assert.ok((await userItem.getText()).includes(nickname), '用户结果应显示昵称')
-    console.log('OK  按昵称搜索到用户')
+    await driver.executeScript('arguments[0].click()', userItem)
+    await driver.wait(until.urlContains('/user/'), 12000)
+    console.log('OK  按昵称搜索到用户并点进主页')
     await shot(driver, '02-5-search-user')
 
     /* ---------- 10. 登录态搜索不存在关键词 → 三个 Tab 均为空 ---------- */

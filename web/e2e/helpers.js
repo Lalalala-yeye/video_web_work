@@ -148,6 +148,179 @@ export async function logout(driver) {
   await driver.wait(until.elementLocated(By.xpath("//a[contains(., '登录')]")), WAIT_MS)
 }
 
+/** 点顶栏文字导航。失败即视为「点不进去」，不要改成 driver.get 绕过。 */
+export async function clickNav(driver, label) {
+  const xpath = `//nav[contains(@class,'nav-links')]//a[normalize-space()='${label}']`
+  const el = await driver.wait(
+    until.elementLocated(By.xpath(xpath)),
+    WAIT_MS,
+    `顶栏没有「${label}」。未登录时没有创作中心；或导航被挡住`
+  )
+  await driver.executeScript('arguments[0].scrollIntoView({block:"center"}); arguments[0].click();', el)
+}
+
+export async function openHomeViaNav(driver) {
+  await clickNav(driver, '首页')
+  await driver.wait(
+    async () => {
+      const url = await driver.getCurrentUrl()
+      const path = new URL(url).pathname
+      return path === '/' || path === ''
+    },
+    WAIT_MS,
+    '点击首页后应回到 /'
+  )
+}
+
+export async function openLiveViaNav(driver) {
+  await clickNav(driver, '直播')
+  await driver.wait(
+    async () => {
+      const path = new URL(await driver.getCurrentUrl()).pathname
+      return path === '/live'
+    },
+    WAIT_MS,
+    '点击直播后应进入 /live 列表（不是某个直播间）'
+  )
+}
+
+/** 用顶栏搜索框，覆盖 UC-12；不要改成 driver.get('/search') 绕过。 */
+export async function searchViaTopNav(driver, keyword) {
+  // 停播/上传成功等 toast 会挡住顶栏搜索框
+  await driver.wait(
+    async () => (await driver.findElements(By.css('.el-message, .el-message-box'))).length === 0,
+    WAIT_MS
+  ).catch(() => {})
+  const input = await driver.wait(
+    until.elementLocated(By.css('.top-nav .search-form input')),
+    WAIT_MS,
+    '顶栏没有搜索框（登录/注册页没有顶栏）'
+  )
+  await driver.executeScript(
+    `const el = arguments[0];
+     el.scrollIntoView({block:'center'});
+     el.focus();
+     el.click();`,
+    input
+  )
+  await setVueInputValue(driver, input, keyword)
+  const btn = await driver.findElement(By.css('.top-nav .search-form .search-btn'))
+  await driver.executeScript('arguments[0].click()', btn)
+  await driver.wait(
+    async () => {
+      const url = await driver.getCurrentUrl()
+      try {
+        const parsed = new URL(url)
+        return parsed.pathname.startsWith('/search') && parsed.searchParams.get('keyword') === keyword
+      } catch {
+        return false
+      }
+    },
+    WAIT_MS,
+    `顶栏搜索后应进入 /search?keyword=${keyword}`
+  )
+}
+
+export async function openStudioViaNav(driver) {
+  await clickNav(driver, '创作中心')
+  await driver.wait(until.urlContains('/studio'), WAIT_MS, '点击创作中心后应进入 /studio')
+  await driver.wait(until.elementLocated(By.css('.sidebar-title')), WAIT_MS)
+}
+
+export async function openStudioSidebar(driver, label) {
+  const btn = await driver.wait(
+    until.elementLocated(By.xpath(`//aside[contains(@class,'studio-sidebar')]//button[contains(., '${label}')]`)),
+    WAIT_MS
+  )
+  await driver.executeScript('arguments[0].click()', btn)
+}
+
+/**
+ * 从顶栏进创作中心上传。fileInputs[0] 视频，[1] 封面。
+ * 返回视频 id（来自跳转的 /studio/edit/:id）。
+ */
+export async function uploadStudioVideo(driver, { title, videoPath, coverPath, visibility = 'public' }) {
+  await openStudioViaNav(driver)
+  await driver.wait(until.urlContains('/studio/upload'), WAIT_MS)
+  await driver.wait(until.elementLocated(By.css('input[placeholder="请输入视频标题"]')), WAIT_MS)
+  const fileInputs = await driver.findElements(By.css('input[type="file"]'))
+  if (fileInputs.length < 1) {
+    throw new Error('上传页没有文件选择框')
+  }
+  await fileInputs[0].sendKeys(videoPath)
+  if (coverPath && fileInputs[1]) {
+    await fileInputs[1].sendKeys(coverPath)
+  }
+  const titleInput = await driver.findElement(By.css('input[placeholder="请输入视频标题"]'))
+  await setVueInputValue(driver, titleInput, title)
+  if (visibility === 'private') {
+    const privateRadio = await driver.wait(
+      until.elementLocated(By.xpath("//label[contains(., '仅自己可见')]")),
+      WAIT_MS
+    )
+    await privateRadio.click()
+  }
+  const submit = await driver.findElement(By.xpath("//button[contains(., '提交上传')]"))
+  await driver.executeScript('arguments[0].click()', submit)
+  await waitMessageContains(driver, '上传成功')
+  await driver.wait(until.urlContains('/studio/edit'), WAIT_MS)
+  const url = await driver.getCurrentUrl()
+  const match = url.match(/\/studio\/edit\/(\d+)/)
+  return match ? match[1] : null
+}
+
+export async function clickVideoCard(driver, videoId) {
+  const card = await driver.wait(
+    until.elementLocated(By.css(`a.video-card[href="/video/${videoId}"]`)),
+    WAIT_MS,
+    `首页/列表没有视频卡片 /video/${videoId}`
+  )
+  await driver.executeScript('arguments[0].scrollIntoView({block:"center"}); arguments[0].click();', card)
+  await driver.wait(until.urlContains(`/video/${videoId}`), WAIT_MS, `点击卡片后应进入 /video/${videoId}`)
+}
+
+export async function assertVideoCardCover(driver, videoId) {
+  const result = await driver.executeScript(
+    `const id = arguments[0];
+     const card = document.querySelector('a.video-card[href="/video/' + id + '"]');
+     if (!card) return { ok: false, message: '没有卡片' };
+     const img = card.querySelector('img.cover');
+     if (!img) return { ok: false, message: '卡片没有封面图（coverUrl 为空或 404）' };
+     if (!img.complete || img.naturalWidth === 0) {
+       return { ok: false, message: '封面未加载 src=' + img.src };
+     }
+     return { ok: true, src: img.src };`,
+    String(videoId)
+  )
+  if (!result?.ok) {
+    throw new Error(`视频 ${videoId} 封面不可用: ${result?.message || '未知'}`)
+  }
+}
+
+export async function assertVideoPlayerMedia(driver) {
+  const result = await driver.executeAsyncScript(
+    `const done = arguments[arguments.length - 1];
+     const v = document.querySelector('video.player');
+     if (!v || !v.getAttribute('src')) {
+       done({ ok: false, message: '详情页没有 video.player 或 src' });
+       return;
+     }
+     const src = v.currentSrc || v.src;
+     fetch(src, { method: 'GET', headers: { Range: 'bytes=0-1' } })
+       .then(function (r) {
+         done({ ok: r.ok || r.status === 206, status: r.status, src: src });
+       })
+       .catch(function (e) {
+         done({ ok: false, message: String(e), src: src });
+       });`
+  )
+  if (!result?.ok) {
+    throw new Error(
+      `播放地址不可用（${result?.status || ''} ${result?.message || ''} src=${result?.src || ''}）`
+    )
+  }
+}
+
 export async function waitMessageContains(driver, text, timeoutMs = WAIT_MS) {
   await driver.wait(
     async () => (await driver.getPageSource()).includes(text),

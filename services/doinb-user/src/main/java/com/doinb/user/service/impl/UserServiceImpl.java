@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.doinb.common.CustomResponse;
 import com.doinb.common.dto.UserDTO;
+import com.doinb.common.dto.VideoDTO;
+import com.doinb.user.client.VideoDirectory;
 import com.doinb.user.mapper.UserMapper;
 import com.doinb.user.pojo.dto.UserPublicDTO;
 import com.doinb.user.pojo.dto.UserShowcaseDTO;
@@ -29,12 +31,14 @@ public class UserServiceImpl implements UserService {
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
 
     private final UserMapper userMapper;
+    private final VideoDirectory videoDirectory;
 
     @Value("${upload.path:uploads}")
     private String uploadPath;
 
-    public UserServiceImpl(UserMapper userMapper) {
+    public UserServiceImpl(UserMapper userMapper, VideoDirectory videoDirectory) {
         this.userMapper = userMapper;
+        this.videoDirectory = videoDirectory;
     }
 
     @Override
@@ -62,10 +66,18 @@ public class UserServiceImpl implements UserService {
         if (profile == null) {
             return null;
         }
+        long safePage = page < 1 ? 1 : page;
+        long safeSize = size < 1 ? 12 : Math.min(size, 50);
+        List<VideoDTO> published = videoDirectory.listPublishedByAuthors(List.of(id), 100);
+        if (published == null) {
+            published = List.of();
+        }
+        int from = (int) Math.min((safePage - 1) * safeSize, published.size());
+        int to = (int) Math.min(from + safeSize, published.size());
         UserShowcaseDTO showcase = new UserShowcaseDTO();
         showcase.setProfile(profile);
-        showcase.setVideos(List.of());
-        showcase.setVideoTotal(0);
+        showcase.setVideos(from >= published.size() ? List.of() : published.subList(from, to));
+        showcase.setVideoTotal(published.size());
         showcase.setFollowing(false);
         return showcase;
     }

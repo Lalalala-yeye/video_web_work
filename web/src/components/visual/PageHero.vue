@@ -58,6 +58,7 @@ const orbitTiles = Array.from({ length: 16 }, (_, index) => index + 1)
   min-height: 270px;
   overflow: hidden;
   background: #f8f8f6;
+  pointer-events: none;
 }
 
 .page-hero__scene {

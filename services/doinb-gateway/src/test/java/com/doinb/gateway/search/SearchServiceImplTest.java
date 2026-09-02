@@ -80,5 +80,27 @@ class SearchServiceImplTest {
         assertEquals(1, result.getUsers().size());
         assertEquals("测试昵称", result.getUsers().get(0).getNickname());
         assertTrue(result.getLiveRooms().isEmpty());
+        assertEquals(1, result.getNotices().size());
+        assertTrue(result.getNotices().get(0).contains("直播"));
+    }
+
+    @Test
+    void search_whenVideoDown_keepsUsersAndAddsNotice() {
+        UserDTO user = new UserDTO();
+        user.setId(10);
+        user.setNickname("演示观众");
+        when(serviceClient.get(eq("http://video"), startsWith(InternalPaths.SEARCH_VIDEOS)))
+                .thenReturn(CustomResponse.fail(502, "调用下游失败"));
+        when(serviceClient.get(eq("http://user"), startsWith(InternalPaths.SEARCH_USERS)))
+                .thenReturn(CustomResponse.ok(List.of(user)));
+        when(serviceClient.get(eq("http://live"), startsWith(InternalPaths.SEARCH_LIVES)))
+                .thenReturn(CustomResponse.ok(List.of()));
+
+        SearchResultDTO result = service.search("演示", 10, 10, 10);
+
+        assertTrue(result.getVideos().isEmpty());
+        assertEquals(1, result.getUsers().size());
+        assertTrue(result.getNotices().get(0).contains("视频"));
+        assertTrue(result.getNotices().stream().noneMatch(n -> n.contains("用户")));
     }
 }
