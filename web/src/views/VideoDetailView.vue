@@ -9,7 +9,7 @@ import FollowButton from '@/components/FollowButton.vue'
 import { fetchVideoDetail, saveProgress, reportVideo, fetchHistoryList } from '@/api/video'
 import { fetchAdminVideoDetail } from '@/api/admin'
 import { fetchComments, addComment } from '@/api/comment'
-import { reactVideo } from '@/api/reaction'
+import { reactVideo, fetchVideoReactionSummary } from '@/api/reaction'
 import { fetchFollowing } from '@/api/subscription'
 import { resolveMediaUrl } from '@/utils/media'
 import { getUser, isLoggedIn, isAdmin, AUTH_UPDATED_EVENT } from '@/utils/auth'
@@ -65,7 +65,7 @@ async function loadVideo() {
       video.value = res.data.data
       reactions.value = res.data.data?.reactions || { likeCount: 0, dislikeCount: 0, userReaction: 0 }
       loading.value = false
-      await syncAuthorFollow()
+      await Promise.all([syncAuthorFollow(), loadReactions()])
     }
   } finally {
     loading.value = false
@@ -87,6 +87,18 @@ async function prepareResumePoint() {
     }
   } catch {
     /* 续播失败不挡播放 */
+  }
+}
+
+async function loadReactions() {
+  if (videoId.value == null) return
+  try {
+    const res = await fetchVideoReactionSummary(videoId.value, { skipErrorHandler: true })
+    if (res.data.code === 200 && res.data.data) {
+      reactions.value = res.data.data
+    }
+  } catch {
+    /* 赞踩摘要失败不挡播放 */
   }
 }
 

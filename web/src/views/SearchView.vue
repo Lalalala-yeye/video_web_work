@@ -5,6 +5,7 @@ import VideoCard from '@/components/VideoCard.vue'
 import LiveCard from '@/components/LiveCard.vue'
 import AppAvatar from '@/components/AppAvatar.vue'
 import { search as searchApi } from '@/api/search'
+import { pageLoadErrorMessage } from '@/utils/httpError'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,7 +14,7 @@ const keyword = ref('')
 const activeTab = ref('video')
 const loading = ref(false)
 const loadError = ref('')
-const results = ref({ videos: [], liveRooms: [], users: [] })
+const results = ref({ videos: [], liveRooms: [], users: [], notices: [] })
 
 async function doSearch() {
   const q = keyword.value.trim()
@@ -23,12 +24,12 @@ async function doSearch() {
   try {
     const res = await searchApi(q, { skipErrorHandler: true })
     if (res.data.code === 200) {
-      results.value = res.data.data || { videos: [], liveRooms: [], users: [] }
+      results.value = res.data.data || { videos: [], liveRooms: [], users: [], notices: [] }
     } else {
       loadError.value = res.data.message || '搜索失败'
     }
-  } catch {
-    loadError.value = '暂时连接不上后端服务，请确认后端已启动后重试'
+  } catch (err) {
+    loadError.value = pageLoadErrorMessage(err)
   } finally {
     loading.value = false
   }
@@ -69,6 +70,15 @@ function onSearchSubmit() {
       <p class="page-subtitle">
         共 {{ (results.videos?.length || 0) + (results.liveRooms?.length || 0) + (results.users?.length || 0) }} 条
       </p>
+      <el-alert
+        v-for="(n, i) in results.notices || []"
+        :key="i"
+        :title="n"
+        type="warning"
+        show-icon
+        :closable="false"
+        class="degrade-alert"
+      />
 
       <el-result
         v-if="loadError"
@@ -112,14 +122,19 @@ function onSearchSubmit() {
           <el-empty v-else description="没有找到相关直播" />
         </el-tab-pane>
         <el-tab-pane :label="`用户 (${results.users?.length || 0})`" name="user">
-          <div v-if="results.users?.length" class="user-list">
-            <div v-for="u in results.users" :key="u.id" class="user-item">
-              <AppAvatar :size="48" :src="u.avatar" :name="u.nickname || u.username" />
+            <div v-if="results.users?.length" class="user-list">
+            <router-link
+              v-for="u in results.users"
+              :key="u.id"
+              :to="`/user/${u.id}`"
+              class="user-item"
+            >
+              <AppAvatar :size="48" :src="u.avatar" :name="u.nickname || u.username" :clickable="false" />
               <div>
                 <div class="user-name">{{ u.nickname || u.username }}</div>
                 <div class="user-id">@{{ u.username }}</div>
               </div>
-            </div>
+            </router-link>
           </div>
           <el-empty v-else description="没有找到相关用户" />
         </el-tab-pane>
@@ -133,6 +148,10 @@ function onSearchSubmit() {
 .search-bar {
   max-width: 640px;
   margin-bottom: 24px;
+}
+
+.degrade-alert {
+  margin-bottom: 12px;
 }
 
 .state-panel {
@@ -155,6 +174,8 @@ function onSearchSubmit() {
   background: #fff;
   border-radius: var(--doinb-radius);
   border: 1px solid var(--doinb-border-light);
+  color: inherit;
+  text-decoration: none;
 }
 
 .user-name {

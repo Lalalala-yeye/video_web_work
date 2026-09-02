@@ -32,6 +32,9 @@ doinb:
   role: service
   service-name: doinb-user
   internal-token: ${DOINB_INTERNAL_TOKEN:doinb-internal-dev-token}
+  services:
+    video: ${DOINB_VIDEO_URL:http://127.0.0.1:8083}
+    interact: ${DOINB_INTERACT_URL:http://127.0.0.1:8085}
   public-path-prefixes:
     - /health
     - /ready

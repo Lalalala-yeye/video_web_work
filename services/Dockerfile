@@ -4,7 +4,9 @@ FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /build
 COPY . .
 ARG MODULE=doinb-gateway
-RUN sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw -B -pl ${MODULE} -am package -DskipTests
+# 缓存 Maven 发行包和依赖，避免每次 COPY 源码后重新下载 wrapper zip
+RUN --mount=type=cache,target=/root/.m2 \
+    sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw -B -pl ${MODULE} -am package -DskipTests
 
 FROM eclipse-temurin:25-jre
 RUN apt-get update && apt-get install -y --no-install-recommends curl \

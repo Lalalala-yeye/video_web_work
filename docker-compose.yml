@@ -57,7 +57,7 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - doinb-uploads:/app/uploads
+      - ./backend/uploads:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://127.0.0.1:8082/ready"]
       interval: 10s
@@ -83,7 +83,7 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - doinb-uploads:/app/uploads
+      - ./backend/uploads:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://127.0.0.1:8083/ready"]
       interval: 10s
@@ -203,9 +203,10 @@ services:
     depends_on:
       gateway:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8787:80"
 
 volumes:
   doinb-mysql-data:
-  doinb-uploads:

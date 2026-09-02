@@ -2,8 +2,8 @@
  * TASK-E2E-05 通知 + 私信 + 后台。
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
  * 后台管理员默认 demo_admin / 123456（可用 E2E_ADMIN_USER、E2E_ADMIN_PASSWORD 覆盖）。
- * 覆盖：发私信、通知面板、非管理员进后台被拦、管理员概览/待审/通过、
- *      页面点赞后作者收到通知、3 名用户举报后进入举报复审队列（UC-07、UC-13）。
+ * 覆盖 UC-14 私信、UC-13 通知、UC-07 举报、UC-15 管理员审核/复审。
+ * 上传走顶栏创作中心，不直达 /studio。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
 import assert from 'node:assert/strict'
@@ -26,6 +26,7 @@ import {
   waitMessageContains,
   setVueInputValue,
   approvePendingVideo,
+  uploadStudioVideo,
 } from './helpers.js'
 
 const ADMIN_USER = process.env.E2E_ADMIN_USER || 'demo_admin'
@@ -79,22 +80,11 @@ async function reportCurrentVideo(driver, reason) {
 }
 
 async function uploadPublicVideo(driver, title) {
-  await driver.get(`${BASE_URL}/studio/upload`)
-  await driver.wait(until.elementLocated(By.css('.page-title')), 12000)
-  const fileInputs = await driver.findElements(By.css('input[type="file"]'))
-  assert.ok(fileInputs.length >= 1, '上传页应有文件选择框')
-  await fileInputs[0].sendKeys(FIXTURE_VIDEO)
-  const titleInput = await driver.wait(
-    until.elementLocated(By.css('input[placeholder="请输入视频标题"]')),
-    12000
-  )
-  await setVueInputValue(driver, titleInput, title)
-  await clickXpath(driver, "//button[contains(., '提交上传')]")
-  await waitMessageContains(driver, '上传成功')
-  await driver.wait(until.urlContains('/studio/edit'), 12000)
-  const url = await driver.getCurrentUrl()
-  const match = url.match(/\/studio\/edit\/(\d+)/)
-  return match ? match[1] : null
+  return uploadStudioVideo(driver, {
+    title,
+    videoPath: FIXTURE_VIDEO,
+    visibility: 'public',
+  })
 }
 
 async function run() {

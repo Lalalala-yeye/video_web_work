@@ -20,6 +20,10 @@ spec:
       labels:
         app: web
     spec:
+      hostAliases:
+        - ip: "127.0.0.1"
+          hostnames:
+            - host.docker.internal
       containers:
         - name: web
           image: ghcr.io/lalalala-yeye/doinb-web:cde7310

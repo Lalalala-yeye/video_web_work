@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import VideoCard from '@/components/VideoCard.vue'
 import PageHero from '@/components/visual/PageHero.vue'
 import { fetchVideoList } from '@/api/video'
+import { pageLoadErrorMessage } from '@/utils/httpError'
 
 const loading = ref(false)
 const loadError = ref('')
@@ -23,8 +24,8 @@ async function loadVideos() {
     } else {
       loadError.value = res.data.message || '视频列表加载失败'
     }
-  } catch {
-    loadError.value = '暂时连接不上后端服务，请确认后端已启动后重试'
+  } catch (err) {
+    loadError.value = pageLoadErrorMessage(err)
   } finally {
     loading.value = false
   }

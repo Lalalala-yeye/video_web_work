@@ -3,6 +3,8 @@ package com.doinb.user.service.impl;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.doinb.common.CustomResponse;
 import com.doinb.common.dto.UserDTO;
+import com.doinb.common.dto.VideoDTO;
+import com.doinb.user.internal.VideoDirectory;
 import com.doinb.user.mapper.UserMapper;
 import com.doinb.user.pojo.dto.UserPublicDTO;
 import com.doinb.user.pojo.dto.UserShowcaseDTO;
@@ -10,6 +12,7 @@ import com.doinb.user.pojo.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentMatchers;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -21,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -30,12 +34,15 @@ import static org.mockito.Mockito.when;
 class UserServiceImplTest {
 
     private UserMapper userMapper;
+    private VideoDirectory videoDirectory;
     private UserServiceImpl service;
 
     @BeforeEach
     void setUp() {
         userMapper = mock(UserMapper.class);
-        service = new UserServiceImpl(userMapper);
+        videoDirectory = mock(VideoDirectory.class);
+        when(videoDirectory.listPublishedByAuthors(any(), anyLong())).thenReturn(List.of());
+        service = new UserServiceImpl(userMapper, videoDirectory);
     }
 
     @Test
@@ -64,7 +71,7 @@ class UserServiceImplTest {
         CustomResponse resp = service.updateUserInfo(10, "  ", "这是简介");
         assertEquals(500, resp.getCode());
         assertEquals("昵称不能为空", resp.getMessage());
-        verify(userMapper, never()).update(isNull(), any(Wrapper.class));
+        verify(userMapper, never()).update(isNull(), ArgumentMatchers.<Wrapper<User>>any());
     }
 
     @Test
@@ -72,7 +79,7 @@ class UserServiceImplTest {
         CustomResponse resp = service.updateUserInfo(10, "测试昵称", "这是简介");
         assertEquals(200, resp.getCode());
         assertEquals("资料更新成功", resp.getMessage());
-        verify(userMapper).update(isNull(), any(Wrapper.class));
+        verify(userMapper).update(isNull(), ArgumentMatchers.<Wrapper<User>>any());
     }
 
     @Test
@@ -109,7 +116,7 @@ class UserServiceImplTest {
         user.setRole(null);
         service.ensurePublisherRole(user);
         assertEquals(1, user.getRole());
-        verify(userMapper).update(isNull(), any(Wrapper.class));
+        verify(userMapper).update(isNull(), ArgumentMatchers.<Wrapper<User>>any());
     }
 
     @Test
@@ -119,15 +126,19 @@ class UserServiceImplTest {
     }
 
     @Test
-    void getShowcase_whenExists_doesNotQueryVideos() {
+    void getShowcase_whenExists_loadsPublishedVideos() {
         User user = new User();
         user.setId(10);
         user.setNickname("昵称");
         when(userMapper.selectById(10)).thenReturn(user);
+        VideoDTO video = new VideoDTO();
+        video.setId(21);
+        video.setTitle("主页视频");
+        when(videoDirectory.listPublishedByAuthors(List.of(10), 100)).thenReturn(List.of(video));
         UserShowcaseDTO showcase = service.getShowcase(10, 1, 10);
         assertNotNull(showcase);
-        assertEquals(0, showcase.getVideoTotal());
-        assertTrue(showcase.getVideos().isEmpty());
+        assertEquals(1, showcase.getVideoTotal());
+        assertEquals("主页视频", showcase.getVideos().get(0).getTitle());
     }
 
     @Test
@@ -151,6 +162,6 @@ class UserServiceImplTest {
         CustomResponse resp = service.uploadAvatar(10, file);
         assertEquals(200, resp.getCode());
         assertEquals("头像更新成功", resp.getMessage());
-        verify(userMapper).update(isNull(), any(Wrapper.class));
+        verify(userMapper).update(isNull(), ArgumentMatchers.<Wrapper<User>>any());
     }
 }

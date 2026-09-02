@@ -2,8 +2,7 @@
  * TASK-E2E-03 互动：评论、点赞、关注、订阅动态。
  * 前置：后端 8081 + 前端 `npm run dev`（8787）+ 本机 Chrome。
  * 管理员账号默认 demo_admin / 123456（可用 E2E_ADMIN_USER / E2E_ADMIN_PASSWORD 覆盖）。
- * 覆盖：视频点赞/取消/点踩、发表评论、评论点赞、关注/取消关注、
- *      关注后动态出现已发布视频、取消关注后动态不再出现（UC-09）。
+ * 覆盖 UC-10 评论、UC-11 赞踩、UC-09 关注订阅。上传走顶栏创作中心。
  * 证据：e2e/artifacts/ 下自动保存关键步骤截图。
  */
 import assert from 'node:assert/strict'
@@ -24,6 +23,9 @@ import {
   waitMessageContains,
   setVueInputValue,
   approvePendingVideo,
+  uploadStudioVideo,
+  clickNav,
+  openStudioSidebar,
 } from './helpers.js'
 
 const ADMIN_USER = process.env.E2E_ADMIN_USER || 'demo_admin'
@@ -69,29 +71,18 @@ async function run() {
     await waitLoggedIn(driver)
     console.log('OK  作者登录', authorName)
 
-    /* ---------- 2. 上传公开视频（进入待审；作者仍可预览互动） ---------- */
-    await driver.get(`${BASE_URL}/studio/upload`)
-    await driver.wait(until.elementLocated(By.css('.page-title')), 12000)
-    const fileInputs = await driver.findElements(By.css('input[type="file"]'))
-    assert.ok(fileInputs.length >= 1, '上传页应有文件选择框')
-    await fileInputs[0].sendKeys(FIXTURE_VIDEO)
-    const titleInput = await driver.wait(
-      until.elementLocated(By.css('input[placeholder="请输入视频标题"]')),
-      12000
-    )
-    await setVueInputValue(driver, titleInput, videoTitle)
-    await clickXpath(driver, "//button[contains(., '提交上传')]")
-    await waitMessageContains(driver, '上传成功')
-    await driver.wait(until.urlContains('/studio/edit'), 12000)
-    const uploadUrl = await driver.getCurrentUrl()
-    const uploadMatch = uploadUrl.match(/\/studio\/edit\/(\d+)/)
-    const videoId = uploadMatch ? uploadMatch[1] : null
+    /* ---------- 2. 从顶栏进创作中心上传公开视频（进入待审） ---------- */
+    const videoId = await uploadStudioVideo(driver, {
+      title: videoTitle,
+      videoPath: FIXTURE_VIDEO,
+      visibility: 'public',
+    })
     assert.ok(videoId, '上传后应拿到视频 id')
     console.log('OK  上传公开视频（待审）', videoTitle, `id=${videoId}`)
     await sleep(800)
 
-    /* ---------- 3. 从创作中心进入视频详情 ---------- */
-    await driver.get(`${BASE_URL}/studio/edit`)
+    /* ---------- 3. 侧栏点「修改视频」再预览详情（不直达 URL） ---------- */
+    await openStudioSidebar(driver, '修改视频')
     const firstItem = await driver.wait(until.elementLocated(By.css('.video-item')), 12000)
     await firstItem.click()
     const previewLink = await driver.wait(
@@ -185,7 +176,7 @@ async function run() {
     await shot(driver, '03-3-following')
     await sleep(600)
 
-    await driver.get(`${BASE_URL}/subscribe`)
+    await clickNav(driver, '关注')
     await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '关注动态')]")), 12000)
     await driver.wait(
       until.elementLocated(By.xpath(`//a[contains(@class,'video-card')][contains(., '${videoTitle}')]`)),
@@ -200,7 +191,7 @@ async function run() {
     await waitMessageContains(driver, '已取消关注')
     console.log('OK  取消关注：出现"已取消关注"反馈')
 
-    await driver.get(`${BASE_URL}/subscribe`)
+    await clickNav(driver, '关注')
     await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '关注动态')]")), 12000)
     await driver.wait(
       async () => {

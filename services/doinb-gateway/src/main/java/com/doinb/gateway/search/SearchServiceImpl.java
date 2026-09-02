@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class SearchServiceImpl implements SearchService {
 
-    private static final long DOWNSTREAM_TIMEOUT_SECONDS = 3;
+    static final long DOWNSTREAM_TIMEOUT_SECONDS = 3;
 
     private final ServiceClient serviceClient;
     private final DoinbProperties properties;
@@ -42,33 +42,45 @@ public class SearchServiceImpl implements SearchService {
         String kw = keyword.trim();
         DoinbProperties.Services s = properties.getServices();
 
-        CompletableFuture<List<Object>> videos = fetch(s.getVideo(), InternalPaths.SEARCH_VIDEOS, kw, clamp(videoLimit));
-        CompletableFuture<List<Object>> lives = fetch(s.getLive(), InternalPaths.SEARCH_LIVES, kw, clamp(liveLimit));
-        CompletableFuture<List<Object>> users = fetch(s.getUser(), InternalPaths.SEARCH_USERS, kw, clamp(userLimit));
+        CompletableFuture<Bucket> videos = fetch(s.getVideo(), InternalPaths.SEARCH_VIDEOS, kw, clamp(videoLimit));
+        CompletableFuture<Bucket> lives = fetch(s.getLive(), InternalPaths.SEARCH_LIVES, kw, clamp(liveLimit));
+        CompletableFuture<Bucket> users = fetch(s.getUser(), InternalPaths.SEARCH_USERS, kw, clamp(userLimit));
         CompletableFuture.allOf(videos, lives, users).join();
 
-        result.setVideos(unchecked(videos.join()));
-        result.setLiveRooms(unchecked(lives.join()));
-        result.setUsers(unchecked(users.join()));
+        Bucket videoBucket = videos.join();
+        Bucket liveBucket = lives.join();
+        Bucket userBucket = users.join();
+        result.setVideos(unchecked(videoBucket.items));
+        result.setLiveRooms(unchecked(liveBucket.items));
+        result.setUsers(unchecked(userBucket.items));
+        if (videoBucket.failed) {
+            result.getNotices().add("视频服务超时或不可用，已跳过视频结果（其它分类不受影响）");
+        }
+        if (liveBucket.failed) {
+            result.getNotices().add("直播服务超时或不可用，已跳过直播结果（其它分类不受影响）");
+        }
+        if (userBucket.failed) {
+            result.getNotices().add("用户服务超时或不可用，已跳过用户结果（其它分类不受影响）");
+        }
         return result;
     }
 
-    private CompletableFuture<List<Object>> fetch(String base, String path, String keyword, long limit) {
+    private CompletableFuture<Bucket> fetch(String base, String path, String keyword, long limit) {
         return CompletableFuture.supplyAsync(() -> call(base, path, keyword, limit), executor)
                 .orTimeout(DOWNSTREAM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .exceptionally(ex -> List.of());
+                .exceptionally(ex -> Bucket.down());
     }
 
-    private List<Object> call(String base, String path, String keyword, long limit) {
+    private Bucket call(String base, String path, String keyword, long limit) {
         String uri = ServiceClient.query(ServiceClient.query(path, "keyword", keyword), "limit", String.valueOf(limit));
         CustomResponse resp = serviceClient.get(base, uri);
         if (resp == null || resp.getCode() != 200) {
-            return List.of();
+            return Bucket.down();
         }
         if (resp.getData() instanceof List<?> list) {
-            return new ArrayList<>(list);
+            return Bucket.ok(new ArrayList<>(list));
         }
-        return List.of();
+        return Bucket.ok(List.of());
     }
 
     private static long clamp(long limit) {
@@ -78,5 +90,15 @@ public class SearchServiceImpl implements SearchService {
     @SuppressWarnings("unchecked")
     private static <T> List<T> unchecked(List<Object> list) {
         return (List<T>) list;
+    }
+
+    private record Bucket(List<Object> items, boolean failed) {
+        static Bucket ok(List<Object> items) {
+            return new Bucket(items, false);
+        }
+
+        static Bucket down() {
+            return new Bucket(List.of(), true);
+        }
     }
 }

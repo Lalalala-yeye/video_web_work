@@ -8,7 +8,7 @@ import { fetchPersonalInfo, uploadAvatar } from '@/api/user'
 import { fetchHistoryList, fetchMyVideos } from '@/api/video'
 import { resolveMediaUrl } from '@/utils/media'
 import { useRouter } from 'vue-router'
-import { postParams } from '@/network/request'
+import { post } from '@/network/request'
 import { MACARON_THEMES } from '@/constants/macaronThemes'
 import { getMacaronThemeId, setMacaronThemeId } from '@/utils/macaronTheme'
 
@@ -103,10 +103,10 @@ function onPickMacaronTheme(id) {
 }
 
 async function saveProfile() {
-  const res = await postParams('/user/info/update', {
-    nickname: editForm.nickname,
-    bio: editForm.bio || undefined
-  })
+  const body = new URLSearchParams()
+  body.append('nickname', editForm.nickname ?? '')
+  if (editForm.bio) body.append('bio', editForm.bio)
+  const res = await post('/user/info/update', body)
   if (res.data.code === 200) {
     ElMessage.success('资料已更新')
     loadProfile()

@@ -511,6 +511,8 @@ jobs:
           sed -i "s|image: ghcr.io/.*/doinb-web:.*|image: ghcr.io/${OWNER}/doinb-web:${SHA}|" deploy/k8s/web.yaml
           sed -i "s/APP_VERSION: \"cde7310\"/APP_VERSION: \"${SHA}\"/" deploy/k8s/java-services.yaml
           sed -i 's/replicas: 2/replicas: 1/g' deploy/k8s/java-services.yaml deploy/k8s/web.yaml
+          # kind-action 没有 metrics-server，HPA 只会刷 FailedGetResourceMetric
+          sed -i '/hpa.yaml/d' deploy/k8s/kustomization.yaml
           kubectl apply -f deploy/k8s/namespace.yaml
           kubectl create secret generic doinb-secrets -n doinb \
             --from-literal=MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
@@ -574,6 +576,8 @@ jobs:
               echo ""
               echo '```'
               kubectl get pods,svc,deploy -n doinb -o wide 2>/dev/null || echo "集群信息不可用"
+              echo "----- web 日志 -----"
+              kubectl logs -n doinb -l app=web --tail=50 2>/dev/null || true
               echo "----- 最近事件 -----"
               kubectl get events -n doinb --sort-by='.lastTimestamp' 2>/dev/null | tail -25 || true
               echo '```'

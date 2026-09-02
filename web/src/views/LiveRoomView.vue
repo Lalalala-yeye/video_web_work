@@ -171,11 +171,10 @@ function startPlayerRetry() {
   stopPlayerRetry()
   if (!room.value?.isLive) return
   playerRetryTimer = setInterval(async () => {
-    if (!room.value?.isLive || !room.value?.playUrl) return
+    if (!room.value?.isLive || !room.value?.playUrl || playerLoading.value) return
     const v = videoRef.value
     if (v && v.readyState >= 2 && !v.paused && !playError.value) return
     playError.value = false
-    playerLoading.value = true
     await syncPlayer()
   }, 8000)
 }
@@ -187,31 +186,39 @@ function stopPlayerRetry() {
   }
 }
 
+let playerSyncing = false
+
 async function syncPlayer() {
-  if (!room.value?.isLive || !room.value?.playUrl) {
-    waitingAnchor.value = false
-    if (!room.value?.isLive) {
-      destroyPlayer()
-      stopPlayerRetry()
-    }
-    return
-  }
-  const streamKey = room.value.streamKey || parseStreamKeyFromPlayUrl(room.value.playUrl)
-  if (streamKey) {
-    waitingAnchor.value = true
-    playerLoading.value = true
-    const ready = await waitStreamPlayable(streamKey, 45000)
-    waitingAnchor.value = false
-    if (!ready) {
-      playError.value = true
-      playerLoading.value = false
-      startPlayerRetry()
+  if (playerSyncing) return
+  playerSyncing = true
+  try {
+    if (!room.value?.isLive || !room.value?.playUrl) {
+      waitingAnchor.value = false
+      if (!room.value?.isLive) {
+        destroyPlayer()
+        stopPlayerRetry()
+      }
       return
     }
-  }
+    const streamKey = room.value.streamKey || parseStreamKeyFromPlayUrl(room.value.playUrl)
+    if (streamKey) {
+      waitingAnchor.value = true
+      playerLoading.value = true
+      const ready = await waitStreamPlayable(streamKey, 8000)
+      waitingAnchor.value = false
+      if (!ready) {
+        playError.value = true
+        playerLoading.value = false
+        startPlayerRetry()
+        return
+      }
+    }
 
-  await nextTick()
-  attachPlayer(room.value.playUrl)
+    await nextTick()
+    attachPlayer(room.value.playUrl)
+  } finally {
+    playerSyncing = false
+  }
 }
 
 onMounted(async () => {

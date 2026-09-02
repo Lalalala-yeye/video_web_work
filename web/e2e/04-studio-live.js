@@ -20,6 +20,9 @@ import {
   waitMessageContains,
   cleanupUserVideos,
   setVueInputValue,
+  openStudioViaNav,
+  openStudioSidebar,
+  openLiveViaNav,
 } from './helpers.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -77,14 +80,14 @@ async function run() {
     await waitLoggedIn(driver)
     console.log('OK  登录', username)
 
-    /* ---------- 3. 创作中心侧栏 ---------- */
-    await driver.get(`${BASE_URL}/studio/upload`)
+    /* ---------- 3. 顶栏点进创作中心 ---------- */
+    await openStudioViaNav(driver)
     await driver.wait(until.elementLocated(By.css('.page-title')), 12000)
     const sidebar = await driver.wait(until.elementLocated(By.css('.sidebar-title')), 12000)
     assert.equal((await sidebar.getText()).trim(), '创作中心')
     await driver.wait(until.elementLocated(By.xpath("//button[contains(., '我的直播')]")), 12000)
     await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '上传视频')]")), 12000)
-    console.log('OK  创作中心侧栏（上传 / 修改 / 直播）')
+    console.log('OK  顶栏点进创作中心侧栏（上传 / 修改 / 直播）')
 
     /* ---------- 4. 上传空提交校验 ---------- */
     await clickXpath(driver, "//button[contains(., '提交上传')]")
@@ -127,8 +130,8 @@ async function run() {
     console.log('OK  修改视频并保存成功')
     await shot(driver, '04-2-edit')
 
-    /* ---------- 7. 我的直播：空标题 / 创建 ---------- */
-    await driver.get(`${BASE_URL}/studio/live`)
+    /* ---------- 7. 侧栏点「我的直播」 ---------- */
+    await openStudioSidebar(driver, '我的直播')
     await driver.wait(until.elementLocated(By.xpath("//h1[contains(., '我的直播')]")), 12000)
     await clickXpath(driver, "//button[normalize-space()='创建']")
     await waitToast(driver, '请填写直播间标题')
@@ -176,8 +179,8 @@ async function run() {
     console.log('OK  OBS 开播成功（未做真实推流）')
     await shot(driver, '04-4-obs-start')
 
-    /* ---------- 10. 公开直播列表 + 进入直播间 ---------- */
-    await driver.get(`${BASE_URL}/live`)
+    /* ---------- 10. 顶栏点直播列表 + 进入直播间 ---------- */
+    await openLiveViaNav(driver)
     await driver.wait(until.elementLocated(By.xpath("//*[contains(., '发现正在进行的精彩直播')]")), 12000)
     const liveCard = await driver.wait(
       until.elementLocated(By.xpath(`//a[contains(@class,'live-card') and contains(., '${liveTitle}')]`)),
@@ -190,7 +193,8 @@ async function run() {
     await shot(driver, '04-5-live-room')
 
     /* ---------- 11. 停播 ---------- */
-    await driver.get(`${BASE_URL}/studio/live`)
+    await openStudioViaNav(driver)
+    await openStudioSidebar(driver, '我的直播')
     const stopBtn = await driver.wait(
       until.elementLocated(
         By.xpath(`//div[contains(@class,'el-table')]//tr[contains(., '${liveTitle}')]//button[contains(., '停播')]`)

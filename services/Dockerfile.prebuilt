@@ -1,0 +1,17 @@
+# 本地已 mvn package 时用预编译 jar 部署，避免容器内再下 Maven。
+# docker build -f Dockerfile.prebuilt --build-arg JAR=doinb-user/target/doinb-user-0.0.1-SNAPSHOT.jar --build-arg PORT=8082 -t doinb-user:local .
+FROM eclipse-temurin:25-jre
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+ARG JAR
+ARG PORT=8080
+ARG APP_VERSION=dev
+ENV SERVER_PORT=${PORT}
+ENV APP_VERSION=${APP_VERSION}
+ENV JAVA_TOOL_OPTIONS="-Xms128m -Xmx384m -XX:+UseG1GC"
+COPY ${JAR} app.jar
+EXPOSE ${PORT}
+HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
+  CMD curl -fs "http://127.0.0.1:${SERVER_PORT}/health" || exit 1
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

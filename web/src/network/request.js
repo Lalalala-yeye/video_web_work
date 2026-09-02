@@ -1,10 +1,11 @@
 import axios from 'axios'
-import { getToken } from '@/utils/auth'
+import { getToken, clearAuth } from '@/utils/auth'
 import {
   handleBusinessError,
   showKnownError,
   extractErrorMessage,
   isUnknownError,
+  isAuthExpiredError,
   handleUnknownError,
 } from '@/utils/httpError'
 
@@ -61,7 +62,15 @@ instance.interceptors.response.use(
   },
   err => {
     releaseAbortController(err.config)
-    if (err.config?.skipErrorHandler || err.code === 'ERR_CANCELED') {
+    if (err.code === 'ERR_CANCELED') {
+      return Promise.reject(err)
+    }
+
+    if (isAuthExpiredError(err) && getToken()) {
+      clearAuth()
+    }
+
+    if (err.config?.skipErrorHandler) {
       return Promise.reject(err)
     }
 
