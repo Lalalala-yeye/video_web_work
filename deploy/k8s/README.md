@@ -47,11 +47,12 @@ kubectl create secret generic doinb-secrets -n doinb `
 
 ```powershell
 kubectl create configmap doinb-db-init -n doinb `
-  --from-file=database.sql=database/database.sql `
+  --from-file=001-schema.sql=database/database.sql `
+  --from-file=002-seed.sql=database/seed.sql `
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-MySQL 官方镜像只会在数据卷为空时执行初始化 SQL，已有 PVC 不会重复建表。
+MySQL 官方镜像只会在数据卷为空时执行初始化 SQL，已有 PVC 不会重复建表。演示账号和样片还会在 `doinb-video` 启动时幂等写入。
 
 ## 3. 正式部署
 

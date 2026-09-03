@@ -37,7 +37,7 @@ curl http://127.0.0.1:8081/version
 docker compose logs -f gateway user video live interact message
 ```
 
-CI 打镜像：`services/Dockerfile`，`--build-arg MODULE=doinb-user --build-arg PORT=8082`。
+CI 打镜像：多数服务用 `services/Dockerfile`（context `services/`）；视频服务用 `services/Dockerfile.video`（仓库根目录为 context，打进 `backend/demo-media`）。
 
 ## 约定
 
