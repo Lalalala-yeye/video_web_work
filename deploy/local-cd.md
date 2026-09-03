@@ -12,7 +12,7 @@ GitHub Actions 只把镜像部署到 **云端 kind**（跑完就拆），老师�
 .\scripts\local-cd.ps1 -Watch
 ```
 
-窗口不要关。另开浏览器打开 http://localhost:8787，看左上角 **doinb** 旁边的版本号（来自 `/api/version`）。
+窗口不要关。日常开发可以一直留在 `小学期ZZW`：脚本只快进本地 `main` 指针，并按 `origin/main` 更新 k8s，不会 `checkout` 到 `main`。另开浏览器打开 http://localhost:8787，看左上角 **doinb** 旁边的版本号（来自 `/api/version`）。
 
 若 GHCR 拉镜像 401：
 

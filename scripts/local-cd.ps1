@@ -1,5 +1,5 @@
-﻿# 本机跟 GitHub：push → Actions 打镜像 → 本脚本只更新本机 Kubernetes（namespace doinb），不用 Compose。
-# 答辩演示：先开 -Watch，浏览器开 8787，push 后等 CI 绿，刷新页面左上角版本号会变，不要手动 kubectl。
+﻿# 本机跟 GitHub：push 到 main → Actions 打镜像 → 本脚本按 origin/main 更新 k8s。
+# 人可以一直留在 小学期ZZW：脚本只快进本地 main 指针，绝不 checkout 到 main。
 #
 #   .\scripts\local-cd.ps1 -Watch
 
@@ -76,20 +76,18 @@ function Get-RemoteSha([string]$branch) {
     return $sha.Trim()
 }
 
-function Test-WorkingTreeClean {
-    return [string]::IsNullOrWhiteSpace((git status --porcelain))
-}
-
-function Sync-Repo([string]$branch) {
-    if (-not (Test-WorkingTreeClean)) {
-        Write-CdLog '工作区有未提交改动，跳过 git pull。'
-        return $false
-    }
+function Sync-LocalMain([string]$branch) {
     $current = (git branch --show-current).Trim()
-    if ($current -ne $branch) { git checkout $branch }
-    git merge --ff-only "origin/$branch"
-    if ($LASTEXITCODE -ne 0) { throw "无法快进 origin/$branch" }
-    return $true
+    if ($current -eq $branch) {
+        Write-CdLog "当前就在 $branch，不改工作区，按 origin/$branch 部署。"
+        return
+    }
+    # 只移动本地 main 指针，不切换当前分支、不碰工作区。
+    git fetch origin "${branch}:${branch}"
+    if ($LASTEXITCODE -ne 0) {
+        throw "无法快进本地 $branch 到 origin/$branch（当前仍在 $current）"
+    }
+    Write-CdLog "本地 $branch 已快进到 origin/$branch，当前分支仍是 $current"
 }
 
 function Wait-GhcrImages([string]$owner, [string]$sha) {
@@ -97,7 +95,7 @@ function Wait-GhcrImages([string]$owner, [string]$sha) {
     while ((Get-Date) -lt $deadline) {
         $missing = @()
         foreach ($m in $Modules) {
-            docker pull "ghcr.io/${owner}/${m}:${sha}" 2>&1 | Out-Null
+            cmd /c "docker pull ghcr.io/${owner}/${m}:${sha} >nul 2>&1"
             if ($LASTEXITCODE -ne 0) { $missing += $m }
         }
         if ($missing.Count -eq 0) { return $true }
@@ -146,7 +144,7 @@ function Invoke-Once {
         return
     }
     Write-CdLog "检测到 origin/$Branch = $sha（上次 $prev）"
-    if (-not (Sync-Repo $Branch)) { return }
+    Sync-LocalMain $Branch
     if (-not (Wait-GhcrImages $GhcrOwner $sha)) {
         throw "等不到 ghcr.io/$GhcrOwner/doinb-web:$sha。看 Actions 是否已绿，或设置 GHCR_TOKEN。"
     }
