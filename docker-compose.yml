@@ -67,8 +67,8 @@ services:
 
   video:
     build:
-      context: ./services
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/Dockerfile.video
       args:
         MODULE: doinb-video
         PORT: "8083"

@@ -371,8 +371,8 @@ jobs:
       - name: Build and push video
         uses: docker/build-push-action@v6
         with:
-          context: ./services
-          file: ./services/Dockerfile
+          context: .
+          file: ./services/Dockerfile.video
           push: true
           tags: ghcr.io/${{ steps.meta.outputs.owner }}/doinb-video:${{ steps.meta.outputs.sha }}
           build-args: |
@@ -520,7 +520,8 @@ jobs:
             --from-literal=JWT_SECRET="$JWT_SECRET" \
             --from-literal=DOINB_INTERNAL_TOKEN="$DOINB_INTERNAL_TOKEN"
           kubectl create configmap doinb-db-init -n doinb \
-            --from-file=database.sql=database/database.sql
+            --from-file=001-schema.sql=database/database.sql \
+            --from-file=002-seed.sql=database/seed.sql
           kubectl apply -k deploy/k8s
       - name: Wait for rollouts
         run: |
@@ -533,7 +534,7 @@ jobs:
           kubectl run doinb-healthcheck -n doinb --restart=Never \
             --image=curlimages/curl:8.12.1 \
             --command -- sh -c \
-            'curl -fsS http://gateway:8081/health && echo && curl -fsS http://gateway:8081/ready && echo && curl -fsS http://gateway:8081/version && echo && curl -fsS http://user:8082/health && echo && curl -fsS http://video:8083/ready && echo && curl -fsS http://web/ >/dev/null && curl -fsS http://web/api/health && echo'
+            'curl -fsS http://gateway:8081/health && echo && curl -fsS http://gateway:8081/ready && echo && curl -fsS http://gateway:8081/version && echo && curl -fsS http://user:8082/health && echo && curl -fsS http://video:8083/ready && echo && curl -fsS -o /dev/null http://video:8083/uploads/covers/demo-1938.png && curl -fsS http://web/ >/dev/null && curl -fsS http://web/api/health && echo'
           for i in $(seq 1 48); do
             phase=$(kubectl get pod doinb-healthcheck -n doinb -o jsonpath='{.status.phase}')
             echo "healthcheck phase=${phase}"

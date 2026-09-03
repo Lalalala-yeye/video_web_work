@@ -1,6 +1,6 @@
 # 课设演示样片
 
-clone 后由后端容器启动脚本拷到 `/app/uploads`，配合 `database/seed.sql` 在首页显示。
+clone 后由 `doinb-video` 启动时拷到 `/app/uploads`（compose 挂宿主机目录，k8s 的 emptyDir 同样走这一步），配合 `database/seed.sql` 在首页显示。
 
 | 文件 | 首页标题 | 约大小 |
 |------|----------|--------|
