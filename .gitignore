@@ -10,6 +10,8 @@ dist/
 # 环境与密钥（切勿提交）
 .env
 .env.local
+.local-cd-state
+.local-cd.log
 application-local.yml
 *.pem
 

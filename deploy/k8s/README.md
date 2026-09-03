@@ -115,7 +115,7 @@ curl.exe -i http://127.0.0.1:8080/api/health
 
 任务：给容器设好 `requests`/`limits`（已在 `java-services.yaml`），再挂 HPA，加压后 Pod 变多，停压后 Pod 变少。现场记下吞吐、均时、P95、错误率。
 
-HPA 挂在 **gateway / video / user**（压测会打到的路径）。副本 1～4，CPU 目标 50%（相对 request 50m）。缩容窗口 30 秒，方便现场看降回去。不要给 MySQL 做 HPA。
+HPA 挂在 **gateway / video / user**（压测会打到的路径）。副本 1～4，CPU 目标 50%（相对 request 50m）。扩容立即最多翻倍（给 JVM 启动留 2 倍余量）；缩容先稳 120 秒再每分钟最多减 20%，避免新 Pod 没 Ready 就被删。不要给 MySQL 做 HPA。
 
 第 4 项单体对比时请先 `kubectl delete hpa -n doinb --all` 或不要加压，避免副本数变化污染对比。
 
@@ -175,7 +175,7 @@ node bench/run.mjs --label micro --base http://127.0.0.1:8081 --scenario login -
 
 老师应看到：TARGETS 超过 50% → REPLICAS 增加 → 新 Pod `ContainerCreating` 再到 `Running`。脚本会打出吞吐、均时、P95、错误率，截下来。
 
-停压后等约 30～60 秒，副本减回去。
+停压后先等约 2 分钟（缩容稳定窗口），再每分钟最多少 1 个 Pod，副本慢慢减回去。
 
 CPU 上不去时：把 `--vus` 加到 80，或确认打的是集群里的 8081 而不是本机 Docker Compose。
 

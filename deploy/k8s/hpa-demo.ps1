@@ -32,4 +32,4 @@ Set-Location $Root
 node bench/run.mjs --label micro --base http://127.0.0.1:8081 --scenario $Scenario --vus $Vus --duration $Duration --warmup 5 --rounds 1
 
 Write-Host ''
-Write-Host '压力已停。等约 30～60 秒看 HPA 把副本减回去。把脚本打印的吞吐/均时/P95/错误率记进实验记录。'
+Write-Host '压力已停。扩容按约 2 倍加副本；缩容要等约 2 分钟稳定窗口，再每分钟最多减 20%。把脚本打印的吞吐/均时/P95/错误率记进实验记录。'
