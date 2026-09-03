@@ -71,11 +71,11 @@ spec:
           livenessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources:
             requests: { cpu: 50m, memory: 192Mi }
-            limits: { cpu: 500m, memory: 512Mi }
+            limits: { cpu: 2000m, memory: 512Mi }
           volumeMounts:
             - name: uploads
               mountPath: /app/uploads
@@ -149,11 +149,11 @@ spec:
           livenessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources:
             requests: { cpu: 50m, memory: 192Mi }
-            limits: { cpu: 500m, memory: 512Mi }
+            limits: { cpu: 2000m, memory: 512Mi }
           volumeMounts:
             - name: uploads
               mountPath: /app/uploads
@@ -227,11 +227,11 @@ spec:
           livenessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources:
             requests: { cpu: 50m, memory: 192Mi }
-            limits: { cpu: 500m, memory: 512Mi }
+            limits: { cpu: 2000m, memory: 512Mi }
 ---
 apiVersion: v1
 kind: Service
@@ -299,11 +299,11 @@ spec:
           livenessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources:
             requests: { cpu: 50m, memory: 192Mi }
-            limits: { cpu: 500m, memory: 512Mi }
+            limits: { cpu: 2000m, memory: 512Mi }
 ---
 apiVersion: v1
 kind: Service
@@ -371,11 +371,11 @@ spec:
           livenessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources:
             requests: { cpu: 50m, memory: 192Mi }
-            limits: { cpu: 500m, memory: 512Mi }
+            limits: { cpu: 2000m, memory: 512Mi }
 ---
 apiVersion: v1
 kind: Service
@@ -439,11 +439,11 @@ spec:
           livenessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources:
             requests: { cpu: 50m, memory: 192Mi }
-            limits: { cpu: 500m, memory: 512Mi }
+            limits: { cpu: 2000m, memory: 512Mi }
 ---
 apiVersion: v1
 kind: Service

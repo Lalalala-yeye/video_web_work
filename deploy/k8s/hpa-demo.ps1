@@ -21,8 +21,15 @@ if ($LASTEXITCODE -ne 0) {
     throw 'kubectl top 失败。kind 请先按 deploy/k8s/README.md 安装 metrics-server（加 --kubelet-insecure-tls）。'
 }
 
+Write-Host '确保 HPA 已挂上（对比压测时可能被 delete 掉）...'
+kubectl apply -n doinb -f (Join-Path $PSScriptRoot 'hpa.yaml') | Out-Host
+Start-Sleep -Seconds 2
 Write-Host '当前 HPA：'
 kubectl get hpa -n doinb
+$hpaRows = @(kubectl get hpa -n doinb --no-headers 2>$null)
+if ($hpaRows.Count -lt 1) {
+    throw 'HPA 仍不存在。检查 kubectl apply -f deploy/k8s/hpa.yaml'
+}
 Write-Host ''
 Write-Host "加压 $Scenario  ${Vus} VU  ${Duration}s（打 port-forward 后的 8081）"
 Write-Host '请先在另一终端： kubectl port-forward -n doinb svc/gateway 8081:8081'

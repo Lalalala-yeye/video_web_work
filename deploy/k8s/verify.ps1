@@ -7,9 +7,12 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 function Invoke-Kubectl {
-    & kubectl @args
+    $kubectlArgs = foreach ($a in $args) {
+        if ($a -is [System.Array]) { $a -join ',' } else { $a }
+    }
+    & kubectl @kubectlArgs
     if ($LASTEXITCODE -ne 0) {
-        throw "kubectl $($args -join ' ') failed with exit code $LASTEXITCODE"
+        throw "kubectl $($kubectlArgs -join ' ') failed with exit code $LASTEXITCODE"
     }
 }
 

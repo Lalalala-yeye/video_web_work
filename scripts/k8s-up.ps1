@@ -42,8 +42,11 @@ function Import-DotEnv {
 }
 
 function Invoke-Kubectl {
-    & kubectl @args
-    if ($LASTEXITCODE -ne 0) { throw "kubectl $($args -join ' ') 失败" }
+    $kubectlArgs = foreach ($a in $args) {
+        if ($a -is [System.Array]) { $a -join ',' } else { $a }
+    }
+    & kubectl @kubectlArgs
+    if ($LASTEXITCODE -ne 0) { throw "kubectl $($kubectlArgs -join ' ') 失败" }
 }
 
 $Modules = @(
@@ -155,6 +158,6 @@ $stateFile = Join-Path $Root '.local-cd-state'
     ConvertTo-Json | Set-Content -Path $stateFile -Encoding utf8
 
 Write-Host ''
-Invoke-Kubectl get pods,svc -n doinb -o wide | Out-Host
+Invoke-Kubectl get 'pods,svc' -n doinb -o wide | Out-Host
 Write-UpLog "完成。浏览器打开 http://localhost:8787 ，版本号应是 $Tag"
 Write-UpLog '之后在本机开着: .\scripts\local-cd.ps1 -Watch'
