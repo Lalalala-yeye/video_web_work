@@ -27,6 +27,7 @@ const showMenu = ref(false)
 const showNotifications = ref(false)
 const showMobileNav = ref(false)
 const unreadCount = ref(0)
+const deployVersion = ref('')
 const useFallbackBell = ref(false)
 const notificationPanelRef = ref(null)
 const loggedIn = ref(isLoggedIn())
@@ -54,6 +55,12 @@ const displayName = computed(() => user.value?.nickname || user.value?.username 
 onMounted(() => {
   refreshAuth()
   window.addEventListener(AUTH_UPDATED_EVENT, onAuthUpdated)
+  fetch('/api/version')
+    .then(r => r.json())
+    .then(j => {
+      deployVersion.value = j?.data?.version || ''
+    })
+    .catch(() => {})
 })
 
 onUnmounted(() => {
@@ -159,6 +166,7 @@ function toggleMobileNav() {
       <router-link to="/" class="logo">
         <img :src="FAVICON_URL" alt="doinb" class="logo-icon-img" />
         <span class="logo-text">doinb</span>
+        <span v-if="deployVersion" class="logo-ver" :title="'当前部署版本 ' + deployVersion">{{ deployVersion }}</span>
       </router-link>
 
       <button type="button" class="mobile-menu-btn" aria-label="打开导航" @click="toggleMobileNav">
@@ -323,6 +331,16 @@ function toggleMobileNav() {
   font-size: 21px;
   font-weight: 800;
   color: var(--doinb-text-primary);
+}
+
+.logo-ver {
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--doinb-text-secondary);
+  border: 1px solid var(--doinb-border-light);
+  border-radius: 999px;
 }
 
 .mobile-menu-btn {

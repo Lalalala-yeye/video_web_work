@@ -72,15 +72,14 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/mysql
-            - name: init-schema
-              mountPath: /docker-entrypoint-initdb.d/001-schema.sql
-              subPath: database.sql
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
               readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: mysql-data
-        - name: init-schema
+        - name: init-sql
           configMap:
             name: doinb-db-init
 ---

@@ -1,6 +1,9 @@
-# 课设：按 CPU 自动扩缩容。只挂入口和会被压测打到的服务。
-# 需要 metrics-server（kind 见 README）。MySQL / live / interact / message / web 不挂 HPA。
-# minReplicas=1：CI kind 把副本改成 1 后不会被 HPA 强行拉回 2。
+# 课设 HPA：gateway / video / user。MySQL / live / interact / message / web 不挂。
+#
+# 扩容：立即按「当前副本的 2 倍」加（Percent 100），给 JVM 启动留余量。
+# 缩容：先稳 120s（等新 Pod Ready，避免刚扩出来就被平均 CPU 拉低删掉），
+#       再每 60s 最多减 20%（剩下约 80% ≈ 按 1.25 倍余量往需求靠），selectPolicy=Min 取更慢的那种。
+# CPU 目标 50%：稳态大约按「把 CPU 压回 request 一半」留余量。
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -24,18 +27,22 @@ spec:
       stabilizationWindowSeconds: 0
       selectPolicy: Max
       policies:
-        - type: Pods
-          value: 2
-          periodSeconds: 15
         - type: Percent
           value: 100
           periodSeconds: 15
+        - type: Pods
+          value: 2
+          periodSeconds: 15
     scaleDown:
-      stabilizationWindowSeconds: 30
+      stabilizationWindowSeconds: 120
+      selectPolicy: Min
       policies:
+        - type: Percent
+          value: 20
+          periodSeconds: 60
         - type: Pods
           value: 1
-          periodSeconds: 15
+          periodSeconds: 60
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -60,18 +67,22 @@ spec:
       stabilizationWindowSeconds: 0
       selectPolicy: Max
       policies:
-        - type: Pods
-          value: 2
-          periodSeconds: 15
         - type: Percent
           value: 100
           periodSeconds: 15
+        - type: Pods
+          value: 2
+          periodSeconds: 15
     scaleDown:
-      stabilizationWindowSeconds: 30
+      stabilizationWindowSeconds: 120
+      selectPolicy: Min
       policies:
+        - type: Percent
+          value: 20
+          periodSeconds: 60
         - type: Pods
           value: 1
-          periodSeconds: 15
+          periodSeconds: 60
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -96,15 +107,19 @@ spec:
       stabilizationWindowSeconds: 0
       selectPolicy: Max
       policies:
-        - type: Pods
-          value: 2
-          periodSeconds: 15
         - type: Percent
           value: 100
           periodSeconds: 15
+        - type: Pods
+          value: 2
+          periodSeconds: 15
     scaleDown:
-      stabilizationWindowSeconds: 30
+      stabilizationWindowSeconds: 120
+      selectPolicy: Min
       policies:
+        - type: Percent
+          value: 20
+          periodSeconds: 60
         - type: Pods
           value: 1
-          periodSeconds: 15
+          periodSeconds: 60

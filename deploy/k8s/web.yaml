@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web
+  namespace: doinb
   labels:
     app: web
 spec:
@@ -64,10 +65,26 @@ apiVersion: v1
 kind: Service
 metadata:
   name: web
+  namespace: doinb
 spec:
   selector:
     app: web
   ports:
     - name: http
       port: 80
+      targetPort: http
+---
+# Docker Desktop：浏览器直接开 localhost:8787，不必再 port-forward。
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-local
+  namespace: doinb
+spec:
+  type: LoadBalancer
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 8787
       targetPort: http
