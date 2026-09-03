@@ -53,7 +53,18 @@ $K8sDeploys = @('gateway', 'user', 'video', 'live', 'interact', 'message', 'web'
 function Write-CdLog([string]$Message) {
     $line = '{0} {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
     Write-Host $line
-    Add-Content -Path $LogFile -Value $line -Encoding utf8
+    # PS 5.1 的 Add-Content -Encoding utf8 在空文件/OneDrive 桌面路径上会报「流不可读」，
+    # 且 $ErrorActionPreference=Stop 会把整次 CD 打断。写日志失败必须忽略。
+    $text = $line + [Environment]::NewLine
+    $utf8 = [System.Text.UTF8Encoding]::new($false)
+    foreach ($path in @($LogFile, (Join-Path $env:TEMP 'doinb-local-cd.log'))) {
+        try {
+            [System.IO.File]::AppendAllText($path, $text, $utf8)
+            return
+        } catch {
+            continue
+        }
+    }
 }
 
 function Test-K8sDoinb {

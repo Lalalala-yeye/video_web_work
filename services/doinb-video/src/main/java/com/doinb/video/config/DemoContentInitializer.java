@@ -20,8 +20,8 @@ import java.sql.Connection;
 import java.util.stream.Stream;
 
 /**
- * k8s 的 uploads 是 emptyDir，没有 compose 那份宿主机目录。
- * 启动时把镜像里的演示样片拷到 UPLOAD_PATH，并幂等写入 seed 账号/视频。
+ * 启动时把镜像里的演示样片拷到 UPLOAD_PATH（已有同名文件会覆盖演示片，用户 UUID 文件不动），
+ * 并幂等写入 seed 账号/视频。k8s 用 hostPath 挂 uploads，滚动更新后用户上传仍在。
  */
 @Component
 @Order(0)
