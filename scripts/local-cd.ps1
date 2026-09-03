@@ -1,4 +1,4 @@
-# 本机跟 GitHub：push → Actions 打镜像 → 本脚本只更新本机 Kubernetes（namespace doinb），不用 Compose。
+﻿# 本机跟 GitHub：push → Actions 打镜像 → 本脚本只更新本机 Kubernetes（namespace doinb），不用 Compose。
 # 答辩演示：先开 -Watch，浏览器开 8787，push 后等 CI 绿，刷新页面左上角版本号会变，不要手动 kubectl。
 #
 #   .\scripts\local-cd.ps1 -Watch
@@ -12,6 +12,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+try {
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $OutputEncoding = [Console]::OutputEncoding
+    chcp 65001 | Out-Null
+} catch {}
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 
