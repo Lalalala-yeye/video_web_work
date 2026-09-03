@@ -198,7 +198,7 @@ CPU 上不去时：把 `--vus` 加到 80，或确认打的是集群里的 8081 �
 ./deploy/k8s/fault-demo.ps1 -Target k8s
 ```
 
-脚本会：打一次搜索 → `docker stop doinb-video`（或 K8s 把 video 副本打到 0）→ 再搜索。第二次应 `code=200`、`notices` 含「视频服务超时或不可用」、`videos` 为空。页面搜索同样会黄条提示。K8s 演示前会暂时删掉 video 的 HPA，结束再 apply 回去。
+脚本会：先打各服务 `/health` 和一次搜索 → `docker stop doinb-video`（或 K8s 把 video 副本打到 0）→ 再搜索并再打一遍 `/health`。第二次应 `code=200`、`notices` 含「视频服务超时或不可用」、`videos` 为空；video 的 health 为 DOWN，gateway / user / live / interact / message 仍 200。页面搜索同样会黄条提示。K8s 演示前会暂时删掉 video 的 HPA，结束再 apply 回去。
 
 # 第二部分：滚动更新实验
 
