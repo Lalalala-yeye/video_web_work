@@ -18,7 +18,13 @@ GitHub Actions 的 **Deploy kind + health (CD-02)** 会在打完镜像后，用�
 - 存活 `/health`，就绪 `/ready`，版本 `/version`
 - web `/api`：反向代理到 `http://gateway:8081/`
 
-所有命令均在仓库根目录执行。开始前确认本地集群可用：
+所有命令均在仓库根目录执行。本机第一次部署可以直接：
+
+```powershell
+.\scripts\k8s-up.ps1
+```
+
+下面步骤用于课设实验手工取证，与脚本等价。开始前确认本地集群可用：
 
 ```powershell
 kubectl cluster-info

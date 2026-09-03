@@ -21,7 +21,11 @@ $env:GHCR_USER = '你的GitHub用户名'
 $env:GHCR_TOKEN = 'read:packages 的 PAT'
 ```
 
-没有 `doinb` 命名空间时脚本会直接失败，不会去起 compose。先按 `deploy/k8s/README.md` 部署。
+没有 `doinb` 命名空间时先首次部署：
+
+```powershell
+.\scripts\k8s-up.ps1
+```
 
 ## 录屏步骤
 
