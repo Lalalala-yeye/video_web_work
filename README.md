@@ -13,23 +13,19 @@ git checkout main
 演示环境在 namespace `doinb`，不用 docker compose。清单和 HPA 说明见 `deploy/k8s/README.md`。
 
 ```powershell
-kubectl apply -f deploy/k8s/namespace.yaml
-
-kubectl create secret generic doinb-secrets -n doinb `
-  --from-literal=MYSQL_ROOT_PASSWORD='test' `
-  --from-literal=MYSQL_PASSWORD='test' `
-  --from-literal=JWT_SECRET='compose-demo-secret-at-least-32-chars!!' `
-  --from-literal=DOINB_INTERNAL_TOKEN='doinb-internal-dev-token'
-
-kubectl create configmap doinb-db-init -n doinb `
-  --from-file=001-schema.sql=database/database.sql `
-  --from-file=002-seed.sql=database/seed.sql
-
-kubectl apply -k deploy/k8s
-kubectl get pods -n doinb
+copy .env.example .env
+.\scripts\k8s-up.ps1
 ```
 
-镜像来自 GHCR。若 Pod 是 `ImagePullBackOff`，先 `docker login ghcr.io`（需要 `read:packages` 的 PAT）。
+脚本会建 namespace、Secret、数据库初始化脚本，`kubectl apply -k deploy/k8s`，再把镜像换成当前 `origin/main` 的 SHA。本机 16GB 默认各服务 1 个副本（`.\scripts\k8s-up.ps1 -Replicas 2` 与课设清单一致）。
+
+镜像来自 GHCR。若报 401 / ImagePullBackOff：
+
+```powershell
+$env:GHCR_USER = '你的GitHub用户名'
+$env:GHCR_TOKEN = 'read:packages 的 PAT'
+.\scripts\k8s-up.ps1
+```
 
 ## 进行检查
 

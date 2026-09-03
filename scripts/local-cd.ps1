@@ -137,7 +137,7 @@ function Invoke-Once {
     docker info 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Docker 未运行（Docker Desktop Kubernetes 需要它拉 GHCR 镜像）。' }
     if (-not (Test-K8sDoinb)) {
-        throw '找不到 namespace doinb。先按 deploy/k8s/README.md 把应用部署到本机 Kubernetes，不要用 docker compose。'
+        throw '找不到 namespace doinb。先运行 .\scripts\k8s-up.ps1 做本机首次部署。'
     }
     Connect-Ghcr
     $sha = Get-RemoteSha $Branch
