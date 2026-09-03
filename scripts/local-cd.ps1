@@ -111,7 +111,13 @@ function Deploy-K8s([string]$sha) {
         kubectl set image "deployment/$d" "$d=ghcr.io/${GhcrOwner}/doinb-${d}:${sha}" -n doinb
         if ($LASTEXITCODE -ne 0) { throw "kubectl set image $d 失败" }
     }
-    kubectl patch configmap doinb-runtime -n doinb --type merge -p "{`"data`":{`"APP_VERSION`":`"$sha`"}}"
+    $patchFile = Join-Path $env:TEMP 'doinb-app-version.json'
+    (@{ data = @{ APP_VERSION = $sha } } | ConvertTo-Json -Compress) |
+        Set-Content -Path $patchFile -Encoding ascii
+    kubectl patch configmap doinb-runtime -n doinb --type merge --patch-file $patchFile
+    if ($LASTEXITCODE -ne 0) { throw 'patch APP_VERSION 失败' }
+    kubectl set env deployment/gateway "APP_VERSION=$sha" -n doinb
+    if ($LASTEXITCODE -ne 0) { throw 'set env APP_VERSION 失败' }
     foreach ($d in $K8sDeploys) {
         kubectl rollout restart "deployment/$d" -n doinb
     }
