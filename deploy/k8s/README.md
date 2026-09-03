@@ -520,4 +520,4 @@ kubectl delete pod gateway-debug web-debug -n doinb --ignore-not-found
 
 停止端口转发只需在对应终端按 `Ctrl+C`。
 
-> 当前 user / video 上传目录使用 `emptyDir`。这适合本次实验，但 Pod 被替换后上传文件不会保留，多副本之间也不共享；生产环境应改用共享存储或对象存储。
+> user / video 的 `/app/uploads` 使用节点 `hostPath`（`/var/lib/doinb/uploads-user` 与 `uploads-video`），滚动更新、HPA 加副本、再次 `k8s-up` 都不会清空文件。`kubectl delete ns doinb` 只删库的 PVC，节点上的上传文件还在；**Docker Desktop → Reset Kubernetes** 会连同 hostPath 一起清掉，网站会回到 seed 演示账号和样片。生产环境应改用共享 PVC 或对象存储。

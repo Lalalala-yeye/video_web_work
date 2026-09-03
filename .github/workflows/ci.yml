@@ -24,7 +24,16 @@ jobs:
         run: |
           chmod +x mvnw
           set -o pipefail
-          ./mvnw -B test 2>&1 | tee /tmp/services-test.log
+          ok=0
+          for i in 1 2 3; do
+            if ./mvnw -B -s .mvn/ci-settings.xml test 2>&1 | tee /tmp/services-test.log; then
+              ok=1
+              break
+            fi
+            echo "mvn test attempt $i failed (Maven Central 429 is common), retry in 25s"
+            sleep 25
+          done
+          test "$ok" = 1
       - name: Write test result to summary
         if: always()
         run: |
@@ -98,7 +107,16 @@ jobs:
         working-directory: services
         run: |
           chmod +x mvnw ci-start.sh
-          ./mvnw -B package -DskipTests
+          ok=0
+          for i in 1 2 3; do
+            if ./mvnw -B -s .mvn/ci-settings.xml package -DskipTests; then
+              ok=1
+              break
+            fi
+            echo "mvn package attempt $i failed (Maven Central 429 is common), retry in 25s"
+            sleep 25
+          done
+          test "$ok" = 1
       - name: Start gateway + five services
         working-directory: services
         run: |
@@ -236,7 +254,16 @@ jobs:
         working-directory: services
         run: |
           chmod +x mvnw ci-start.sh
-          ./mvnw -B package -DskipTests
+          ok=0
+          for i in 1 2 3; do
+            if ./mvnw -B -s .mvn/ci-settings.xml package -DskipTests; then
+              ok=1
+              break
+            fi
+            echo "mvn package attempt $i failed (Maven Central 429 is common), retry in 25s"
+            sleep 25
+          done
+          test "$ok" = 1
           mkdir -p /tmp/doinb-uploads
           bash ./ci-start.sh
           touch /tmp/e2e-backend-up

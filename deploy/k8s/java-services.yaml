@@ -80,8 +80,12 @@ spec:
             - name: uploads
               mountPath: /app/uploads
       volumes:
+        # 单机 Docker Desktop：hostPath 跨滚动更新仍在；emptyDir 会随 Pod 清空。
+        # 多副本可共用（同一节点）。Reset Kubernetes / 删节点盘才会丢。
         - name: uploads
-          emptyDir: {}
+          hostPath:
+            path: /var/lib/doinb/uploads-user
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
@@ -159,7 +163,9 @@ spec:
               mountPath: /app/uploads
       volumes:
         - name: uploads
-          emptyDir: {}
+          hostPath:
+            path: /var/lib/doinb/uploads-video
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
